@@ -44,7 +44,9 @@ pkg_zip_path = get_example_dir('zipped_imports', 'pkg.zip')
 
 def test_find_module_package_zipped(Script, inference_state, environment):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    script = Script('import pkg; pkg.mod', sys_path=sys_path)
+
+    project = Project('.', sys_path=sys_path)
+    script = Script('import pkg; pkg.mod', project=project)
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
@@ -86,7 +88,7 @@ def test_find_module_package_zipped(Script, inference_state, environment):
 def test_correct_zip_package_behavior(Script, inference_state, environment, code,
                                       file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    pkg, = Script(code, sys_path=sys_path).infer()
+    pkg, = Script(code, project=Project('.', sys_path=sys_path)).infer()
     value, = pkg._name.infer()
     assert value.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
     assert '.'.join(value.py__package__()) == package
@@ -98,7 +100,7 @@ def test_correct_zip_package_behavior(Script, inference_state, environment, code
 def test_find_module_not_package_zipped(Script, inference_state, environment):
     path = get_example_dir('zipped_imports', 'not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
-    script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
+    script = Script('import not_pkg; not_pkg.val', project=Project('.', sys_path=sys_path))
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
@@ -144,7 +146,7 @@ def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     path = get_example_dir('flask-site-packages')
-    completions = Script(code, sys_path=[path]).complete()
+    completions = Script(code, project=Project('.', sys_path=[path])).complete()
     assert name in [c.name for c in completions]
 
 
@@ -166,10 +168,14 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
     bar_path = tmpdir.join('bar')
     foo_path.join('module.py').write('foo = 123', ensure=True)
     bar_path.join('module.py').write('bar = 123', ensure=True)
-    foo_completions = Script('import module; module.',
-                             sys_path=[foo_path.strpath]).complete()
-    bar_completions = Script('import module; module.',
-                             sys_path=[bar_path.strpath]).complete()
+    foo_completions = Script(
+        'import module; module.',
+        project=Project('.', sys_path=[foo_path.strpath]),
+    ).complete()
+    bar_completions = Script(
+        'import module; module.',
+        project=Project('.', sys_path=[bar_path.strpath]),
+    ).complete()
     assert 'foo' in [c.name for c in foo_completions]
     assert 'bar' not in [c.name for c in foo_completions]
 
@@ -460,7 +466,7 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
     script = Script(
         'import ' + name,
         path=tmpdir.join('something.py').strpath,
-        sys_path=[tmpdir.strpath] + environment.get_sys_path(),
+        project=Project('.', sys_path=[tmpdir.strpath] + environment.get_sys_path()),
     )
     module, = script.infer()
     assert module._inference_state.builtins_module.py__file__() != module_path

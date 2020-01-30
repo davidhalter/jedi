@@ -3,6 +3,7 @@
 All character set and unicode related tests.
 """
 from jedi._compatibility import u, unicode
+from jedi import Project
 
 
 def test_unicode_script(Script):
@@ -70,7 +71,8 @@ def test_wrong_encoding(Script, tmpdir):
     # Use both latin-1 and utf-8 (a really broken file).
     x.write_binary(u'foobar = 1\nä'.encode('latin-1') + u'ä'.encode('utf-8'))
 
-    c, = Script('import x; x.foo', sys_path=[tmpdir.strpath]).complete()
+    project = Project('.', sys_path=[tmpdir.strpath])
+    c, = Script('import x; x.foo', project=project).complete()
     assert c.name == 'foobar'
 
 

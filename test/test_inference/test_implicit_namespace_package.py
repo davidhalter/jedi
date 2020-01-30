@@ -3,6 +3,7 @@ from os.path import dirname
 import pytest
 
 from test.helpers import get_example_dir, example_dir
+from jedi import Project
 
 
 @pytest.fixture(autouse=True)
@@ -14,9 +15,10 @@ def skip_not_supported_versions(environment):
 def test_implicit_namespace_package(Script):
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
+    project = Project('.', sys_path=sys_path)
 
     def script_with_path(*args, **kwargs):
-        return Script(sys_path=sys_path, *args, **kwargs)
+        return Script(project=project, *args, **kwargs)
 
     # goto definition
     assert script_with_path('from pkg import ns1_file').infer()
@@ -55,15 +57,14 @@ def test_implicit_namespace_package(Script):
 def test_implicit_nested_namespace_package(Script):
     code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
-    sys_path = [example_dir]
-
-    script = Script(sys_path=sys_path, source=code, line=1, column=61)
+    project = Project('.', sys_path=[example_dir])
+    script = Script(project=project, source=code, line=1, column=61)
 
     result = script.infer()
 
     assert len(result) == 1
 
-    implicit_pkg, = Script(code, sys_path=sys_path).infer(column=10)
+    implicit_pkg, = Script(code, project=project).infer(column=10)
     assert implicit_pkg.type == 'module'
     assert implicit_pkg.module_path is None
 
@@ -71,9 +72,8 @@ def test_implicit_nested_namespace_package(Script):
 def test_implicit_namespace_package_import_autocomplete(Script):
     CODE = 'from implicit_name'
 
-    sys_path = [example_dir]
-
-    script = Script(sys_path=sys_path, source=CODE)
+    project = Project('.', sys_path=[example_dir])
+    script = Script(project=project, source=CODE)
     compl = script.complete()
     assert [c.name for c in compl] == ['implicit_namespace_package']
 
@@ -83,7 +83,8 @@ def test_namespace_package_in_multiple_directories_autocompletion(Script):
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
 
-    script = Script(sys_path=sys_path, source=CODE)
+    project = Project('.', sys_path=sys_path)
+    script = Script(project=project, source=CODE)
     compl = script.complete()
     assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
 
@@ -92,7 +93,8 @@ def test_namespace_package_in_multiple_directories_goto_definition(Script):
     CODE = 'from pkg import ns1_file'
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
-    script = Script(sys_path=sys_path, source=CODE)
+    project = Project('.', sys_path=sys_path)
+    script = Script(project=project, source=CODE)
     result = script.infer()
     assert len(result) == 1
 
@@ -102,6 +104,7 @@ def test_namespace_name_autocompletion_full_name(Script):
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
 
-    script = Script(sys_path=sys_path, source=CODE)
+    project = Project('.', sys_path=sys_path)
+    script = Script(project=project, source=CODE)
     compl = script.complete()
     assert set(c.full_name for c in compl) == set(['pkg'])
