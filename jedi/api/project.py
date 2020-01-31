@@ -3,7 +3,7 @@ import json
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
 from jedi.api.environment import SameEnvironment, \
-    get_cached_default_environment
+    get_cached_default_environment, get_system_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
@@ -30,8 +30,6 @@ def _force_unicode_list(lst):
 
 
 class Project(object):
-    # TODO serialize environment
-    _serializer_ignore_attributes = ('_environment',)
     _environment = None
 
     @staticmethod
@@ -58,6 +56,10 @@ class Project(object):
     def __init__(self, path, **kwargs):
         """
         :param path: The base path for this project.
+        :param python_path: The Python executable path, typically the path of a
+            virtual environment.
+        :param python_version: The version string of the Python environment to
+            be loaded, e.g. `"3"` or `"3.8"`.
         :param sys_path: list of str. You can override the sys path if you
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
@@ -67,12 +69,14 @@ class Project(object):
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, environment=None, sys_path=None, added_sys_path=True,
-                     smart_sys_path=True, _django=False):
+        def py2_comp(path, python_path=None, python_version=None, sys_path=None,
+                     added_sys_path=True, smart_sys_path=True, _django=False):
+            if python_version is not None and python_path is not None:
+                raise ValueError('You cannot use both python_version and python_path')
             self._path = os.path.abspath(path)
-            if isinstance(environment, SameEnvironment):
-                self._environment = environment
 
+            self._python_path = python_path
+            self._python_version = python_version
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._django = _django
@@ -140,16 +144,20 @@ class Project(object):
 
     def save(self):
         data = dict(self.__dict__)
-        for attribute in self._serializer_ignore_attributes:
-            data.pop(attribute, None)
+        data.pop('_environment', None)
+        data = {k.lstrip('_'): v for k, v in data.items()}
 
         with open(self._get_json_path(self._path), 'wb') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
     def get_environment(self):
         if self._environment is None:
-            return get_cached_default_environment()
-
+            if self._python_path is not None:
+                self._environment = create_environment(self._python_path, safe=False)
+            elif self._python_version is not None:
+                self._environment = get_system_environment(self._python_version)
+            else:
+                self._environment = get_cached_default_environment()
         return self._environment
 
     def __repr__(self):
