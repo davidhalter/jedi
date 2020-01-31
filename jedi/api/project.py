@@ -1,4 +1,5 @@
 import os
+import errno
 import json
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
@@ -33,8 +34,12 @@ class Project(object):
     _environment = None
 
     @staticmethod
+    def _get_config_folder_path(base_path):
+        return os.path.join(base_path, _CONFIG_FOLDER)
+
+    @staticmethod
     def _get_json_path(base_path):
-        return os.path.join(base_path, _CONFIG_FOLDER, 'project.json')
+        return os.path.join(Project._get_config_folder_path(base_path), 'project.json')
 
     @classmethod
     def load(cls, path):
@@ -45,9 +50,7 @@ class Project(object):
             version, data = json.load(f)
 
         if version == 1:
-            self = cls.__new__()
-            self.__dict__.update(data)
-            return self
+            return cls(**data)
         else:
             raise WrongVersion(
                 "The Jedi version of this project seems newer than what we can handle."
@@ -70,7 +73,7 @@ class Project(object):
             being properly configured on the ``sys.path``.
         """
         def py2_comp(path, python_path=None, python_version=None, sys_path=None,
-                     added_sys_path=True, smart_sys_path=True):
+                     added_sys_path=(), smart_sys_path=True):
             if python_version is not None and python_path is not None:
                 raise ValueError('You cannot use both python_version and python_path')
             self._path = os.path.abspath(path)
@@ -80,7 +83,7 @@ class Project(object):
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._django = False
-            self.added_sys_path = []
+            self.added_sys_path = list(added_sys_path)
             """The sys path that is going to be added at the end of the """
 
         py2_comp(path, **kwargs)
@@ -145,9 +148,16 @@ class Project(object):
     def save(self):
         data = dict(self.__dict__)
         data.pop('_environment', None)
+        data.pop('_django', None)  # TODO make django setting public?
         data = {k.lstrip('_'): v for k, v in data.items()}
 
-        with open(self._get_json_path(self._path), 'wb') as f:
+        # TODO when dropping Python 2 use pathlib.Path.mkdir(parents=True, exist_ok=True)
+        try:
+            os.makedirs(self._get_config_folder_path(self._path))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        with open(self._get_json_path(self._path), 'w') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
     def get_environment(self):

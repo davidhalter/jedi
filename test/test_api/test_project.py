@@ -30,3 +30,11 @@ def test_added_sys_path(inference_state):
     p = '/some_random_path'
     project.added_sys_path = [p]
     assert p in project._get_base_sys_path(inference_state)
+
+
+def test_load_save_project(tmpdir):
+    project = Project(tmpdir.strpath, added_sys_path=['/foo'])
+    project.save()
+
+    loaded = Project.load(tmpdir.strpath)
+    assert loaded.added_sys_path == ['/foo']
