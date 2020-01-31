@@ -3,8 +3,7 @@ import errno
 import json
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
-from jedi.api.environment import SameEnvironment, \
-    get_cached_default_environment, get_system_environment, create_environment
+from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
@@ -61,8 +60,6 @@ class Project(object):
         :param path: The base path for this project.
         :param python_path: The Python executable path, typically the path of a
             virtual environment.
-        :param python_version: The version string of the Python environment to
-            be loaded, e.g. `"3"` or `"3.8"`.
         :param sys_path: list of str. You can override the sys path if you
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
@@ -72,14 +69,11 @@ class Project(object):
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, python_path=None, python_version=None, sys_path=None,
+        def py2_comp(path, python_path=None, sys_path=None,
                      added_sys_path=(), smart_sys_path=True):
-            if python_version is not None and python_path is not None:
-                raise ValueError('You cannot use both python_version and python_path')
             self._path = os.path.abspath(path)
 
             self._python_path = python_path
-            self._python_version = python_version
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._django = False
@@ -164,8 +158,6 @@ class Project(object):
         if self._environment is None:
             if self._python_path is not None:
                 self._environment = create_environment(self._python_path, safe=False)
-            elif self._python_version is not None:
-                self._environment = get_system_environment(self._python_version)
             else:
                 self._environment = get_cached_default_environment()
         return self._environment
