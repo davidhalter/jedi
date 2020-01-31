@@ -29,7 +29,7 @@ def test_added_sys_path(inference_state):
     project = get_default_project()
     p = '/some_random_path'
     project.added_sys_path = [p]
-    assert p in project._get_base_sys_path(inference_state)
+    assert p in project._get_sys_path(inference_state)
 
 
 def test_load_save_project(tmpdir):

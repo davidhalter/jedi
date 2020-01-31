@@ -142,7 +142,7 @@ class InferenceState(object):
 
     def get_sys_path(self, **kwargs):
         """Convenience function"""
-        return self.project._get_sys_path(self, environment=self.environment, **kwargs)
+        return self.project._get_sys_path(self, **kwargs)
 
     def infer(self, context, name):
         def_ = name.get_definition(import_name_always=True)

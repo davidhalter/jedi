@@ -454,8 +454,12 @@ def _load_python_module(inference_state, file_io,
 
 
 def _load_builtin_module(inference_state, import_names=None, sys_path=None):
+    project = inference_state.project
     if sys_path is None:
         sys_path = inference_state.get_sys_path()
+    if not project._load_unsafe_extensions:
+        safe_paths = project._get_base_sys_path(inference_state)
+        sys_path = [p for p in sys_path if p in safe_paths]
 
     dotted_name = '.'.join(import_names)
     assert dotted_name is not None

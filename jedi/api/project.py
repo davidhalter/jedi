@@ -60,6 +60,11 @@ class Project(object):
         :param path: The base path for this project.
         :param python_path: The Python executable path, typically the path of a
             virtual environment.
+        :param load_unsafe_extensions: Loads extensions that are not in the
+            sys path and in the local directories. With this option enabled,
+            this is potentially unsafe if you clone a git repository and
+            analyze it's code, because those compiled extensions will be
+            important and therefore have execution privileges.
         :param sys_path: list of str. You can override the sys path if you
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
@@ -69,13 +74,14 @@ class Project(object):
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, python_path=None, sys_path=None,
-                     added_sys_path=(), smart_sys_path=True):
+        def py2_comp(path, python_path=None, load_unsafe_extensions=False,
+                     sys_path=None, added_sys_path=(), smart_sys_path=True):
             self._path = os.path.abspath(path)
 
             self._python_path = python_path
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
+            self._load_unsafe_extensions = load_unsafe_extensions
             self._django = False
             self.added_sys_path = list(added_sys_path)
             """The sys path that is going to be added at the end of the """
@@ -83,20 +89,14 @@ class Project(object):
         py2_comp(path, **kwargs)
 
     @inference_state_as_method_param_cache()
-    def _get_base_sys_path(self, inference_state, environment=None):
-        if self._sys_path is not None:
-            return self._sys_path
-
+    def _get_base_sys_path(self, inference_state):
         # The sys path has not been set explicitly.
-        if environment is None:
-            environment = self.get_environment()
-
-        sys_path = list(environment.get_sys_path())
+        sys_path = list(self.get_environment().get_sys_path())
         try:
             sys_path.remove('')
         except ValueError:
             pass
-        return sys_path + self.added_sys_path
+        return sys_path
 
     @inference_state_as_method_param_cache()
     def _get_sys_path(self, inference_state, environment=None,
@@ -105,10 +105,14 @@ class Project(object):
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
         """
-        suffixed = []
+        suffixed = list(self.added_sys_path)
         prefixed = []
 
-        sys_path = list(self._get_base_sys_path(inference_state, environment))
+        if self._sys_path is None:
+            sys_path = list(self._get_base_sys_path(inference_state))
+        else:
+            sys_path = list(self._sys_path)
+
         if self._smart_sys_path:
             prefixed.append(self._path)
 
