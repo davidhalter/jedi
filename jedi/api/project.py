@@ -70,7 +70,7 @@ class Project(object):
             being properly configured on the ``sys.path``.
         """
         def py2_comp(path, python_path=None, python_version=None, sys_path=None,
-                     added_sys_path=True, smart_sys_path=True, _django=False):
+                     added_sys_path=True, smart_sys_path=True):
             if python_version is not None and python_path is not None:
                 raise ValueError('You cannot use both python_version and python_path')
             self._path = os.path.abspath(path)
@@ -79,7 +79,7 @@ class Project(object):
             self._python_version = python_version
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
-            self._django = _django
+            self._django = False
             self.added_sys_path = []
             """The sys path that is going to be added at the end of the """
 
@@ -204,7 +204,9 @@ def get_default_project(path=None):
                 first_no_init_file = dir
 
         if _is_django_path(dir):
-            return Project(dir, _django=True)
+            project = Project(dir)
+            project._django = True
+            return project
 
         if probable_path is None and _is_potential_project(dir):
             probable_path = dir
