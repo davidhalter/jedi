@@ -167,6 +167,10 @@ class GenericClass(ClassMixin, DefineGenericBase):
 
     def get_type_hint(self, add_class_info=True):
         n = self.py__name__()
+        # Not sure if this is the best way to do this, but all of these types
+        # are a bit special in that they have type aliases and other ways to
+        # become lower case. It's probably better to make them upper case,
+        # because that's what you can use in annotations.
         n = dict(list="List", dict="Dict", set="Set", tuple="Tuple").get(n, n)
         s = n + self._generics_manager.get_type_hint()
         if add_class_info:
