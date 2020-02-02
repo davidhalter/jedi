@@ -31,6 +31,9 @@ class _AbstractGenericManager(object):
             debug.warning('No param #%s found for annotation %s', index, self)
             return NO_VALUES
 
+    def get_type_hint(self):
+        return '[%s]' % ', '.join(t.get_type_hint(add_class_info=False) for t in self.to_tuple())
+
 
 class LazyGenericManager(_AbstractGenericManager):
     def __init__(self, context_of_index, index_value):

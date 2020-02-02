@@ -513,6 +513,16 @@ class BaseDefinition(object):
     def execute(self):
         return _values_to_definitions(self._name.infer().execute_with_values())
 
+    def get_type_hint(self):
+        """
+        Returns type hints like ``Iterable[int]`` or ``Union[int, str]``.
+
+        This method might be quite slow, especially for functions. The problem
+        is finding executions for those functions to return something like
+        ``Callable[[int, str], str]``.
+        """
+        return self._name.infer().get_type_hint()
+
 
 class Completion(BaseDefinition):
     """

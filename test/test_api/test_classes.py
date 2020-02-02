@@ -558,3 +558,34 @@ def test_definition_goto_follow_imports(Script):
     assert follow.description == 'def dumps'
     assert follow.line != 1
     assert follow.module_name == 'json'
+
+
+@pytest.mark.parametrize(
+    'code, expected', [
+        ('1', 'int'),
+        ('x = None; x', 'None'),
+        ('n: Optional[str]; n', 'Optional[str]'),
+        ('n = None if xxxxx else ""; n', 'Optional[str]'),
+        ('n = None if xxxxx else str(); n', 'Optional[str]'),
+        ('n = None if xxxxx else str; n', 'Optional[Type[str]]'),
+        ('class Foo: pass\nFoo', 'Type[Foo]'),
+        ('class Foo: pass\nFoo()', 'Foo'),
+
+        ('n: Type[List[int]]; n', 'Type[List[int]]'),
+        ('n: Type[List]; n', 'Type[list]'),
+        ('n: List[int]; n', 'List[int]'),
+        ('n: Iterable[int]; n', 'Iterable[int]'),
+
+        ('n = [1]; n', 'List[int]'),
+        ('n = [1, ""]; n', 'List[Union[int, str]]'),
+        ('n = [1, str(), None]; n', 'List[Optional[Union[int, str]]]'),
+        ('n = {1, str()}; n', 'Set[Union[int, str]]'),
+        ('n = (1,); n', 'Tuple[int]'),
+        ('n = {1: ""}; n', 'Dict[int, str]'),
+        ('n = {1: "", 1.0: b""}; n', 'Dict[Union[float, int], Union[bytes, str]]'),
+    ]
+)
+def test_get_type_hint(Script, code, expected, skip_python2):
+    code = 'from typing import *\n' + code
+    d, = Script(code).goto()
+    assert d.get_type_hint() == expected
