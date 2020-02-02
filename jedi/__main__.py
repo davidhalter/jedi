@@ -48,7 +48,8 @@ def _complete():
         for c in jedi.Script(sys.argv[2]).complete():
             c.docstring()
             c.type
-    except Exception:
+    except Exception as e:
+        print(e)
         pdb.post_mortem()
 
 
