@@ -73,7 +73,13 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
                     converted_names = converted.goto(name.get_public_name())
                     if converted_names:
                         for n in converted_names:
-                            yield n
+                            if n.get_root_context().is_stub():
+                                # If it's a stub again, it means we're going in
+                                # a circle. Probably some imports make it a
+                                # stub again.
+                                yield name
+                            else:
+                                yield n
                         continue
         yield name
 
