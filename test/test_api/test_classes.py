@@ -594,7 +594,7 @@ def test_definition_goto_follow_imports(Script):
          'foo(x: str, y: int=None) -> Union[int, str]'),
     ]
 )
-def test_get_type_hint(Script, code, expected, skip_pre_python35):
+def test_get_type_hint(Script, code, expected, skip_pre_python36):
     code = 'from typing import *\n' + code
     d, = Script(code).goto()
     assert d.get_type_hint() == expected
