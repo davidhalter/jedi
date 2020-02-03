@@ -30,6 +30,7 @@ from jedi.api.completion import Completion
 from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
+from jedi.api.errors import parso_to_jedi_errors
 from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
@@ -503,6 +504,9 @@ class Script(object):
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
         """
         return self._names(**kwargs)  # Python 2...
+
+    def get_syntax_errors(self):
+        return parso_to_jedi_errors(self._grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):
         def def_ref_filter(_def):
