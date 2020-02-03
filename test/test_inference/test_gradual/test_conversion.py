@@ -62,3 +62,11 @@ def test_goto_import(Script, skip_pre_python35):
     assert d.is_stub()
     d, = Script(code).goto()
     assert not d.is_stub()
+
+
+def test_os_stat_result(Script):
+    d, = Script('import os; os.stat_result').goto()
+    assert d.is_stub()
+    n = d._name
+    # This should not be a different stub name
+    assert convert_names([n]) == [n]

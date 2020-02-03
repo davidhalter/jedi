@@ -165,6 +165,18 @@ class GenericClass(ClassMixin, DefineGenericBase):
     def _get_wrapped_value(self):
         return self._class_value
 
+    def get_type_hint(self, add_class_info=True):
+        n = self.py__name__()
+        # Not sure if this is the best way to do this, but all of these types
+        # are a bit special in that they have type aliases and other ways to
+        # become lower case. It's probably better to make them upper case,
+        # because that's what you can use in annotations.
+        n = dict(list="List", dict="Dict", set="Set", tuple="Tuple").get(n, n)
+        s = n + self._generics_manager.get_type_hint()
+        if add_class_info:
+            return 'Type[%s]' % s
+        return s
+
     def get_type_var_filter(self):
         return _TypeVarFilter(self.get_generics(), self.list_type_vars())
 
@@ -238,6 +250,9 @@ class _GenericInstanceWrapper(ValueWrapper):
             elif cls.py__name__() == 'Iterator':
                 return ValueSet([builtin_from_name(self.inference_state, u'None')])
         return self._wrapped_value.py__stop_iteration_returns()
+
+    def get_type_hint(self, add_class_info=True):
+        return self._wrapped_value.class_value.get_type_hint(add_class_info=False)
 
 
 class _PseudoTreeNameClass(Value):

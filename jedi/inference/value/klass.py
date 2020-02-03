@@ -221,6 +221,11 @@ class ClassMixin(object):
     def _as_context(self):
         return ClassContext(self)
 
+    def get_type_hint(self, add_class_info=True):
+        if add_class_info:
+            return 'Type[%s]' % self.py__name__()
+        return self.py__name__()
+
 
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'

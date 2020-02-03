@@ -86,6 +86,33 @@ class FunctionMixin(object):
     def py__name__(self):
         return self.name.string_name
 
+    def get_type_hint(self, add_class_info=True):
+        return_annotation = self.tree_node.annotation
+        if return_annotation is None:
+            def param_name_to_str(n):
+                s = n.string_name
+                annotation = n.infer().get_type_hint()
+                if annotation is not None:
+                    s += ': ' + annotation
+                if n.default_node is not None:
+                    s += '=' + n.default_node.get_code(include_prefix=False)
+                return s
+
+            function_execution = self.as_context()
+            result = function_execution.infer()
+            return_hint = result.get_type_hint()
+            body = self.py__name__() + '(%s)' % ', '.join([
+                param_name_to_str(n)
+                for n in function_execution.get_param_names()
+            ])
+            if return_hint is None:
+                return body
+        else:
+            return_hint = return_annotation.get_code(include_prefix=False)
+            body = self.py__name__() + self.tree_node.children[2].get_code(include_prefix=False)
+
+        return body + ' -> ' + return_hint
+
     def py__call__(self, arguments):
         function_execution = self.as_context(arguments)
         return function_execution.infer()
@@ -398,6 +425,9 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
 
     def get_signature_functions(self):
         return self._overloaded_functions
+
+    def get_type_hint(self, add_class_info=True):
+        return 'Union[%s]' % ', '.join(f.get_type_hint() for f in self._overloaded_functions)
 
 
 def _find_overload_functions(context, tree_node):

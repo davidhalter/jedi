@@ -113,7 +113,12 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
 
 
 def _from_loader(loader, string):
-    is_package = loader.is_package(string)
+    try:
+        is_package_method = loader.is_package
+    except AttributeError:
+        is_package = False
+    else:
+        is_package = is_package_method(string)
     try:
         get_filename = loader.get_filename
     except AttributeError:
@@ -123,7 +128,11 @@ def _from_loader(loader, string):
 
     # To avoid unicode and read bytes, "overwrite" loader.get_source if
     # possible.
-    f = type(loader).get_source
+    try:
+        f = type(loader).get_source
+    except AttributeError:
+        raise ImportError("get_source was not defined on loader")
+
     if is_py3 and f is not importlib.machinery.SourceFileLoader.get_source:
         # Unfortunately we are reading unicode here, not bytes.
         # It seems hard to get bytes, because the zip importer
