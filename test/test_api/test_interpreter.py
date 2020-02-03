@@ -531,6 +531,16 @@ def test__wrapped__():
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_illegal_class_instance():
+    class X:
+        __class__ = 1
+    X.__name__ = 'asdf'
+    d, = jedi.Interpreter('foo', [{'foo': X()}]).infer()
+    v, = d._name.infer()
+    assert not v.is_instance()
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('module_name', ['sys', 'time', 'unittest.mock'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)

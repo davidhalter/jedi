@@ -570,4 +570,6 @@ def _is_class_instance(obj):
     except AttributeError:
         return False
     else:
-        return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
+        # The isinstance check for cls is just there so issubclass doesn't
+        # raise an exception.
+        return cls != type and isinstance(cls, type) and not issubclass(cls, NOT_CLASS_TYPES)
