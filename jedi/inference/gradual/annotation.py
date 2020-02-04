@@ -285,7 +285,7 @@ def infer_return_for_callable(arguments, param_values, result_values):
             all_type_vars.update(type_var_dict)
 
     return ValueSet.from_sets(
-        v.define_generics(type_var_dict)
+        v.define_generics(all_type_vars)
         if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
         for v in result_values
     ).execute_annotation()
