@@ -277,12 +277,12 @@ class Script(object):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
-        dynamic language, which means depending on an option you can have two
-        different versions of a function.
+        dynamic language, which means you can have two different versions of a
+        function.
 
         :param follow_imports: The goto call will follow imports.
-        :param follow_builtin_imports: If follow_imports is True will decide if
-            it follow builtin imports.
+        :param follow_builtin_imports: If follow_imports is True will try to
+            look up names in builtins (i.e. compiled or extension modules).
         :param only_stubs: Only return stubs for this goto call.
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`classes.Definition`
@@ -316,7 +316,7 @@ class Script(object):
             names = list(name.goto())
 
         if follow_imports:
-            names = helpers.filter_follow_imports(names)
+            names = helpers.filter_follow_imports(names, follow_builtin_imports)
         names = convert_names(
             names,
             only_stubs=only_stubs,
