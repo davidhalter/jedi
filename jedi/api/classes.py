@@ -524,6 +524,10 @@ class BaseDefinition(object):
         return self._name.infer().get_type_hint()
 
     def is_side_effect(self):
+        """
+        Checks if a name is defined as ``self.foo = 3``. In case of self, this
+        function would return False, for foo it would return True.
+        """
         tree_name = self._name.tree_name
         if tree_name is None:
             return False
