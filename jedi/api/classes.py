@@ -523,6 +523,12 @@ class BaseDefinition(object):
         """
         return self._name.infer().get_type_hint()
 
+    def is_side_effect(self):
+        tree_name = self._name.tree_name
+        if tree_name is None:
+            return False
+        return tree_name.parent.type == 'trailer'
+
 
 class Completion(BaseDefinition):
     """
