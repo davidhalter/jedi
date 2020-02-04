@@ -175,12 +175,15 @@ def test_no_error(get_names):
     'code, index, is_side_effect', [
         ('x', 0, False),
         ('x.x', 0, False),
-        ('x.x', 1, True),
-        ('def x(x): x.x', 1, False),
-        ('def x(x): x.x', 3, True),
+        ('x.x', 1, False),
+        ('x.x = 3', 0, False),
+        ('x.x = 3', 1, True),
+        ('def x(x): x.x = 3', 1, False),
+        ('def x(x): x.x = 3', 3, True),
         ('import sys; sys.path', 0, False),
         ('import sys; sys.path', 1, False),
-        ('import sys; sys.path', 2, True),
+        ('import sys; sys.path', 2, False),
+        ('import sys; sys.path = []', 2, True),
     ]
 )
 def test_is_side_effect(get_names, code, index, is_side_effect):

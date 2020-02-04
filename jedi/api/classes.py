@@ -523,16 +523,6 @@ class BaseDefinition(object):
         """
         return self._name.infer().get_type_hint()
 
-    def is_side_effect(self):
-        """
-        Checks if a name is defined as ``self.foo = 3``. In case of self, this
-        function would return False, for foo it would return True.
-        """
-        tree_name = self._name.tree_name
-        if tree_name is None:
-            return False
-        return tree_name.parent.type == 'trailer'
-
 
 class Completion(BaseDefinition):
     """
@@ -716,6 +706,16 @@ class Definition(BaseDefinition):
             return True
         else:
             return self._name.tree_name.is_definition()
+
+    def is_side_effect(self):
+        """
+        Checks if a name is defined as ``self.foo = 3``. In case of self, this
+        function would return False, for foo it would return True.
+        """
+        tree_name = self._name.tree_name
+        if tree_name is None:
+            return False
+        return tree_name.is_definition() and tree_name.parent.type == 'trailer'
 
     def __eq__(self, other):
         return self._name.start_pos == other._name.start_pos \
