@@ -4,7 +4,7 @@ Test compiled module
 import os
 
 import jedi
-from ..helpers import cwd_at
+from ..helpers import get_example_dir
 import pytest
 
 
@@ -34,9 +34,8 @@ def test_get_signatures_stdlib(Script):
 
 
 # Check only on linux 64 bit platform and Python3.4.
-@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
-@cwd_at('test/examples')
+@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
 def test_init_extension_module(Script, load_unsafe_extensions):
     """
     ``__init__`` extension modules are also packages and Jedi should understand
@@ -51,7 +50,8 @@ def test_init_extension_module(Script, load_unsafe_extensions):
 
     This is also why this test only runs on certain systems (and Python 3.4).
     """
-    project = jedi.Project('.', load_unsafe_extensions=load_unsafe_extensions)
+
+    project = jedi.Project(get_example_dir(), load_unsafe_extensions=load_unsafe_extensions)
     s = jedi.Script(
         'import init_extension_module as i\ni.',
         path='not_existing.py',
