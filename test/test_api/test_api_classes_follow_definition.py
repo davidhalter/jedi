@@ -1,7 +1,9 @@
+from os.path import join
 from itertools import chain
+from functools import partial
 
 import jedi
-from ..helpers import cwd_at
+from ..helpers import test_dir
 
 
 def test_import_empty(Script):
@@ -47,8 +49,8 @@ def test_follow_import_incomplete(Script, environment):
     assert alias == ['module']
 
 
-@cwd_at('test/completion/import_tree')
 def test_follow_definition_nested_import(Script):
+    Script = partial(Script, project=jedi.Project(join(test_dir, 'completion', 'import_tree')))
     types = check_follow_definition_types(Script, "import pkg.mod1; pkg")
     assert types == ['module']
 

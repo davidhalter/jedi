@@ -9,6 +9,7 @@ import pytest
 import jedi
 from jedi.api.environment import get_system_environment, InterpreterEnvironment
 from jedi._compatibility import py_version
+from test.helpers import test_dir
 
 collect_ignore = [
     'setup.py',
@@ -107,6 +108,12 @@ def environment(request):
 @pytest.fixture(scope='session')
 def Script(environment):
     return partial(jedi.Script, environment=environment)
+
+
+@pytest.fixture(scope='session')
+def ScriptWithProject(Script):
+    project = jedi.Project(test_dir)
+    return partial(jedi.Script, project=project)
 
 
 @pytest.fixture(scope='session')

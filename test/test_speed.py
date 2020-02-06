@@ -6,7 +6,7 @@ should.
 import time
 import functools
 
-from .helpers import cwd_at, get_example_dir
+from .helpers import get_example_dir
 import jedi
 
 
@@ -44,7 +44,6 @@ def test_scipy_speed(Script):
 
 
 @_check_speed(0.8)
-@cwd_at('test')
 def test_precedence_slowdown(Script):
     """
     Precedence calculation can slow down things significantly in edge

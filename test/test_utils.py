@@ -5,7 +5,7 @@ except ImportError:
 
 from jedi import utils
 
-from .helpers import unittest, cwd_at
+from .helpers import unittest
 
 
 @unittest.skipIf(not readline, "readline not found")
@@ -86,9 +86,8 @@ class TestSetupReadline(unittest.TestCase):
         # (posix and nt) librariesare included.
         assert len(difference) < 20
 
-    @cwd_at('test')
     def test_local_import(self):
-        s = 'import test_utils'
+        s = 'import test.test_utils'
         assert self.complete(s) == [s]
 
     def test_preexisting_values(self):
