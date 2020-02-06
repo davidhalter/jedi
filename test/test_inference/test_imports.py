@@ -205,23 +205,24 @@ def test_goto_definition_on_import(Script):
 
 
 def test_complete_on_empty_import(ScriptWithProject):
+    path = os.path.join(test_dir, 'whatever.py')
     assert ScriptWithProject("from datetime import").complete()[0].name == 'import'
     # should just list the files in the directory
-    assert 10 < len(ScriptWithProject("from .", path='whatever.py').complete()) < 30
+    assert 10 < len(ScriptWithProject("from .", path=path).complete()) < 30
 
     # Global import
-    assert len(ScriptWithProject("from . import", 'whatever.py').complete(1, 5)) > 30
+    assert len(ScriptWithProject("from . import", path=path).complete(1, 5)) > 30
     # relative import
-    assert 10 < len(ScriptWithProject("from . import", 'whatever.py').complete(1, 6)) < 30
+    assert 10 < len(ScriptWithProject("from . import", path=path).complete(1, 6)) < 30
 
     # Global import
-    assert len(ScriptWithProject("from . import classes", 'whatever.py').complete(1, 5)) > 30
+    assert len(ScriptWithProject("from . import classes", path=path).complete(1, 5)) > 30
     # relative import
-    assert 10 < len(ScriptWithProject("from . import classes", 'whatever.py').complete(1, 6)) < 30
+    assert 10 < len(ScriptWithProject("from . import classes", path=path).complete(1, 6)) < 30
 
     wanted = {'ImportError', 'import', 'ImportWarning'}
     assert {c.name for c in ScriptWithProject("import").complete()} == wanted
-    assert len(ScriptWithProject("import import", path='').complete()) > 0
+    assert len(ScriptWithProject("import import", path=path).complete()) > 0
 
     # 111
     assert ScriptWithProject("from datetime import").complete()[0].name == 'import'
