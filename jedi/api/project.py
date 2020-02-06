@@ -91,7 +91,7 @@ class Project(object):
     @inference_state_as_method_param_cache()
     def _get_base_sys_path(self, inference_state):
         # The sys path has not been set explicitly.
-        sys_path = list(self.get_environment().get_sys_path())
+        sys_path = list(inference_state.environment.get_sys_path())
         try:
             sys_path.remove('')
         except ValueError:
@@ -99,8 +99,7 @@ class Project(object):
         return sys_path
 
     @inference_state_as_method_param_cache()
-    def _get_sys_path(self, inference_state, environment=None,
-                      add_parent_paths=True, add_init_paths=False):
+    def _get_sys_path(self, inference_state, add_parent_paths=True, add_init_paths=False):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
