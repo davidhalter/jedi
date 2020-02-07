@@ -265,6 +265,9 @@ class Value(HelperValueMixin, BaseValue):
     def py__name__(self):
         return self.name.string_name
 
+    def get_type_hint(self, add_class_info=True):
+        return None
+
 
 def iterate_values(values, contextualized_node=None, is_async=False):
     """
@@ -414,6 +417,26 @@ class ValueSet(BaseValueSet):
 
     def get_signatures(self):
         return [sig for c in self._set for sig in c.get_signatures()]
+
+    def get_type_hint(self, add_class_info=True):
+        t = [v.get_type_hint(add_class_info=add_class_info) for v in self._set]
+        type_hints = sorted(filter(None, t))
+        if len(type_hints) == 1:
+            return type_hints[0]
+
+        optional = 'None' in type_hints
+        if optional:
+            type_hints.remove('None')
+
+        if len(type_hints) == 0:
+            return None
+        elif len(type_hints) == 1:
+            s = type_hints[0]
+        else:
+            s = 'Union[%s]' % ', '.join(type_hints)
+        if optional:
+            s = 'Optional[%s]' % s
+        return s
 
 
 NO_VALUES = ValueSet([])

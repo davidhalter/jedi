@@ -78,6 +78,28 @@ g = iter([1.0])
 #? float()
 next(g)
 
+x, y = Get()
+#? int() str()
+x
+#? int() str()
+x
+
+class Iter:
+    def __iter__(self):
+        yield ""
+        i = 0
+        while True:
+            v = 1
+            yield v
+            i += 1
+a, b, c = Iter()
+#? str() int()
+a
+#? str() int()
+b
+#? str() int()
+c
+
 
 # -----------------
 # __next__
@@ -134,7 +156,7 @@ a, b = simple()
 #? int() str()
 a
 # For now this is ok.
-#?
+#? int() str()
 b
 
 

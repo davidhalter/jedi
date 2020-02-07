@@ -436,6 +436,12 @@ def the_callable() -> float: ...
 #? float()
 call3_pls()(the_callable)[0]
 
+def call4_pls(fn: typing.Callable[..., TYPE_VARX]) -> typing.Callable[..., TYPE_VARX]:
+    return ""
+
+#? int()
+call4_pls(lambda x: 1)()
+
 # -------------------------
 # TYPE_CHECKING
 # -------------------------

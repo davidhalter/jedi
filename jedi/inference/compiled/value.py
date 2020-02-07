@@ -285,6 +285,11 @@ class CompiledValue(Value):
             for k in self.access_handle.get_key_paths()
         ]
 
+    def get_type_hint(self, add_class_info=True):
+        if self.access_handle.get_repr() in ('None', "<class 'NoneType'>"):
+            return 'None'
+        return None
+
 
 class CompiledModule(CompiledValue):
     file_io = None  # For modules

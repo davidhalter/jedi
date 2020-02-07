@@ -131,15 +131,6 @@ def _parse_argument_clinic(string):
 
 
 class _AbstractArgumentsMixin(object):
-    def infer_all(self, funcdef=None):
-        """
-        Inferes all arguments as a support for static analysis
-        (normally Jedi).
-        """
-        for key, lazy_value in self.unpack():
-            types = lazy_value.infer()
-            try_iter_content(types)
-
     def unpack(self, funcdef=None):
         raise NotImplementedError
 

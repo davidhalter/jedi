@@ -130,6 +130,9 @@ class AbstractInstanceValue(Value):
             for name in names
         )
 
+    def get_type_hint(self, add_class_info=True):
+        return self.py__name__()
+
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.class_value)
 

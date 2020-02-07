@@ -278,17 +278,17 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
 
 
 def infer_return_for_callable(arguments, param_values, result_values):
-    result = NO_VALUES
+    all_type_vars = {}
     for pv in param_values:
         if pv.array_type == 'list':
             type_var_dict = infer_type_vars_for_callable(arguments, pv.py__iter__())
+            all_type_vars.update(type_var_dict)
 
-            result |= ValueSet.from_sets(
-                v.define_generics(type_var_dict)
-                if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
-                for v in result_values
-            ).execute_annotation()
-    return result
+    return ValueSet.from_sets(
+        v.define_generics(all_type_vars)
+        if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
+        for v in result_values
+    ).execute_annotation()
 
 
 def infer_type_vars_for_callable(arguments, lazy_params):

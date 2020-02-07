@@ -800,7 +800,8 @@ def check_tuple_assignments(name, value_set):
         if isinstance(index, slice):
             # For no star unpacking is not possible.
             return NO_VALUES
-        for _ in range(index + 1):
+        i = 0
+        while i <= index:
             try:
                 lazy_value = next(iterated)
             except StopIteration:
@@ -809,6 +810,8 @@ def check_tuple_assignments(name, value_set):
                 # index number is high. Therefore break if the loop is
                 # finished.
                 return NO_VALUES
+            else:
+                i += lazy_value.max
         value_set = lazy_value.infer()
     return value_set
 
