@@ -509,11 +509,33 @@ dynamic_annotation('')
 class Foo(typing.TypedDict):
     foo: str
     bar: typing.List[float]
+    an_int: int
     foo
     #! ['foo: str']
     foo
     #? str()
     foo
+    #? int()
+    an_int
+
+def typed_dict_test_foo(arg: Foo):
+    a_string = arg['foo']
+    a_list_of_floats = arg['bar']
+    an_int = arg['an_int']
+
+    #? str()
+    a_string
+    #? [float()]
+    a_list_of_strings
+    #? int()
+    an_int
+
+    #? ['isupper']
+    a_string.isuppe
+    #? ['pop']
+    a_list_of_floats.po
+    #? ['as_integer_ratio']
+    an_int.as_integer_rati
 
 #! ['class Foo']
 d: Foo
