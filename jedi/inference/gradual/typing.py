@@ -389,7 +389,13 @@ class TypedDict(LazyValueWrapper):
         return ValueName(self, self.tree_node.name)
 
     def py__simple_getitem__(self, index):
-        return ValueSet({self.inference_state.builtins_module})
+        if isinstance(index, str):
+            return ValueSet.from_sets(
+                name.infer()
+                for filter in self._definition_class.get_filters(is_instance=True)
+                for name in filter.get(index)
+            )
+        return NO_VALUES
 
     def get_key_values(self):
         from jedi.inference.compiled import create_simple_object

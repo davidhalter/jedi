@@ -508,7 +508,7 @@ dynamic_annotation('')
 
 class Foo(typing.TypedDict):
     foo: str
-    bar: List[int]
+    bar: typing.List[float]
     foo
     #! ['foo: str']
     foo
@@ -519,7 +519,7 @@ class Foo(typing.TypedDict):
 d: Foo
 #? str()
 d['foo']
-#? str()
+#? float()
 d['bar'][0]
 #?
 d['baz']
