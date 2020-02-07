@@ -400,7 +400,7 @@ class TypedDict(LazyValueWrapper):
 
     def get_key_values(self):
         filtered_values = itertools.chain.from_iterable((
-            f.values(from_instance=True)
+            f.values()
             for f in self._definition_class.get_filters(is_instance=True)
         ))
         return ValueSet({
