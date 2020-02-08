@@ -153,7 +153,7 @@ class TestCase(object):
         prefix = '  |'
         for i, line in enumerate(self.script._code.split('\n')[lower:lineno]):
             print(prefix, lower + i + 1, line)
-        print(prefix, '   ', ' ' * (column + len(str(lineno))), '^')
+        print(prefix, ' ' * (column + len(str(lineno))), '^')
 
     def show_operation(self):
         print("%s:\n" % self.operation.capitalize())
