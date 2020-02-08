@@ -23,6 +23,10 @@ Vim:
 - YouCompleteMe_
 - deoplete-jedi_
 
+VSCode:
+
+- Jedi is used by default if you download VSCode.
+
 Emacs:
 
 - Jedi.el_

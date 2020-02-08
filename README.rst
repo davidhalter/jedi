@@ -43,6 +43,7 @@ the CPython REPL you have to install it.
 Jedi can currently be used with the following editors/projects:
 
 - Vim (jedi-vim_, YouCompleteMe_, deoplete-jedi_, completor.vim_)
+- VSCode (Jedi is the default backend)
 - Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - TextMate_ (Not sure if it's actually working)
