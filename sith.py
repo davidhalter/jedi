@@ -151,7 +151,7 @@ class TestCase(object):
         # Three lines ought to be enough
         lower = lineno - show if lineno - show > 0 else 0
         prefix = '  |'
-        for i, line in enumerate(self.script._source.split('\n')[lower:lineno]):
+        for i, line in enumerate(self.script._code.split('\n')[lower:lineno]):
             print(prefix, lower + i + 1, line)
         print(prefix, '   ', ' ' * (column + len(str(lineno))), '^')
 
