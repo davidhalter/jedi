@@ -76,9 +76,11 @@ def pytest_generate_tests(metafunc):
 
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir
+        cases = list(refactor.collect_dir_tests(base_dir, test_files))
         metafunc.parametrize(
-            'refactor_case',
-            refactor.collect_dir_tests(base_dir, test_files))
+            'refactor_case', cases,
+            ids=[c.refactor_type + '-' + c.name for c in cases]
+        )
 
     if 'static_analysis_case' in metafunc.fixturenames:
         base_dir = os.path.join(os.path.dirname(__file__), 'static_analysis')
