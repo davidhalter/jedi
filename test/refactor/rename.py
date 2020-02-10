@@ -42,3 +42,24 @@ def y():
  def y():
      some_var = 3
      some_var
+# ----- import
+from import_tree.mod1 import foobarbaz
+#? 0 renamed
+foobarbaz
+# +++++
+--- /home/dave/source/jedi/test/completion/import_tree/mod1.py
++++ /home/dave/source/jedi/test/completion/import_tree/mod1.py
+@@ -1,5 +1,5 @@
+ a = 1
+ from import_tree.random import a as c
+ 
+-foobarbaz = 3.0
++renamed = 3.0
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,4 +1,4 @@
+-from import_tree.mod1 import foobarbaz
++from import_tree.mod1 import renamed
+ #? 0 renamed
+-foobarbaz
++renamed

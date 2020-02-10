@@ -11,6 +11,7 @@ import re
 
 from functools import reduce
 import jedi
+from .helpers import test_dir
 
 
 class RefactoringCase(object):
@@ -31,7 +32,8 @@ class RefactoringCase(object):
         return f_name.replace('.py', '')
 
     def calculate_diff(self):
-        script = jedi.Script(self._code, path=self._path)
+        project = jedi.Project(os.path.join(test_dir, 'completion'))
+        script = jedi.Script(self._code, path=self._path, project=project)
         refactor_func = getattr(script, self.refactor_type)
         refactor_object = refactor_func(self._line_nr, self._index, *self._args)
         return refactor_object.get_diff()
