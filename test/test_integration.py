@@ -58,5 +58,5 @@ def test_refactor(refactor_case):
 
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
-    refactor_case.run()
-    assert_case_equal(refactor_case, refactor_case.result, refactor_case.desired)
+    diff = refactor_case.run()
+    assert_case_equal(refactor_case, diff, refactor_case.desired)

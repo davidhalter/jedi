@@ -16,14 +16,13 @@ import jedi
 class RefactoringCase(object):
 
     def __init__(self, name, code, line_nr, index, path,
-                 new_name, start_line_test, desired):
+                 args, desired):
         self.name = name
         self.code = code
         self.line_nr = line_nr
         self.index = index
         self.path = path
-        self.new_name = new_name
-        self.start_line_test = start_line_test
+        self._args = args
         self.desired = desired
 
     @property
@@ -32,29 +31,13 @@ class RefactoringCase(object):
         return f_name.replace('.py', '')
 
     def refactor(self):
-        script = jedi.Script(self.code, self.line_nr, self.index, self.path)
+        script = jedi.Script(self.code, path=self.path)
         refactor_func = getattr(script, self.refactor_type)
-        args = (self.new_name,) if self.new_name else ()
-        return refactor_func(script, *args)
+        return refactor_func(self.line_nr, self.index, *self._args)
 
     def run(self):
         refactor_object = self.refactor()
-
-        # try to get the right excerpt of the newfile
-        f = refactor_object.new_files()[self.path]
-        lines = f.splitlines()[self.start_line_test:]
-
-        end = self.start_line_test + len(lines)
-        pop_start = None
-        for i, l in enumerate(lines):
-            if l.startswith('# +++'):
-                end = i
-                break
-            elif '#? ' in l:
-                pop_start = i
-        lines.pop(pop_start)
-        self.result = '\n'.join(lines[:end - 1]).strip()
-        return self.result
+        return refactor_object.get_diff()
 
     def check(self):
         return self.run() == self.desired
@@ -65,13 +48,12 @@ class RefactoringCase(object):
 
 
 def collect_file_tests(code, path, lines_to_execute):
-    r = r'^# --- ?([^\n]*)\n((?:(?!\n# \+\+\+).)*)' \
-        r'\n# \+\+\+((?:(?!\n# ---).)*)'
+    r = r'^# -{5} ?([^\n]*)\n((?:(?!\n# \+{5}).)*\n)' \
+        r'# \+{5}\n((?:(?!\n# -{5}).)*\n)'
     for match in re.finditer(r, code, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
-        first = match.group(2).strip()
-        second = match.group(3).strip()
-        start_line_test = code[:match.start()].count('\n') + 1
+        first = match.group(2)
+        second = match.group(3)
 
         # get the line with the position of the operation
         p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ?([^\n]*)', first, re.DOTALL)
@@ -81,13 +63,13 @@ def collect_file_tests(code, path, lines_to_execute):
         until = p.group(1)
         index = int(p.group(2))
         new_name = p.group(3)
+        args = (new_name,) if new_name else ()
 
-        line_nr = start_line_test + until.count('\n') + 2
+        line_nr = until.count('\n') + 2
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        yield RefactoringCase(name, code, line_nr, index, path,
-                              new_name, start_line_test, second)
+        yield RefactoringCase(name, first, line_nr, index, path, args, second)
 
 
 def collect_dir_tests(base_dir, test_files):

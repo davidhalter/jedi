@@ -8,3 +8,7 @@ class InternalError(_JediError):
 
 class WrongVersion(_JediError):
     pass
+
+
+class RefactoringError(_JediError):
+    pass

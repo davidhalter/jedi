@@ -523,6 +523,37 @@ class Script(object):
         ]
         return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
+    def rename(self, line, column, new_name):
+        """
+        Returns an object that you can use to rename the variable under the
+        cursor and its references to a different name.
+        """
+        definitions = self.get_references(line, column, include_builtins=False)
+        file_renames = []
+        file_tree_name_map = {}
+        for d in definitions:
+            if d.type == 'module':
+                file_renames.append((d.module_path, new))
+            else:
+                # This private access is ok in a way. It's not public to
+                # protect Jedi users from seeing it.
+                tree_name = d._name.tree_name
+                if tree_name is not None:
+                    fmap = file_tree_name_map.setdefault(d.module_path, {})
+                    fmap[tree_name] = tree_name.prefix + new_name
+        from jedi.api.refactoring import Refactoring
+        return Refactoring(self._grammar, file_tree_name_map, file_renames)
+
+    def extract_variable(self):
+        """
+        """
+        raise NotImplementedError
+
+    def extract_method(self):
+        """
+        """
+        raise NotImplementedError
+
 
 class Interpreter(Script):
     """
