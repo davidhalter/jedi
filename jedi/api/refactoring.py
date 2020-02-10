@@ -65,3 +65,26 @@ class Refactoring(object):
 
         for f in self.get_changed_files():
             f.apply()
+
+
+def _rename_path(path, new_name):
+    pass
+
+
+def rename(grammar, definitions, new_name):
+    file_renames = []
+    file_tree_name_map = {}
+
+    for d in definitions:
+        if d.type == 'module':
+            file_renames.append(
+                (d.module_path, _rename_path(d.module_path, new_name))
+            )
+        else:
+            # This private access is ok in a way. It's not public to
+            # protect Jedi users from seeing it.
+            tree_name = d._name.tree_name
+            if tree_name is not None:
+                fmap = file_tree_name_map.setdefault(d.module_path, {})
+                fmap[tree_name] = tree_name.prefix + new_name
+    return Refactoring(grammar, file_tree_name_map, file_renames)

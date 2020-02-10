@@ -31,6 +31,7 @@ from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.api.errors import parso_to_jedi_errors
+from jedi.api.refactoring import rename
 from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
@@ -529,20 +530,7 @@ class Script(object):
         cursor and its references to a different name.
         """
         definitions = self.get_references(line, column, include_builtins=False)
-        file_renames = []
-        file_tree_name_map = {}
-        for d in definitions:
-            if d.type == 'module':
-                file_renames.append((d.module_path, new))
-            else:
-                # This private access is ok in a way. It's not public to
-                # protect Jedi users from seeing it.
-                tree_name = d._name.tree_name
-                if tree_name is not None:
-                    fmap = file_tree_name_map.setdefault(d.module_path, {})
-                    fmap[tree_name] = tree_name.prefix + new_name
-        from jedi.api.refactoring import Refactoring
-        return Refactoring(self._grammar, file_tree_name_map, file_renames)
+        return rename(self._grammar, definitions, new_name)
 
     def extract_variable(self):
         """
