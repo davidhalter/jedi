@@ -18,27 +18,27 @@ class RefactoringCase(object):
     def __init__(self, name, code, line_nr, index, path,
                  args, desired_diff):
         self.name = name
-        self.code = code
-        self.line_nr = line_nr
-        self.index = index
-        self.path = path
+        self._code = code
+        self._line_nr = line_nr
+        self._index = index
+        self._path = path
         self._args = args
         self.desired_diff = desired_diff
 
     @property
     def refactor_type(self):
-        f_name = os.path.basename(self.path)
+        f_name = os.path.basename(self._path)
         return f_name.replace('.py', '')
 
     def calculate_diff(self):
-        script = jedi.Script(self.code, path=self.path)
+        script = jedi.Script(self._code, path=self._path)
         refactor_func = getattr(script, self.refactor_type)
-        refactor_object = refactor_func(self.line_nr, self.index, *self._args)
+        refactor_object = refactor_func(self._line_nr, self._index, *self._args)
         return refactor_object.get_diff()
 
     def __repr__(self):
         return '<%s: %s:%s>' % (self.__class__.__name__,
-                                self.name, self.line_nr - 1)
+                                self.name, self._line_nr - 1)
 
 
 def _collect_file_tests(code, path, lines_to_execute):
