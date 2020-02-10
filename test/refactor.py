@@ -16,38 +16,32 @@ import jedi
 class RefactoringCase(object):
 
     def __init__(self, name, code, line_nr, index, path,
-                 args, desired):
+                 args, desired_diff):
         self.name = name
         self.code = code
         self.line_nr = line_nr
         self.index = index
         self.path = path
         self._args = args
-        self.desired = desired
+        self.desired_diff = desired_diff
 
     @property
     def refactor_type(self):
         f_name = os.path.basename(self.path)
         return f_name.replace('.py', '')
 
-    def refactor(self):
+    def calculate_diff(self):
         script = jedi.Script(self.code, path=self.path)
         refactor_func = getattr(script, self.refactor_type)
-        return refactor_func(self.line_nr, self.index, *self._args)
-
-    def run(self):
-        refactor_object = self.refactor()
+        refactor_object = refactor_func(self.line_nr, self.index, *self._args)
         return refactor_object.get_diff()
-
-    def check(self):
-        return self.run() == self.desired
 
     def __repr__(self):
         return '<%s: %s:%s>' % (self.__class__.__name__,
                                 self.name, self.line_nr - 1)
 
 
-def collect_file_tests(code, path, lines_to_execute):
+def _collect_file_tests(code, path, lines_to_execute):
     r = r'^# -{5} ?([^\n]*)\n((?:(?!\n# \+{5}).)*\n)' \
         r'# \+{5}\n((?:(?!\n# -{5}).)*\n)'
     for match in re.finditer(r, code, re.DOTALL | re.MULTILINE):
@@ -80,5 +74,5 @@ def collect_dir_tests(base_dir, test_files):
             path = os.path.join(base_dir, f_name)
             with open(path) as f:
                 code = f.read()
-            for case in collect_file_tests(code, path, lines_to_execute):
+            for case in _collect_file_tests(code, path, lines_to_execute):
                 yield case

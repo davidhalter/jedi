@@ -41,8 +41,11 @@ class Refactoring(object):
 
     def get_changed_files(self):
         return [
-            ChangedFile(self._grammar, path, next(iter(map_)).get_root_node(), map_)
-            for path, map_ in self._file_to_node_changes.items()
+            ChangedFile(
+                self._grammar, path,
+                module_node=next(iter(map_)).get_root_node(),
+                node_to_str_map=map_
+            ) for path, map_ in self._file_to_node_changes.items()
         ]
 
     def get_renames(self):
