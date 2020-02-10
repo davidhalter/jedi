@@ -150,10 +150,10 @@ Docstrings (inference/docstrings.py)
 
 .. _refactoring:
 
-Refactoring (inference/refactoring.py)
+Refactoring (inference/api/refactoring.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.refactoring
+.. automodule:: jedi.api.refactoring
 
 
 .. _imports-modules:
