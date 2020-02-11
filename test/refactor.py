@@ -44,8 +44,8 @@ class RefactoringCase(object):
 
 
 def _collect_file_tests(code, path, lines_to_execute):
-    r = r'^# -{5} ?([^\n]*)\n((?:(?!\n# \+{5}).)*\n)' \
-        r'# \+{5}\n((?:(?!\n# -{5}).)*\n)'
+    r = r'^# -{5,} ?([^\n]*)\n((?:(?!\n# \+{5,}).)*\n)' \
+        r'# \+{5,}\n((?:(?!\n# -{5,}).)*\n)'
     for match in re.finditer(r, code, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
         first = match.group(2)
