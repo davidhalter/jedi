@@ -510,7 +510,6 @@ class Foo(typing.TypedDict):
     foo: str
     bar: typing.List[float]
     an_int: int
-    foo
     #! ['foo: str']
     foo
     #? str()
@@ -525,8 +524,10 @@ def typed_dict_test_foo(arg: Foo):
 
     #? str()
     a_string
-    #? [float()]
-    a_list_of_strings
+    #? list()
+    a_list_of_floats
+    #? float()
+    a_list_of_floats[0]
     #? int()
     an_int
 
@@ -558,7 +559,41 @@ Foo.set
 #? ['setdefault']
 d.setdefaul
 
-#? 5 ["'foo'"]
+#? 5 ["'foo"]
 d['fo']
 #? 5 ['"bar"']
 d["bar"]
+
+class Bar(Foo):
+    another_variable: int
+
+    #? int()
+    another_variable
+    #? str()
+    foo
+    #? int()
+    an_int
+
+def typed_dict_test_foo(arg: Bar):
+    a_string = arg['foo']
+    a_list_of_floats = arg['bar']
+    an_int = arg['an_int']
+    another_variable = arg['another_variable']
+
+    #? str()
+    a_string
+    #? list()
+    a_list_of_floats
+    #? float()
+    a_list_of_floats[0]
+    #? int()
+    an_int
+    #? int()
+    another_variable
+
+    #? ['isupper']
+    a_string.isuppe
+    #? ['pop']
+    a_list_of_floats.po
+    #? ['as_integer_ratio']
+    an_int.as_integer_rati
