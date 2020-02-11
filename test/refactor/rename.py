@@ -43,37 +43,37 @@ def y():
      some_var = 3
      some_var
 # -------------------------------------------------- import
-from import_tree.mod import foobar
+from import_tree.some_mod import foobar
 #? 0 renamed
 foobar
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- /home/dave/source/jedi/test/refactor/import_tree/mod.py
-+++ /home/dave/source/jedi/test/refactor/import_tree/mod.py
+--- /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
++++ /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
 @@ -1,2 +1,2 @@
 -foobar = 3
 +renamed = 3
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,4 +1,4 @@
--from import_tree.mod import foobar
-+from import_tree.mod import renamed
+-from import_tree.some_mod import foobar
++from import_tree.some_mod import renamed
  #? 0 renamed
 -foobar
 +renamed
 # -------------------------------------------------- module
-from import_tree import mod
+from import_tree import some_mod
 #? 0 renamedm
-mod
+some_mod
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-rename from /home/dave/source/jedi/test/refactor/import_tree/mod.py
+rename from /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
 rename to /home/dave/source/jedi/test/refactor/import_tree/renamedm.py
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,4 +1,4 @@
--from import_tree import mod
+-from import_tree import some_mod
 +from import_tree import renamedm
  #? 0 renamedm
--mod
+-some_mod
 +renamedm
 # -------------------------------------------------- in-package-with-stub
 #? 31 renamedm

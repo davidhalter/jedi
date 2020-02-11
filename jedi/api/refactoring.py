@@ -66,11 +66,11 @@ class Refactoring(object):
         return text + ''.join(f.get_diff() for f in self.get_changed_files())
 
     def apply(self):
-        for old, new in self.get_renames():
-            rename(old, new)
-
         for f in self.get_changed_files():
             f.apply()
+
+        for old, new in self.get_renames():
+            rename(old, new)
 
 
 def _calculate_rename(path, new_name):
