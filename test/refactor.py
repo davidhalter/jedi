@@ -32,7 +32,7 @@ class RefactoringCase(object):
         return f_name.replace('.py', '')
 
     def calculate_diff(self):
-        project = jedi.Project(os.path.join(test_dir, 'completion'))
+        project = jedi.Project(os.path.join(test_dir, 'refactor'))
         script = jedi.Script(self._code, path=self._path, project=project)
         refactor_func = getattr(script, self.refactor_type)
         refactor_object = refactor_func(self._line_nr, self._index, *self._args)

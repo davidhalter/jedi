@@ -43,44 +43,35 @@ def y():
      some_var = 3
      some_var
 # ----- import
-from import_tree.mod1 import foobarbaz
+from import_tree.mod import foobar
 #? 0 renamed
-foobarbaz
+foobar
 # +++++
---- /home/dave/source/jedi/test/completion/import_tree/mod1.py
-+++ /home/dave/source/jedi/test/completion/import_tree/mod1.py
-@@ -1,5 +1,5 @@
- a = 1
- from import_tree.random import a as c
- 
--foobarbaz = 3.0
-+renamed = 3.0
+--- /home/dave/source/jedi/test/refactor/import_tree/mod.py
++++ /home/dave/source/jedi/test/refactor/import_tree/mod.py
+@@ -1,2 +1,2 @@
+-foobar = 3
++renamed = 3
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,4 +1,4 @@
--from import_tree.mod1 import foobarbaz
-+from import_tree.mod1 import renamed
+-from import_tree.mod import foobar
++from import_tree.mod import renamed
  #? 0 renamed
--foobarbaz
+-foobar
 +renamed
 # ----- module
-from import_tree import mod1
+from import_tree import mod
 #? 0 renamedm
-mod1
+mod
 # +++++
---- /home/dave/source/jedi/test/completion/import_tree/mod1.py
-+++ /home/dave/source/jedi/test/completion/import_tree/renamedm.py
-@@ -1,5 +1,5 @@
- a = 1
- from import_tree.random import a as c
- 
--foobarbaz = 3.0
-+renamed = 3.0
+rename from /home/dave/source/jedi/test/refactor/import_tree/mod.py
+rename to /home/dave/source/jedi/test/refactor/import_tree/renamedm.py
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,4 +1,4 @@
--from import_tree import mod1
+-from import_tree import mod
 +from import_tree import renamedm
  #? 0 renamedm
--mod1
+-mod
 +renamedm
