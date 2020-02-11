@@ -75,3 +75,47 @@ rename to /home/dave/source/jedi/test/refactor/import_tree/renamedm.py
  #? 0 renamedm
 -mod
 +renamedm
+# -------------------------------------------------- in-package-with-stub
+#? 31 renamedm
+from import_tree.pkgx import pkgx
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
+@@ -1,3 +1,3 @@
+-def pkgx():
++def renamedm():
+     pass
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
+@@ -1,2 +1,2 @@
+-def pkgx() -> int: ...
++def renamedm() -> int: ...
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
+@@ -1,2 +1,2 @@
+-from . import pkgx
++from . import renamedm
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,3 +1,3 @@
+ #? 31 renamedm
+-from import_tree.pkgx import pkgx
++from import_tree.pkgx import renamedm
+# -------------------------------------------------- package-with-stub
+#? 18 renamedp
+from import_tree.pkgx
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+rename from /home/dave/source/jedi/test/refactor/import_tree/pkgx
+rename to /home/dave/source/jedi/test/refactor/import_tree/renamedp
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
+@@ -1,2 +1,2 @@
+-from .. import pkgx
++from .. import renamedp
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,3 +1,3 @@
+ #? 18 renamedp
+-from import_tree.pkgx
++from import_tree.renamedp
+# -------------------------------------------------- weird-package-mix

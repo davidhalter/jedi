@@ -78,7 +78,7 @@ def _calculate_rename(path, new_name):
     dir_ = dirname(path)
     if name in ('__init__.py', '__init__.pyi'):
         parent_dir = dirname(dir_)
-        return dir_, join(parent_dir, new_name, name)
+        return dir_, join(parent_dir, new_name)
     ending = re.search(r'\.pyi?$', name).group(0)
     return path, join(dir_, new_name + ending)
 

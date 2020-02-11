@@ -3,6 +3,7 @@ import os
 import pytest
 
 from . import helpers
+from jedi.inference.utils import indent_block
 
 
 def assert_case_equal(case, actual, desired):
@@ -15,9 +16,11 @@ def assert_case_equal(case, actual, desired):
     """
     assert actual == desired, """
 Test %r failed.
-actual  = %s
-desired = %s
-""" % (case, actual, desired)
+actual  =
+%s
+desired =
+%s
+""" % (case, indent_block(actual), indent_block(desired))
 
 
 def assert_static_analysis(case, actual, desired):
