@@ -119,3 +119,45 @@ rename to /home/dave/source/jedi/test/refactor/import_tree/renamedp
 -from import_tree.pkgx
 +from import_tree.renamedp
 # -------------------------------------------------- weird-package-mix
+if random_undefined_variable:
+    from import_tree.pkgx import pkgx
+else:
+    from import_tree import pkgx
+#? 4 rename
+pkgx
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+rename from /home/dave/source/jedi/test/refactor/import_tree/pkgx
+rename to /home/dave/source/jedi/test/refactor/import_tree/rename
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
+@@ -1,3 +1,3 @@
+-def pkgx():
++def rename():
+     pass
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
+@@ -1,2 +1,2 @@
+-def pkgx() -> int: ...
++def rename() -> int: ...
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
+@@ -1,2 +1,2 @@
+-from . import pkgx
++from . import rename
+--- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
++++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
+@@ -1,2 +1,2 @@
+-from .. import pkgx
++from .. import rename
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,7 +1,7 @@
+ if random_undefined_variable:
+-    from import_tree.pkgx import pkgx
++    from import_tree.rename import rename
+ else:
+-    from import_tree import pkgx
++    from import_tree import rename
+ #? 4 rename
+-pkgx
++rename
