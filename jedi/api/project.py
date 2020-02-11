@@ -124,7 +124,7 @@ class Project(object):
                     #   2. Stopping immediately when above self._path
                     traversed = []
                     for parent_path in traverse_parents(inference_state.script_path):
-                        if not parent_path.startswith(self._path):
+                        if parent_path == self._path or not parent_path.startswith(self._path):
                             break
                         if not add_init_paths \
                                 and os.path.isfile(os.path.join(parent_path, "__init__.py")):
