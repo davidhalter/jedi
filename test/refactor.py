@@ -16,14 +16,13 @@ from .helpers import test_dir
 
 class RefactoringCase(object):
 
-    def __init__(self, name, code, line_nr, index, path,
-                 args, desired_diff):
+    def __init__(self, name, code, line_nr, index, path, kwargs, desired_diff):
         self.name = name
         self._code = code
         self._line_nr = line_nr
         self._index = index
         self._path = path
-        self._args = args
+        self._kwargs = kwargs
         self.desired_diff = desired_diff
 
     @property
@@ -35,7 +34,7 @@ class RefactoringCase(object):
         project = jedi.Project(os.path.join(test_dir, 'refactor'))
         script = jedi.Script(self._code, path=self._path, project=project)
         refactor_func = getattr(script, self.refactor_type)
-        refactor_object = refactor_func(self._line_nr, self._index, *self._args)
+        refactor_object = refactor_func(self._line_nr, self._index, **self._kwargs)
         return refactor_object.get_diff()
 
     def __repr__(self):
@@ -58,14 +57,13 @@ def _collect_file_tests(code, path, lines_to_execute):
             continue
         until = p.group(1)
         index = int(p.group(2))
-        new_name = p.group(3)
-        args = (new_name,) if new_name else ()
+        kwargs = eval(p.group(3))
 
         line_nr = until.count('\n') + 2
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        yield RefactoringCase(name, first, line_nr, index, path, args, second)
+        yield RefactoringCase(name, first, line_nr, index, path, kwargs, second)
 
 
 def collect_dir_tests(base_dir, test_files):
