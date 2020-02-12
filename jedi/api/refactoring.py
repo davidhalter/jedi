@@ -1,8 +1,11 @@
 from os.path import dirname, basename, join
+import os
 import re
 import difflib
 
 from parso import split_lines
+
+from jedi.api.exceptions import RefactoringError
 
 
 class ChangedFile(object):
@@ -15,7 +18,7 @@ class ChangedFile(object):
 
     def get_diff(self):
         old_lines = split_lines(self._module_node.get_code(), keepends=True)
-        new_lines = split_lines(self.get_code(), keepends=True)
+        new_lines = split_lines(self.get_new_code(), keepends=True)
         diff = difflib.unified_diff(
             old_lines, new_lines,
             fromfile=self._from_path,
@@ -25,12 +28,17 @@ class ChangedFile(object):
         # reason.
         return ''.join(diff).rstrip(' ')
 
-    def get_code(self):
+    def get_new_code(self):
         return self._grammar.refactor(self._module_node, self._node_to_str_map)
 
     def apply(self):
+        if self._from_path is None:
+            raise RefactoringError(
+                'Cannot apply a refactoring on a Script with path=None'
+            )
+
         with open(self._from_path, 'w') as f:
-            f.write(self.get_code())
+            f.write(self.get_new_code())
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._from_path)
@@ -43,7 +51,13 @@ class Refactoring(object):
         self._file_to_node_changes = file_to_node_changes
 
     def get_changed_files(self):
+        """
+        Returns a path to ``ChangedFile`` map. The files can be used
+        ``Dict[str
+        """
         def calculate_to_path(p):
+            if p is None:
+                return p
             for from_, to in renames:
                 if p.startswith(from_):
                     p = to + p[len(from_):]
@@ -76,11 +90,14 @@ class Refactoring(object):
         return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
     def apply(self):
-        for f in self.get_changed_files():
+        """
+        Applies the whole refactoring to the files, which includes renames.
+        """
+        for f in self.get_changed_files().values():
             f.apply()
 
         for old, new in self.get_renames():
-            rename(old, new)
+            os.rename(old, new)
 
 
 def _calculate_rename(path, new_name):

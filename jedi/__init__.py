@@ -42,7 +42,7 @@ from jedi.api.environment import find_virtualenvs, find_system_environments, \
     get_default_environment, InvalidPythonEnvironment, create_environment, \
     get_system_environment
 from jedi.api.project import Project, get_default_project
-from jedi.api.exceptions import InternalError
+from jedi.api.exceptions import InternalError, RefactoringError
 # Finally load the internal plugins. This is only internal.
 from jedi.plugins import registry
 del registry

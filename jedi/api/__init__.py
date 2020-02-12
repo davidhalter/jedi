@@ -524,11 +524,17 @@ class Script(object):
         ]
         return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
-    def rename(self, line, column, new_name):
+    def rename(self, line=None, column=None, **kwargs):
         """
         Returns an object that you can use to rename the variable under the
         cursor and its references to a different name.
+
+        :param new_name: The variable under the cursor will be renamed to this
+            string.
         """
+        return self._rename(line, column, **kwargs)
+
+    def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
         return rename(self._grammar, definitions, new_name)
 
