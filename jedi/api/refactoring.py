@@ -50,15 +50,15 @@ class Refactoring(object):
             return p
 
         renames = self.get_renames()
-        return [
-            ChangedFile(
+        return {
+            path: ChangedFile(
                 self._grammar,
                 from_path=path,
                 to_path=calculate_to_path(path),
                 module_node=next(iter(map_)).get_root_node(),
                 node_to_str_map=map_
             ) for path, map_ in self._file_to_node_changes.items()
-        ]
+        }
 
     def get_renames(self):
         """
@@ -73,7 +73,7 @@ class Refactoring(object):
         for from_, to in self.get_renames():
             text += 'rename from %s\nrename to %s\n' % (from_, to)
 
-        return text + ''.join(f.get_diff() for f in self.get_changed_files())
+        return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
     def apply(self):
         for f in self.get_changed_files():
