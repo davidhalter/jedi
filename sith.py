@@ -157,7 +157,7 @@ class TestCase(object):
 
     def show_operation(self):
         print("%s:\n" % self.operation.capitalize())
-        if self.operation == 'completions':
+        if self.operation == 'complete':
             self.show_completions()
         else:
             self.show_definitions()
