@@ -108,7 +108,7 @@ from import_tree.pkgx
 rename from /home/dave/source/jedi/test/refactor/import_tree/pkgx
 rename to /home/dave/source/jedi/test/refactor/import_tree/renamedp
 --- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
-+++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
++++ /home/dave/source/jedi/test/refactor/import_tree/renamedp/mod2.py
 @@ -1,2 +1,2 @@
 -from .. import pkgx
 +from .. import renamedp
@@ -129,23 +129,23 @@ pkgx
 rename from /home/dave/source/jedi/test/refactor/import_tree/pkgx
 rename to /home/dave/source/jedi/test/refactor/import_tree/rename
 --- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
-+++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.py
++++ /home/dave/source/jedi/test/refactor/import_tree/rename/__init__.py
 @@ -1,3 +1,3 @@
 -def pkgx():
 +def rename():
      pass
 --- /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
-+++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/__init__.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/rename/__init__.pyi
 @@ -1,2 +1,2 @@
 -def pkgx() -> int: ...
 +def rename() -> int: ...
 --- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
-+++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod.pyi
++++ /home/dave/source/jedi/test/refactor/import_tree/rename/mod.pyi
 @@ -1,2 +1,2 @@
 -from . import pkgx
 +from . import rename
 --- /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
-+++ /home/dave/source/jedi/test/refactor/import_tree/pkgx/mod2.py
++++ /home/dave/source/jedi/test/refactor/import_tree/rename/mod2.py
 @@ -1,2 +1,2 @@
 -from .. import pkgx
 +from .. import rename

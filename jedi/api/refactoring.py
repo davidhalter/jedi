@@ -6,9 +6,10 @@ from parso import split_lines
 
 
 class ChangedFile(object):
-    def __init__(self, grammar, path, module_node, node_to_str_map):
+    def __init__(self, grammar, from_path, to_path, module_node, node_to_str_map):
         self._grammar = grammar
-        self._path = path
+        self._from_path = from_path
+        self._to_path = to_path
         self._module_node = module_node
         self._node_to_str_map = node_to_str_map
 
@@ -17,8 +18,8 @@ class ChangedFile(object):
         new_lines = split_lines(self.get_code(), keepends=True)
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=self._path,
-            tofile=self._path
+            fromfile=self._from_path,
+            tofile=self._to_path
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
@@ -28,11 +29,11 @@ class ChangedFile(object):
         return self._grammar.refactor(self._module_node, self._node_to_str_map)
 
     def apply(self):
-        with open(self._path, 'w') as f:
+        with open(self._from_path, 'w') as f:
             f.write(self.get_code())
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._path)
+        return '<%s: %s>' % (self.__class__.__name__, self._from_path)
 
 
 class Refactoring(object):
@@ -42,9 +43,18 @@ class Refactoring(object):
         self._file_to_node_changes = file_to_node_changes
 
     def get_changed_files(self):
+        def calculate_to_path(p):
+            for from_, to in renames:
+                if p.startswith(from_):
+                    p = to + p[len(from_):]
+            return p
+
+        renames = self.get_renames()
         return [
             ChangedFile(
-                self._grammar, path,
+                self._grammar,
+                from_path=path,
+                to_path=calculate_to_path(path),
                 module_node=next(iter(map_)).get_root_node(),
                 node_to_str_map=map_
             ) for path, map_ in self._file_to_node_changes.items()
@@ -56,7 +66,7 @@ class Refactoring(object):
 
         Returns ``Iterable[Tuple[str, str]]``.
         """
-        return sorted(self._renames)
+        return sorted(self._renames, key=lambda x: (-len(x), x))
 
     def get_diff(self):
         text = ''
