@@ -9,7 +9,7 @@ def test1():
     test1()
     AssertionError
     return test1, test1.not_existing
-# +++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,6 +1,6 @@
@@ -21,6 +21,18 @@ def test1():
      AssertionError
 -    return test1, test1.not_existing
 +    return blabla, blabla.not_existing
+# -------------------------------------------------- var-not-found
+undefined_var
+#? 0 lala
+undefined_var
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,4 +1,4 @@
+ undefined_var
+ #? 0 lala
+-undefined_var
++lala
 # -------------------------------------------------- different-scopes
 def x():
     #? 7 v
@@ -75,6 +87,19 @@ rename to /home/dave/source/jedi/test/refactor/import_tree/renamedm.py
  #? 0 renamedm
 -some_mod
 +renamedm
+# -------------------------------------------------- import-not-found
+#? 20 lala
+import undefined_import
+haha( undefined_import)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,4 +1,4 @@
+ #? 20 lala
+-import undefined_import
+-haha( undefined_import)
++import lala
++haha( lala)
 # -------------------------------------------------- in-package-with-stub
 #? 31 renamedm
 from import_tree.pkgx import pkgx
