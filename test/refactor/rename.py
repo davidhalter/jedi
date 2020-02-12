@@ -54,6 +54,48 @@ def y():
  def y():
      some_var = 3
      some_var
+# -------------------------------------------------- keyword-param1
+#? 22 lala
+def mykeywordparam1(param1):
+    str(param1)
+mykeywordparam1(1)
+mykeywordparam1(param1=3)
+mykeywordparam1(x, param1=2)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,7 +1,7 @@
+ #? 22 lala
+-def mykeywordparam1(param1):
+-    str(param1)
++def mykeywordparam1(lala):
++    str(lala)
+ mykeywordparam1(1)
+-mykeywordparam1(param1=3)
+-mykeywordparam1(x, param1=2)
++mykeywordparam1(lala=3)
++mykeywordparam1(x, lala=2)
+# -------------------------------------------------- keyword-param2
+def mykeywordparam2(param1):
+    str(param1)
+mykeywordparam2(1)
+mykeywordparam2(param1=3)
+#? 22 lala
+mykeywordparam2(x, param1=2)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/rename.py
++++ /home/dave/source/jedi/test/refactor/rename.py
+@@ -1,7 +1,7 @@
+-def mykeywordparam2(param1):
+-    str(param1)
++def mykeywordparam2(lala):
++    str(lala)
+ mykeywordparam2(1)
+-mykeywordparam2(param1=3)
++mykeywordparam2(lala=3)
+ #? 22 lala
+-mykeywordparam2(x, param1=2)
++mykeywordparam2(x, lala=2)
 # -------------------------------------------------- import
 from import_tree.some_mod import foobar
 #? 0 renamed
