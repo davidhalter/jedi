@@ -45,6 +45,7 @@ class RefactoringCase(object):
 def _collect_file_tests(code, path, lines_to_execute):
     r = r'^# -{5,} ?([^\n]*)\n((?:(?!\n# \+{5,}).)*\n)' \
         r'# \+{5,}\n((?:(?!\n# -{5,}).)*\n)'
+    match = None
     for match in re.finditer(r, code, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
         first = match.group(2)
@@ -53,17 +54,24 @@ def _collect_file_tests(code, path, lines_to_execute):
         # get the line with the position of the operation
         p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ?([^\n]*)', first, re.DOTALL)
         if p is None:
-            print("Please add a test start.")
+            raise Exception("Please add a test start.")
             continue
         until = p.group(1)
         index = int(p.group(2))
-        kwargs = eval(p.group(3))
+        if p.group(3):
+            kwargs = eval(p.group(3))
+        else:
+            kwargs = {}
 
         line_nr = until.count('\n') + 2
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
         yield RefactoringCase(name, first, line_nr, index, path, kwargs, second)
+    if match is None:
+        raise Exception("Didn't match any test")
+    if match.end() != len(code):
+        raise Exception("Didn't match until the end of the file in %s" % path)
 
 
 def collect_dir_tests(base_dir, test_files):
