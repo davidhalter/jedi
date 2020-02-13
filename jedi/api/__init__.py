@@ -31,7 +31,7 @@ from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.api.errors import parso_to_jedi_errors
-from jedi.api.refactoring import rename
+from jedi.api import refactoring
 from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
@@ -531,19 +531,39 @@ class Script(object):
 
         :param new_name: The variable under the cursor will be renamed to this
             string.
+        :rtype: :class:`refactoring.Refactoring`
         """
         return self._rename(line, column, **kwargs)
 
     def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
-        return rename(self._grammar, definitions, new_name)
+        return refactoring.rename(self._grammar, definitions, new_name)
 
-    def extract_variable(self):
+    def extract_variable(self, line=None, column=None, **kwargs):
+        """
+        :param new_name: The variable under the cursor will be renamed to this
+            string.
+        :rtype: :class:`refactoring.Refactoring`
+        """
+        return self._extract_variable(line, column, **kwargs)
+
+    def _extract_variable(self, line, column, new_name):  # Python 2...
+        raise NotImplementedError
+
+    def extract_function(self, line=None, column=None, **kwargs):
+        """
+        """
+        return self._extract_method(line, column, **kwargs)
+
+    def _extract_function(self, line, column, new_name):  # Python 2...
+        raise NotImplementedError
+
+    def inline_variable(self, line=None, column=None, until_line=None, until_column=None):
         """
         """
         raise NotImplementedError
 
-    def extract_method(self):
+    def reorder_imports(self):
         """
         """
         raise NotImplementedError
