@@ -569,9 +569,7 @@ class Bar(Foo):
 
     #? int()
     another_variable
-    #? str()
-    foo
-    #? int()
+    #?
     an_int
 
 def typed_dict_test_foo(arg: Bar):
