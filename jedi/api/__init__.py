@@ -545,21 +545,22 @@ class Script(object):
             string.
         :rtype: :class:`refactoring.Refactoring`
         """
-        return self._extract_variable(line, column, **kwargs)
+        return self._extract_variable(line, column, **kwargs)  # Python 2...
 
-    def _extract_variable(self, line, column, new_name):  # Python 2...
+    def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
         raise NotImplementedError
 
     def extract_function(self, line=None, column=None, **kwargs):
         """
         """
-        return self._extract_method(line, column, **kwargs)
+        return self._extract_method(line, column, **kwargs)  # Python 2...
 
-    def _extract_function(self, line, column, new_name):  # Python 2...
+    def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
         raise NotImplementedError
 
-    def inline_variable(self, line=None, column=None, until_line=None, until_column=None):
+    def inline(self, line=None, column=None):
         """
+        Inlines a variable under the cursor.
         """
         raise NotImplementedError
 
