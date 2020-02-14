@@ -4,6 +4,7 @@ import pytest
 
 from . import helpers
 from jedi.inference.utils import indent_block
+from jedi import RefactoringError
 
 
 def assert_case_equal(case, actual, desired):
@@ -61,5 +62,10 @@ def test_refactor(refactor_case):
 
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
-    diff = refactor_case.calculate_diff()
-    assert_case_equal(refactor_case, diff, refactor_case.desired_diff)
+    if refactor_case.is_error:
+        with pytest.raises(RefactoringError) as e:
+            refactor_case.calculate_diff()
+        assert e.value.args[0] == refactor_case.desired_diff.strip()
+    else:
+        diff = refactor_case.calculate_diff()
+        assert_case_equal(refactor_case, diff, refactor_case.desired_diff)

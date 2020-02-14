@@ -1,3 +1,10 @@
+# -------------------------------------------------- multi-equal
+def test():
+    #? 4 error
+    a = b = 3
+    return test(100, a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a statement with multiple definitions
 # -------------------------------------------------- simple
 def test():
     #? 4
