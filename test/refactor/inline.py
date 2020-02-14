@@ -41,9 +41,8 @@ test(foobarb)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 --- /home/dave/source/jedi/test/refactor/inline.py
 +++ /home/dave/source/jedi/test/refactor/inline.py
-@@ -1,4 +1,4 @@
+@@ -1,4 +1,3 @@
 -foobarb: int = 1
-+
  #? 5
 -test(foobarb)
 +test(1)
@@ -112,3 +111,79 @@ if 1:
 -    a = 1, 2
 -    return test(100, a)
 +    return test(100, (1, 2))
+# -------------------------------------------------- multiplication-add-parens1
+a = 1+2
+#? 11
+test(100 * a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,3 @@
+-a = 1+2
+ #? 11
+-test(100 * a)
++test(100 * (1+2))
+# -------------------------------------------------- multiplication-add-parens2
+a = 1+2
+#? 11
+(x, 100 * a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,3 @@
+-a = 1+2
+ #? 11
+-(x, 100 * a)
++(x, 100 * (1+2))
+# -------------------------------------------------- multiplication-add-parens3
+x
+a = 1+2
+#? 9
+(100 ** a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,5 +1,4 @@
+ x
+-a = 1+2
+ #? 9
+-(100 ** a)
++(100 ** (1+2))
+# -------------------------------------------------- no-add-parens1
+x
+a = 1+2
+#? 5
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,5 +1,4 @@
+ x
+-a = 1+2
+ #? 5
+-test(a)
++test(1+2)
+# -------------------------------------------------- no-add-parens2
+a = 1+2
+#? 9
+test(3, a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,3 @@
+-a = 1+2
+ #? 9
+-test(3, a)
++test(3, 1+2)
+# -------------------------------------------------- no-add-parens3
+a = 1|2
+#? 5
+(3, a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,3 @@
+-a = 1|2
+ #? 5
+-(3, a)
++(3, 1|2)

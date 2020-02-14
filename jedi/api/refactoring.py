@@ -184,17 +184,20 @@ def inline(grammar, names):
             name.tree_name.prefix + s
 
     path = definitions[0].get_root_context().py__file__()
-    file_to_node_changes.setdefault(path, {})[expr_stmt] = \
-        _remove_indent_and_newline_of_prefix(expr_stmt.get_first_leaf().prefix)
+    changes = file_to_node_changes.setdefault(path, {})
+    changes[expr_stmt] = _remove_indent_of_prefix(expr_stmt.get_first_leaf().prefix)
+    next_leaf = expr_stmt.get_next_leaf()
+
+    # Most of the time we have to remove the newline at the end of the
+    # statement, but if there's a comment we might not need to.
+    if next_leaf.prefix.strip(' \t') == '' \
+            and (next_leaf.type == 'newline' or next_leaf == ';'):
+        changes[next_leaf] = ''
     return Refactoring(grammar, file_to_node_changes)
 
 
-def _remove_indent_and_newline_of_prefix(prefix):
+def _remove_indent_of_prefix(prefix):
     r"""
     Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
     """
-    lines = split_lines(prefix, keepends=True)[:-1]
-    if lines and lines[-1].endswith('\n'):
-        # Remove the newline
-        lines[-1] = lines[-1][:-1]
-    return ''.join(lines)
+    return ''.join(split_lines(prefix, keepends=True)[:-1])
