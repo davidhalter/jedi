@@ -7,6 +7,11 @@ from parso import split_lines
 
 from jedi.api.exceptions import RefactoringError
 
+_INLINE_NEEDS_BRACKET = (
+    'xor_expr and_expr shift_expr arith_expr term factor power '
+    'or_test and_test not_test comparison'
+).split()
+
 
 class ChangedFile(object):
     def __init__(self, grammar, from_path, to_path, module_node, node_to_str_map):
@@ -178,7 +183,8 @@ def inline(grammar, names):
     for name in references:
         path = name.get_root_context().py__file__()
         s = replace_code
-        if rhs.type == 'testlist_star_expr':
+        if rhs.type == 'testlist_star_expr' \
+                or name.tree_name.parent.type in _INLINE_NEEDS_BRACKET:
             s = '(' + replace_code + ')'
         file_to_node_changes.setdefault(path, {})[name.tree_name] = \
             name.tree_name.prefix + s
