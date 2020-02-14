@@ -562,7 +562,8 @@ class Script(object):
         """
         Inlines a variable under the cursor.
         """
-        raise NotImplementedError
+        names = [d._name for d in self.get_references(line, column, include_builtins=True)]
+        return refactoring.inline(self._grammar, names)
 
     def reorder_imports(self):
         """

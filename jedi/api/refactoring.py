@@ -125,3 +125,60 @@ def rename(grammar, definitions, new_name):
                 fmap = file_tree_name_map.setdefault(d.module_path, {})
                 fmap[tree_name] = tree_name.prefix + new_name
     return Refactoring(grammar, file_tree_name_map, file_renames)
+
+
+def inline(grammar, names):
+    if not names:
+        raise RefactoringError("There's no name under the cursor")
+    if any(n.api_type == 'module' for n in names):
+        raise RefactoringError("Cannot inline imports or modules.")
+    if any(n.tree_name is None for n in names):
+        raise RefactoringError("Cannot inline builtins.")
+
+    definitions = [n for n in names if n.tree_name.is_definition()]
+    if len(definitions) == 0:
+        raise RefactoringError("No definition found to inline.")
+    if len(definitions) > 1:
+        raise RefactoringError("Cannot inline a name with multiple definitions.")
+
+    tree_name = definitions[0].tree_name
+
+    expr_stmt = tree_name.get_definition()
+    if expr_stmt.type != 'expr_stmt':
+        type_ = dict(
+            funcdef='a function',
+            classdef='a class',
+        ).get(expr_stmt.type, expr_stmt.type)
+        raise RefactoringError("Cannot inline %s" % type_)
+
+    if len(expr_stmt.get_defined_names(include_setitem=True)) > 1:
+        raise RefactoringError("Cannot inline a statement with multiple definitions")
+
+    rhs = expr_stmt.get_rhs()
+    replace_code = rhs.get_code(include_prefix=False)
+
+    references = [n for n in names if not n.tree_name.is_definition()]
+    file_to_node_changes = {}
+    for name in references:
+        path = name.get_root_context().py__file__()
+        s = replace_code
+        if rhs.type == 'testlist_star_expr':
+            s = '(' + replace_code + ')'
+        file_to_node_changes.setdefault(path, {})[name.tree_name] = \
+            name.tree_name.prefix + s
+
+    path = definitions[0].get_root_context().py__file__()
+    file_to_node_changes.setdefault(path, {})[expr_stmt] = \
+        _remove_indent_and_newline_of_prefix(expr_stmt.get_first_leaf().prefix)
+    return Refactoring(grammar, file_to_node_changes)
+
+
+def _remove_indent_and_newline_of_prefix(prefix):
+    r"""
+    Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
+    """
+    lines = split_lines(prefix, keepends=True)[:-1]
+    if lines and lines[-1].endswith('\n'):
+        # Remove the newline
+        lines[-1] = lines[-1][:-1]
+    return ''.join(lines)
