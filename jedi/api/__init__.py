@@ -50,6 +50,17 @@ from jedi.inference.gradual.utils import load_proper_stub_module
 sys.setrecursionlimit(3000)
 
 
+def no_py2_support(func):
+    # TODO remove when removing Python 2
+    def wrapper(self, *args, **kwargs):
+        if self._grammar.version_info.major == 2:
+            raise NotImplementedError(
+                "Python 2 is deprecated and won't support this feature anymore"
+            )
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class Script(object):
     """
     A Script is the base for completions, goto or whatever you want to do with
@@ -524,6 +535,7 @@ class Script(object):
         ]
         return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
+    @no_py2_support
     def rename(self, line=None, column=None, **kwargs):
         """
         Returns an object that you can use to rename the variable under the
@@ -539,6 +551,7 @@ class Script(object):
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._grammar, definitions, new_name)
 
+    @no_py2_support
     def extract_variable(self, line=None, column=None, **kwargs):
         """
         :param new_name: The variable under the cursor will be renamed to this
@@ -550,6 +563,7 @@ class Script(object):
     def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
         raise NotImplementedError
 
+    @no_py2_support
     def extract_function(self, line=None, column=None, **kwargs):
         """
         """
@@ -558,6 +572,7 @@ class Script(object):
     def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
         raise NotImplementedError
 
+    @no_py2_support
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor.
@@ -565,6 +580,7 @@ class Script(object):
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
         return refactoring.inline(self._grammar, names)
 
+    @no_py2_support
     def reorder_imports(self):
         """
         """
