@@ -3,6 +3,11 @@ Test coverage for renaming is mostly being done by testing
 `Script.get_references`.
 """
 
+# -------------------------------------------------- no-name
+#? 0 error {'new_name': 'blabla'}
+1
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+There is no name under the cursor
 # -------------------------------------------------- simple
 def test1():
     #? 7 {'new_name': 'blabla'}

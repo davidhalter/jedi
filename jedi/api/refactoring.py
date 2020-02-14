@@ -114,6 +114,9 @@ def rename(grammar, definitions, new_name):
     file_renames = set()
     file_tree_name_map = {}
 
+    if not definitions:
+        raise RefactoringError("There is no name under the cursor")
+
     for d in definitions:
         tree_name = d._name.tree_name
         if d.type == 'module' and tree_name is None:
@@ -129,7 +132,7 @@ def rename(grammar, definitions, new_name):
 
 def inline(grammar, names):
     if not names:
-        raise RefactoringError("There's no name under the cursor")
+        raise RefactoringError("There is no name under the cursor")
     if any(n.api_type == 'module' for n in names):
         raise RefactoringError("Cannot inline imports or modules.")
     if any(n.tree_name is None for n in names):
