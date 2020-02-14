@@ -8,7 +8,7 @@ from parso import split_lines
 from jedi.api.exceptions import RefactoringError
 
 _INLINE_NEEDS_BRACKET = (
-    'xor_expr and_expr shift_expr arith_expr term factor power '
+    'xor_expr and_expr shift_expr arith_expr term factor power atom_expr '
     'or_test and_test not_test comparison'
 ).split()
 
@@ -181,13 +181,26 @@ def inline(grammar, names):
     references = [n for n in names if not n.tree_name.is_definition()]
     file_to_node_changes = {}
     for name in references:
+        tree_name = name.tree_name
         path = name.get_root_context().py__file__()
         s = replace_code
         if rhs.type == 'testlist_star_expr' \
-                or name.tree_name.parent.type in _INLINE_NEEDS_BRACKET:
+                or tree_name.parent.type in _INLINE_NEEDS_BRACKET \
+                or tree_name.parent.type == 'trailer' \
+                and tree_name.parent.get_next_sibling() is not None:
             s = '(' + replace_code + ')'
-        file_to_node_changes.setdefault(path, {})[name.tree_name] = \
-            name.tree_name.prefix + s
+
+        of_path = file_to_node_changes.setdefault(path, {})
+
+        n = tree_name
+        prefix = n.prefix
+        par = n.parent
+        if par.type == 'trailer' and par.children[0] == '.':
+            prefix = par.parent.children[0].prefix
+            n = par
+            for some_node in par.parent.children[:par.parent.children.index(par)]:
+                of_path[some_node] = ''
+        of_path[n] = prefix + s
 
     path = definitions[0].get_root_context().py__file__()
     changes = file_to_node_changes.setdefault(path, {})

@@ -58,12 +58,30 @@ import math
 math.cos
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline builtins/extensions
-# -------------------------------------------------- module
+# -------------------------------------------------- module-error
 from import_tree import some_mod
 #? 11 error
 test(some_mod)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline imports or modules
+# -------------------------------------------------- module-works
+from import_tree import some_mod
+#? 20
+test(x, some_mod.  inline_var.conjugate)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,4 @@
+ from import_tree import some_mod
+ #? 20
+-test(x, some_mod.  inline_var.conjugate)
++test(x, (5 + 3).conjugate)
+--- /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
++++ /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
+@@ -1,4 +1,3 @@
+ foobar = 3
+ 
+-inline_var = 5 + 3
 # -------------------------------------------------- class
 class A: pass
 #? 5 error
@@ -213,3 +231,15 @@ a = 1, 2	; b = 3
  #? 9
 -(3, 3 == a)
 +(3, 3 == (1, 2))
+# -------------------------------------------------- no-tree-name
+a = 1 + 2 
+#? 0
+a.conjugate
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,3 @@
+-a = 1 + 2 
+ #? 0
+-a.conjugate
++(1 + 2).conjugate
