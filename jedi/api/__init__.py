@@ -580,12 +580,6 @@ class Script(object):
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
         return refactoring.inline(self._grammar, names)
 
-    @no_py2_support
-    def reorder_imports(self):
-        """
-        """
-        raise NotImplementedError
-
 
 class Interpreter(Script):
     """
