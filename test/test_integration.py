@@ -62,10 +62,15 @@ def test_refactor(refactor_case, skip_python2):
 
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
-    if refactor_case.is_error:
+    if refactor_case.type == 'error':
         with pytest.raises(RefactoringError) as e:
-            refactor_case.calculate_diff()
-        assert e.value.args[0] == refactor_case.desired_diff.strip()
+            refactor_case.refactor()
+        assert e.value.args[0] == refactor_case.desired_result.strip()
+    elif refactor_case.type == 'text':
+        refactoring = refactor_case.refactor()
+        assert not refactoring.get_renames()
+        text = ''.join(f.get_new_code() for f in refactoring.get_changed_files().values())
+        assert_case_equal(refactor_case, text, refactor_case.desired_result)
     else:
-        diff = refactor_case.calculate_diff()
-        assert_case_equal(refactor_case, diff, refactor_case.desired_diff)
+        diff = refactor_case.refactor().get_diff()
+        assert_case_equal(refactor_case, diff, refactor_case.desired_result)
