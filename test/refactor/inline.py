@@ -187,3 +187,29 @@ a = 1|2
  #? 5
 -(3, a)
 +(3, 1|2)
+# -------------------------------------------------- comment
+a = 1 and 2 # foo
+#? 9
+(3, 3 * a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,4 @@
+-a = 1 and 2 # foo
++ # foo
+ #? 9
+-(3, 3 * a)
++(3, 3 * (1 and 2))
+# -------------------------------------------------- semicolon
+a = 1, 2	; b = 3
+#? 9
+(3, 3 == a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,4 @@
+-a = 1, 2	; b = 3
++ b = 3
+ #? 9
+-(3, 3 == a)
++(3, 3 == (1, 2))
