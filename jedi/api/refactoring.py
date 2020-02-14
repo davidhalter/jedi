@@ -149,10 +149,10 @@ def inline(grammar, names):
     expr_stmt = tree_name.get_definition()
     if expr_stmt.type != 'expr_stmt':
         type_ = dict(
-            funcdef='a function',
-            classdef='a class',
+            funcdef='function',
+            classdef='class',
         ).get(expr_stmt.type, expr_stmt.type)
-        raise RefactoringError("Cannot inline %s" % type_)
+        raise RefactoringError("Cannot inline a %s" % type_)
 
     if len(expr_stmt.get_defined_names(include_setitem=True)) > 1:
         raise RefactoringError("Cannot inline a statement with multiple definitions")

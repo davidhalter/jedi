@@ -65,6 +65,25 @@ from import_tree import some_mod
 test(some_mod)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline imports or modules
+# -------------------------------------------------- class
+class A: pass
+#? 5 error
+test(A)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a class
+# -------------------------------------------------- function
+def foo(a):
+    return a + 1
+#? 5 error
+test(foo(1))
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a function
+# -------------------------------------------------- for-stmt
+for x in []:
+    #? 9 error
+    test(x)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a for_stmt
 # -------------------------------------------------- simple
 def test():
     #? 4
