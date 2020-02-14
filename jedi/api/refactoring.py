@@ -134,15 +134,15 @@ def inline(grammar, names):
     if not names:
         raise RefactoringError("There is no name under the cursor")
     if any(n.api_type == 'module' for n in names):
-        raise RefactoringError("Cannot inline imports or modules.")
+        raise RefactoringError("Cannot inline imports or modules")
     if any(n.tree_name is None for n in names):
-        raise RefactoringError("Cannot inline builtins.")
+        raise RefactoringError("Cannot inline builtins/extensions")
 
     definitions = [n for n in names if n.tree_name.is_definition()]
     if len(definitions) == 0:
-        raise RefactoringError("No definition found to inline.")
+        raise RefactoringError("No definition found to inline")
     if len(definitions) > 1:
-        raise RefactoringError("Cannot inline a name with multiple definitions.")
+        raise RefactoringError("Cannot inline a name with multiple definitions")
 
     tree_name = definitions[0].tree_name
 
@@ -156,6 +156,19 @@ def inline(grammar, names):
 
     if len(expr_stmt.get_defined_names(include_setitem=True)) > 1:
         raise RefactoringError("Cannot inline a statement with multiple definitions")
+    first_child = expr_stmt.children[1]
+    if first_child.type == 'annassign' and len(first_child.children) == 4:
+        first_child = first_child.children[2]
+    if first_child != '=':
+        if first_child.type == 'annassign':
+            raise RefactoringError(
+                'Cannot inline a statement that is defined by an annotation'
+            )
+        else:
+            raise RefactoringError(
+                'Cannot inline a statement with "%s"'
+                % first_child.get_code(include_prefix=False)
+            )
 
     rhs = expr_stmt.get_rhs()
     replace_code = rhs.get_code(include_prefix=False)

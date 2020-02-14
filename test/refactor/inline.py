@@ -1,10 +1,70 @@
-# -------------------------------------------------- multi-equal
+# -------------------------------------------------- no-name-error
+#? 0 error
+1
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+There is no name under the cursor
+# -------------------------------------------------- multi-equal-error
 def test():
     #? 4 error
     a = b = 3
     return test(100, a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline a statement with multiple definitions
+# -------------------------------------------------- no-definition-error
+#? 5 error
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+No definition found to inline
+# -------------------------------------------------- multi-names-error
+#? 0 error
+a, b[1] = 3
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a statement with multiple definitions
+# -------------------------------------------------- addition-error
+#? 0 error
+a = 2
+a += 3
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a name with multiple definitions
+# -------------------------------------------------- only-addition-error
+#? 0 error
+a += 3
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a statement with "+="
+# -------------------------------------------------- with-annotation
+foobarb: int = 1
+#? 5
+test(foobarb)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- /home/dave/source/jedi/test/refactor/inline.py
++++ /home/dave/source/jedi/test/refactor/inline.py
+@@ -1,4 +1,4 @@
+-foobarb: int = 1
++
+ #? 5
+-test(foobarb)
++test(1)
+# -------------------------------------------------- only-annotation-error
+a: int
+#? 5 error
+test(a)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline a statement that is defined by an annotation
+# -------------------------------------------------- builtin
+import math
+#? 7 error
+math.cos
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline builtins/extensions
+# -------------------------------------------------- module
+from import_tree import some_mod
+#? 11 error
+test(some_mod)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot inline imports or modules
 # -------------------------------------------------- simple
 def test():
     #? 4
