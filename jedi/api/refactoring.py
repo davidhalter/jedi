@@ -6,11 +6,13 @@ import difflib
 from parso import split_lines
 
 from jedi.api.exceptions import RefactoringError
+from jedi.inference.utils import indent_block
 
 _INLINE_NEEDS_BRACKET = (
     'xor_expr and_expr shift_expr arith_expr term factor power atom_expr '
     'or_test and_test not_test comparison'
 ).split()
+_DEFINITION_SCOPES = ('suite', 'file_input')
 
 
 class ChangedFile(object):
@@ -215,8 +217,57 @@ def inline(grammar, names):
     return Refactoring(grammar, file_to_node_changes)
 
 
+def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
+    start_leaf = module_node.get_leaf_for_position(pos, include_prefixes=True)
+    if until_pos is None:
+        node = start_leaf
+        if node.type == 'operator':
+            node = node.parent
+        while node.parent.type in _INLINE_NEEDS_BRACKET:
+            node = node.parent
+        start_leaf
+        extracted = node.get_code(include_prefix=False)
+        nodes = [node]
+    else:
+        end_leaf = module_node.get_leaf_for_position(until_pos, include_prefixes=True)
+        if end_leaf.start_pos > until_pos:
+            end_leaf = end_leaf.get_previous_leaf()
+            if end_leaf is None:
+                raise RefactoringError('Cannot extract anything from that')
+
+    definition = _get_parent_definition(node)
+    first_definition_leaf = definition.get_first_leaf()
+
+    dct = {}
+    for i, node in enumerate(nodes):
+        dct[node] = node.get_first_leaf().prefix + new_name if i == 0 else ''
+    dct[first_definition_leaf] = _insert_line_before(
+        first_definition_leaf,
+        new_name + ' = ' + extracted,
+    )
+    file_to_node_changes = {path: dct}
+    return Refactoring(grammar, file_to_node_changes)
+
+
 def _remove_indent_of_prefix(prefix):
     r"""
     Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
     """
     return ''.join(split_lines(prefix, keepends=True)[:-1])
+
+
+def _insert_line_before(leaf, code):
+    lines = split_lines(leaf.prefix, keepends=True)
+    lines[-1:-1] = [indent_block(code, lines[-1]) + '\n']
+    return ''.join(lines) + leaf.value
+
+
+def _get_parent_definition(node):
+    """
+    Returns the statement where a node is defined.
+    """
+    while node is not None:
+        if node.parent.type in _DEFINITION_SCOPES:
+            return node
+        node = node.parent
+    raise NotImplementedError('We should never even get here')

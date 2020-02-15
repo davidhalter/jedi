@@ -552,6 +552,7 @@ class Script(object):
         return refactoring.rename(self._grammar, definitions, new_name)
 
     @no_py2_support
+    @validate_line_column
     def extract_variable(self, line=None, column=None, **kwargs):
         """
         :param new_name: The variable under the cursor will be renamed to this
@@ -561,9 +562,18 @@ class Script(object):
         return self._extract_variable(line, column, **kwargs)  # Python 2...
 
     def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
-        raise NotImplementedError
+        if until_line is None or until_column is None:
+            if until_line is not until_column:
+                raise TypeError('If you provide until_line or until_column '
+                                'you have to provide both')
+            until_pos = None
+        else:
+            until_pos = until_line, until_column
+        return refactoring.extract_variable(
+            self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)
 
     @no_py2_support
+    @validate_line_column
     def extract_function(self, line=None, column=None, **kwargs):
         """
         """
