@@ -13,6 +13,7 @@ _INLINE_NEEDS_BRACKET = (
     'or_test and_test not_test comparison'
 ).split()
 _DEFINITION_SCOPES = ('suite', 'file_input')
+_NON_EXCTRACABLE = ('param', )
 
 
 class ChangedFile(object):
@@ -219,6 +220,10 @@ def inline(grammar, names):
 
 def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
     start_leaf = module_node.get_leaf_for_position(pos, include_prefixes=True)
+    if start_leaf.type == 'operator':
+        next_leaf = start_leaf.get_next_leaf()
+        if next_leaf is not None and next_leaf.start_pos == pos:
+            start_leaf = next_leaf
     if until_pos is None:
         node = start_leaf
         if node.type == 'operator':
@@ -234,6 +239,10 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
             end_leaf = end_leaf.get_previous_leaf()
             if end_leaf is None:
                 raise RefactoringError('Cannot extract anything from that')
+    if any(node.type == 'name' and node.is_definition() for node in nodes):
+        raise RefactoringError('Cannot extract a definition of a name')
+    if any(node.type in _NON_EXCTRACABLE for node in nodes):
+        raise RefactoringError('Cannot extract a %s' % node.type)
 
     definition = _get_parent_definition(node)
     first_definition_leaf = definition.get_first_leaf()
