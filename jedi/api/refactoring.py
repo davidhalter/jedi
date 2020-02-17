@@ -12,6 +12,7 @@ _INLINE_NEEDS_BRACKET = (
     'xor_expr and_expr shift_expr arith_expr term factor power atom_expr '
     'or_test and_test not_test comparison'
 ).split()
+_EXTRACT_USE_PARENT = _INLINE_NEEDS_BRACKET + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
 _NON_EXCTRACABLE = ('param', )
 
@@ -228,7 +229,7 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
         node = start_leaf
         if node.type == 'operator':
             node = node.parent
-        while node.parent.type in _INLINE_NEEDS_BRACKET:
+        while node.parent.type in _EXTRACT_USE_PARENT:
             node = node.parent
         start_leaf
         extracted = node.get_code(include_prefix=False)

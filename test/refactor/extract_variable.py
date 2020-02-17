@@ -66,3 +66,30 @@ def test(p1=20):
 x = 20
 def test(p1=x):
     return
+# -------------------------------------------------- for-something
+#? 12 text {'new_name': 'x'}
+def test(p1=20):
+    return
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 12 text {'new_name': 'x'}
+x = 20
+def test(p1=x):
+    return
+# -------------------------------------------------- class-inheritance-1
+#? 12 text {'new_name': 'x'}
+class Foo(foo.Bar):
+    pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 12 text {'new_name': 'x'}
+x = foo.Bar
+class Foo(x):
+    pass
+# -------------------------------------------------- class-inheritance-1
+#? 16 text {'new_name': 'x'}
+class Foo(foo.Bar):
+    pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 16 text {'new_name': 'x'}
+x = foo.Bar
+class Foo(x):
+    pass
