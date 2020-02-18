@@ -84,7 +84,7 @@ class Foo(foo.Bar):
 x = foo.Bar
 class Foo(x):
     pass
-# -------------------------------------------------- class-inheritance-1
+# -------------------------------------------------- class-inheritance-2
 #? 16 text {'new_name': 'x'}
 class Foo(foo.Bar):
     pass

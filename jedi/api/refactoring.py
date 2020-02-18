@@ -6,7 +6,7 @@ import difflib
 from parso import split_lines
 
 from jedi.api.exceptions import RefactoringError
-from jedi.inference.utils import indent_block
+from jedi.utils import indent_block
 
 _INLINE_NEEDS_BRACKET = (
     'xor_expr and_expr shift_expr arith_expr term factor power atom_expr '
