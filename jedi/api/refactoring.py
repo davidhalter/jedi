@@ -14,7 +14,7 @@ _INLINE_NEEDS_BRACKET = (
 ).split()
 _EXTRACT_USE_PARENT = _INLINE_NEEDS_BRACKET + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
-_NON_EXCTRACABLE = ('param', )
+_NON_EXCTRACABLE = ('param', 'keyword')
 
 
 class ChangedFile(object):

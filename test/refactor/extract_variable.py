@@ -93,3 +93,13 @@ class Foo(foo.Bar):
 x = foo.Bar
 class Foo(x):
     pass
+# -------------------------------------------------- keyword-pass
+#? 12 error {'new_name': 'x'}
+def x(): pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a keyword
+# -------------------------------------------------- keyword-continue
+#? 5 error {'new_name': 'x'}
+continue
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a keyword
