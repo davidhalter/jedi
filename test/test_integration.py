@@ -3,7 +3,7 @@ import os
 import pytest
 
 from . import helpers
-from jedi.utils import indent_block
+from jedi.common.utils import indent_block
 from jedi import RefactoringError
 
 

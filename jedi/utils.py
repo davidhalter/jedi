@@ -132,13 +132,3 @@ def version_info():
     from jedi import __version__
     tupl = re.findall(r'[a-z]+|\d+', __version__)
     return Version(*[x if i == 3 else int(x) for i, x in enumerate(tupl)])
-
-
-def indent_block(text, indention='    '):
-    """This function indents a text block with a default of four spaces."""
-    temp = ''
-    while text and text[-1] == '\n':
-        temp += text[-1]
-        text = text[:-1]
-    lines = text.split('\n')
-    return '\n'.join(map(lambda s: indention + s, lines)) + temp
