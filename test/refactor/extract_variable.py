@@ -103,3 +103,12 @@ Cannot extract a keyword
 continue
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot extract a keyword
+# -------------------------------------------------- keyword-None
+if 1:
+    #? 4 text {'new_name': 'x'}
+    None
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+if 1:
+    #? 4 text {'new_name': 'x'}
+    x = None
+    x

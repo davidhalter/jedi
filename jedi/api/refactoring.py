@@ -14,7 +14,7 @@ _INLINE_NEEDS_BRACKET = (
 ).split()
 _EXTRACT_USE_PARENT = _INLINE_NEEDS_BRACKET + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
-_NON_EXCTRACABLE = ('param', 'keyword')
+_NON_EXCTRACABLE = ('param',)
 
 
 class ChangedFile(object):
@@ -242,7 +242,8 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
                 raise RefactoringError('Cannot extract anything from that')
     if any(node.type == 'name' and node.is_definition() for node in nodes):
         raise RefactoringError('Cannot extract a definition of a name')
-    if any(node.type in _NON_EXCTRACABLE for node in nodes):
+    if any(node.type in _NON_EXCTRACABLE for node in nodes) \
+            or nodes[0].type == 'keyword' and nodes[0].value not in ('None', 'True', 'False'):
         raise RefactoringError('Cannot extract a %s' % node.type)
 
     definition = _get_parent_definition(node)
