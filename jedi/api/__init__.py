@@ -562,12 +562,13 @@ class Script(object):
         return self._extract_variable(line, column, **kwargs)  # Python 2...
 
     def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
-        if until_line is None or until_column is None:
-            if until_line is not until_column:
-                raise TypeError('If you provide until_line or until_column '
-                                'you have to provide both')
+        if until_line is None and until_column is None:
             until_pos = None
         else:
+            if until_line is None:
+                until_line = line
+            if until_line is None:
+                raise TypeError('If you provide until_line you have to provide until_column')
             until_pos = until_line, until_column
         return refactoring.extract_variable(
             self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)

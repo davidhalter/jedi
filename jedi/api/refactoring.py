@@ -232,7 +232,6 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
         while node.parent.type in _EXTRACT_USE_PARENT:
             node = node.parent
         start_leaf
-        extracted = node.get_code(include_prefix=False)
         nodes = [node]
     else:
         end_leaf = module_node.get_leaf_for_position(until_pos, include_prefixes=True)
@@ -240,16 +239,21 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
             end_leaf = end_leaf.get_previous_leaf()
             if end_leaf is None:
                 raise RefactoringError('Cannot extract anything from that')
+        parent_node = start_leaf
+        while parent_node.end_pos < end_leaf.end_pos:
+            parent_node = parent_node.parent
+        nodes = [parent_node]
     if any(node.type == 'name' and node.is_definition() for node in nodes):
         raise RefactoringError('Cannot extract a definition of a name')
     if any(node.type in _NON_EXCTRACABLE for node in nodes) \
             or nodes[0].type == 'keyword' and nodes[0].value not in ('None', 'True', 'False'):
         raise RefactoringError('Cannot extract a %s' % node.type)
 
-    definition = _get_parent_definition(node)
+    definition = _get_parent_definition(nodes[0])
     first_definition_leaf = definition.get_first_leaf()
 
     dct = {}
+    extracted = ''.join(n.get_code(include_prefix=i != 0) for i, n in enumerate(nodes))
     extracted_prefix = _insert_line_before(
         first_definition_leaf.prefix,
         new_name + ' = ' + extracted,
