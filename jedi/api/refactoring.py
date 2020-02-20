@@ -250,14 +250,20 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
     first_definition_leaf = definition.get_first_leaf()
 
     dct = {}
-    for i, node in enumerate(nodes):
-        dct[node] = node.get_first_leaf().prefix, new_name if i == 0 else ''
-    dct[first_definition_leaf] = _insert_line_before(
-        *dct.get(first_definition_leaf,
-                 (first_definition_leaf.prefix, first_definition_leaf.value)),
+    extracted_prefix = _insert_line_before(
+        first_definition_leaf.prefix,
         new_name + ' = ' + extracted,
     )
-    file_to_node_changes = {path: _flatten_changes(dct)}
+    first_node_leaf = nodes[0].get_first_leaf()
+    if first_node_leaf is first_definition_leaf:
+        dct[nodes[0]] = extracted_prefix + new_name
+    else:
+        dct[nodes[0]] = first_node_leaf.prefix + new_name
+        dct[first_definition_leaf] = extracted_prefix + first_definition_leaf.value
+
+    for node in nodes[1:]:
+        dct[node] = ''
+    file_to_node_changes = {path: dct}
     return Refactoring(grammar, file_to_node_changes)
 
 
@@ -268,14 +274,10 @@ def _remove_indent_of_prefix(prefix):
     return ''.join(split_lines(prefix, keepends=True)[:-1])
 
 
-def _insert_line_before(prefix, value, code):
+def _insert_line_before(prefix, code):
     lines = split_lines(prefix, keepends=True)
     lines[-1:-1] = [indent_block(code, lines[-1]) + '\n']
-    return ''.join(lines), value
-
-
-def _flatten_changes(changes):
-    return {node: prefix + string for node, (prefix, string) in changes.items()}
+    return ''.join(lines)
 
 
 def _get_parent_definition(node):
