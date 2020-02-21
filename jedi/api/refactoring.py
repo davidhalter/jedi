@@ -310,11 +310,13 @@ def _remove_unwanted_expression_nodes(parent_node, pos, until_pos):
                     start_index -= 1
                 break
         for i, n in reversed(list(enumerate(nodes))):
-            if n.start_pos <= until_pos:
+            if n.start_pos < until_pos:
                 end_index = i
                 if n.type == 'operator':
                     end_index += 1
                 break
-        print(nodes, start_index, end_index)
-        return nodes[start_index:end_index + 1]
+        nodes = nodes[start_index:end_index + 1]
+        nodes[0:1] = _remove_unwanted_expression_nodes(nodes[0], pos, until_pos)
+        nodes[-1:] = _remove_unwanted_expression_nodes(nodes[-1], pos, until_pos)
+        return nodes
     return [parent_node]
