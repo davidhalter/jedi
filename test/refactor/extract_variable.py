@@ -226,3 +226,26 @@ yy = not foo or bar
 #? 4 text {'new_name': 'x', 'until_column': 7}
 x = not foo
 yy = x or bar
+# -------------------------------------------------- augassign
+yy = ()
+#? 6 text {'new_name': 'x', 'until_column': 10}
+yy += 3, 4
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+yy = ()
+#? 6 text {'new_name': 'x', 'until_column': 10}
+x = 3, 4
+yy += x
+# -------------------------------------------------- if-else
+#? 9 text {'new_name': 'x', 'until_column': 22}
+yy = foo(a if y else b)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 9 text {'new_name': 'x', 'until_column': 22}
+x = a if y else b
+yy = foo(x)
+# -------------------------------------------------- lambda
+#? 8 text {'new_name': 'x', 'until_column': 17}
+y = foo(lambda x: 3, 5)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 8 text {'new_name': 'x', 'until_column': 17}
+x = lambda x: 3
+y = foo(x, 5)

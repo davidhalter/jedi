@@ -16,8 +16,8 @@ _EXPRESSION_PARTS = (
 _EXTRACT_USE_PARENT = _EXPRESSION_PARTS + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
 _VARIABLE_EXCTRACTABLE = _EXPRESSION_PARTS + \
-    ('keyword atom name number string testlist_star_expr test_list test '
-     'lambdef lambdef_nocond').split()
+    ('atom testlist_star_expr testlist test lambdef lambdef_nocond '
+     'keyword name number string fstring').split()
 
 
 class ChangedFile(object):
@@ -261,12 +261,16 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
 
         nodes = _remove_unwanted_expression_nodes(parent_node, pos, until_pos)
 
+    debug.dbg('Extracting nodes: %s', nodes)
+
     if any(node.type == 'name' and node.is_definition() for node in nodes):
         raise RefactoringError('Cannot extract a name that defines something')
-    debug.dbg('Extracting nodes: %s', nodes)
+
     if nodes[0].type not in _VARIABLE_EXCTRACTABLE:
         raise RefactoringError('Cannot extract a "%s"' % nodes[0].type)
 
+    # Now try to replace the nodes found with a variable and move the code
+    # before the current statement.
     definition = _get_parent_definition(nodes[0])
     first_definition_leaf = definition.get_first_leaf()
 
