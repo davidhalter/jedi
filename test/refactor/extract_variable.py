@@ -50,13 +50,13 @@ def test():
 def test(p1):
     return
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a definition of a name
+Cannot extract a name that defines something
 # -------------------------------------------------- for-param-error-2
 #? 12 error {'new_name': 'x'}
 def test(p1= 3):
     return
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a param
+Cannot extract a "param"
 # -------------------------------------------------- for-param-1
 #? 12 text {'new_name': 'x'}
 def test(p1=20):
@@ -97,12 +97,12 @@ class Foo(x):
 #? 12 error {'new_name': 'x'}
 def x(): pass
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a keyword
+Cannot extract a "keyword"
 # -------------------------------------------------- keyword-continue
 #? 5 error {'new_name': 'x'}
 continue
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a keyword
+Cannot extract a "keyword"
 # -------------------------------------------------- keyword-None
 if 1:
     #? 4 text {'new_name': 'x'}
@@ -196,3 +196,26 @@ z = (y+1*2+3)
 #? 9 text {'new_name': 'x', 'until_column': 13}
 x = (y+1*2+3)
 z = x
+# -------------------------------------------------- extract-weird-1
+#? 0 error {'new_name': 'x', 'until_column': 7}
+foo = 3
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a "expr_stmt"
+# -------------------------------------------------- extract-weird-2
+#? 0 error {'new_name': 'x', 'until_column': 5}
+def x():
+    foo = 3
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a "funcdef"
+# -------------------------------------------------- extract-weird-3
+def x():
+#? 4 error {'new_name': 'x', 'until_column': 8}
+    if 1:
+        pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a "if_stmt"
+# -------------------------------------------------- extract-weird-4
+#? 4 error {'new_name': 'x', 'until_column': 7}
+x = foo = 4
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Cannot extract a name that defines something

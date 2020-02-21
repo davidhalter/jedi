@@ -9,12 +9,14 @@ from jedi.api.exceptions import RefactoringError
 from jedi.common.utils import indent_block
 
 _EXPRESSION_PARTS = (
-    'or_test and_test not_test comparison'
-    'xor_expr and_expr shift_expr arith_expr term factor power atom_expr '
+    'or_test and_test not_test comparison '
+    'expr xor_expr and_expr shift_expr arith_expr term factor power atom_expr'
 ).split()
 _EXTRACT_USE_PARENT = _EXPRESSION_PARTS + ['trailer']
 _DEFINITION_SCOPES = ('suite', 'file_input')
-_NON_EXCTRACABLE = ('param',)
+_VARIABLE_EXCTRACTABLE = _EXPRESSION_PARTS + \
+    ('keyword atom name number string testlist_star_expr test_list test '
+     'lambdef lambdef_nocond').split()
 
 
 class ChangedFile(object):
@@ -245,10 +247,11 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
 
         nodes = _remove_unwanted_expression_nodes(parent_node, pos, until_pos)
     if any(node.type == 'name' and node.is_definition() for node in nodes):
-        raise RefactoringError('Cannot extract a definition of a name')
-    if any(node.type in _NON_EXCTRACABLE for node in nodes) \
+        raise RefactoringError('Cannot extract a name that defines something')
+    if nodes[0].type not in _VARIABLE_EXCTRACTABLE \
             or nodes[0].type == 'keyword' and nodes[0].value not in ('None', 'True', 'False'):
-        raise RefactoringError('Cannot extract a %s' % node.type)
+        print(nodes)
+        raise RefactoringError('Cannot extract a "%s"' % nodes[0].type)
 
     definition = _get_parent_definition(nodes[0])
     first_definition_leaf = definition.get_first_leaf()
