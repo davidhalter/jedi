@@ -147,10 +147,10 @@ y +  1, 3
 #? 1 text {'new_name': 'x', 'until_column': 1}
 x = y
 x +  1, 3
-# -------------------------------------------------- range-5
-#? 0 text {'new_name': 'x', 'until_column': 1}
-y +  1, 3
+# -------------------------------------------------- addition-1
+#? 4 text {'new_name': 'x', 'until_column': 9}
+z = y + 1 + 2+ 3, 3
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-#? 0 text {'new_name': 'x', 'until_column': 1}
-x = y
-x +  1, 3
+#? 4 text {'new_name': 'x', 'until_column': 9}
+x = y + 1
+z = x + 2+ 3, 3
