@@ -555,8 +555,8 @@ class Script(object):
     @validate_line_column
     def extract_variable(self, line=None, column=None, **kwargs):
         """
-        :param new_name: The variable under the cursor will be renamed to this
-            string.
+        :param new_name: The expression under the cursor will be renamed to
+            this string.
         :rtype: :class:`refactoring.Refactoring`
         """
         return self._extract_variable(line, column, **kwargs)  # Python 2...
@@ -574,14 +574,26 @@ class Script(object):
             self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)
 
     @no_py2_support
-    @validate_line_column
-    def extract_function(self, line=None, column=None, **kwargs):
+    def extract_function(self, line, column, **kwargs):
         """
+        :param new_name: The statements under the cursor will be renamed to
+            this string.
+        :rtype: :class:`refactoring.Refactoring`
         """
-        return self._extract_method(line, column, **kwargs)  # Python 2...
+        return self._extract_function(line, column, **kwargs)  # Python 2...
 
     def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
-        raise NotImplementedError
+        if until_line is None and until_column is None:
+            until_pos = None
+        else:
+            if until_line is None:
+                until_line = line
+            if until_line is None:
+                raise TypeError('If you provide until_line you have to provide until_column')
+            until_pos = until_line, until_column
+        return refactoring.extract_function(
+            self._inference_state, self.path, self._module_node, new_name,
+            (line, column), until_pos)
 
     @no_py2_support
     def inline(self, line=None, column=None):

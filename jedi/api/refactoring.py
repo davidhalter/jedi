@@ -222,7 +222,22 @@ def inline(grammar, names):
     return Refactoring(grammar, file_to_node_changes)
 
 
-def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
+def extract_variable(grammar, path, module_node, name, pos, until_pos):
+    nodes = _find_nodes(module_node, pos, until_pos)
+    debug.dbg('Extracting nodes: %s', nodes)
+
+    if any(node.type == 'name' and node.is_definition() for node in nodes):
+        raise RefactoringError('Cannot extract a name that defines something')
+
+    if nodes[0].type not in _VARIABLE_EXCTRACTABLE:
+        raise RefactoringError('Cannot extract a "%s"' % nodes[0].type)
+
+    generated_code = name + ' = ' + _expression_nodes_to_string(nodes)
+    file_to_node_changes = {path: _replace(nodes, name, generated_code)}
+    return Refactoring(grammar, file_to_node_changes)
+
+
+def _find_nodes(module_node, pos, until_pos):
     start_node = module_node.get_leaf_for_position(pos, include_prefixes=True)
 
     if until_pos is None:
@@ -260,37 +275,34 @@ def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
             parent_node = parent_node.parent
 
         nodes = _remove_unwanted_expression_nodes(parent_node, pos, until_pos)
+    return nodes
 
-    debug.dbg('Extracting nodes: %s', nodes)
 
-    if any(node.type == 'name' and node.is_definition() for node in nodes):
-        raise RefactoringError('Cannot extract a name that defines something')
-
-    if nodes[0].type not in _VARIABLE_EXCTRACTABLE:
-        raise RefactoringError('Cannot extract a "%s"' % nodes[0].type)
-
+def _replace(nodes, expression_replacement, extracted):
     # Now try to replace the nodes found with a variable and move the code
     # before the current statement.
     definition = _get_parent_definition(nodes[0])
     first_definition_leaf = definition.get_first_leaf()
 
-    dct = {}
-    extracted = ''.join(n.get_code(include_prefix=i != 0) for i, n in enumerate(nodes))
+    replacement_dct = {}
     extracted_prefix = _insert_line_before(
         first_definition_leaf.prefix,
-        new_name + ' = ' + extracted,
+        extracted,
     )
     first_node_leaf = nodes[0].get_first_leaf()
     if first_node_leaf is first_definition_leaf:
-        dct[nodes[0]] = extracted_prefix + new_name
+        replacement_dct[nodes[0]] = extracted_prefix + expression_replacement
     else:
-        dct[nodes[0]] = first_node_leaf.prefix + new_name
-        dct[first_definition_leaf] = extracted_prefix + first_definition_leaf.value
+        replacement_dct[nodes[0]] = first_node_leaf.prefix + expression_replacement
+        replacement_dct[first_definition_leaf] = extracted_prefix + first_definition_leaf.value
 
     for node in nodes[1:]:
-        dct[node] = ''
-    file_to_node_changes = {path: dct}
-    return Refactoring(grammar, file_to_node_changes)
+        replacement_dct[node] = ''
+    return replacement_dct
+
+
+def _expression_nodes_to_string(nodes):
+    return ''.join(n.get_code(include_prefix=i != 0) for i, n in enumerate(nodes))
 
 
 def _remove_indent_of_prefix(prefix):
@@ -298,6 +310,10 @@ def _remove_indent_of_prefix(prefix):
     Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
     """
     return ''.join(split_lines(prefix, keepends=True)[:-1])
+
+
+def _get_indentation(node):
+    return split_lines(node.get_first_leaf().prefix)[-1]
 
 
 def _insert_line_before(prefix, code):
@@ -353,3 +369,49 @@ def _remove_unwanted_expression_nodes(parent_node, pos, until_pos):
 def _is_not_extractable_syntax(node):
     return node.type == 'operator' \
         or node.type == 'keyword' and node.value not in ('None', 'True', 'False')
+
+
+def extract_function(inference_state, path, module_node, name, pos, until_pos):
+    # 1. extract expression
+    is_class_method = False
+    is_method = False
+    is_expression = True
+    class_indentation = ''
+    # 2. extract statements
+    nodes = _find_nodes(module_node, pos, until_pos)
+    return_variables = []
+    params = _find_non_global_names(nodes)
+
+    dct = {}
+    # Find variables
+    # Is a class method / method
+    if is_expression:
+        code_block = 'return ' + _expression_nodes_to_string(nodes)
+    else:
+        raise 1
+        output_var_str = ', '.join(return_variables)
+        code_block += '\nreturn ' + output_var_str
+
+    function_call = '%s(%s)' % (name, ', '.join(params))
+    decorator = ''
+    if is_class_method:
+        decorator = '@classmethod\n'
+    function_code = '%sdef %s:\n%s\n\n' % (decorator, function_call, indent_block(code_block))
+
+    if is_method:
+        function_code = indent_block(function_code, indentation=class_indentation)
+
+    if is_expression:
+        replacement = function_call
+    else:
+        replacement = _get_indentation(nodes[0]) + output_var_str + ' = ' + function_call
+
+    dct[nodes[0]] = replacement
+    for node in nodes[1:]:
+        dct[node] = ''
+    file_to_node_changes = {path: _replace(nodes, replacement, function_code)}
+    return Refactoring(inference_state.grammar, file_to_node_changes)
+
+
+def _find_non_global_names(nodes):
+    return []
