@@ -5,6 +5,7 @@ import difflib
 
 from parso import split_lines
 
+from jedi import debug
 from jedi.api.exceptions import RefactoringError
 from jedi.common.utils import indent_block
 
@@ -222,35 +223,48 @@ def inline(grammar, names):
 
 
 def extract_variable(grammar, path, module_node, new_name, pos, until_pos):
-    start_leaf = module_node.get_leaf_for_position(pos, include_prefixes=True)
-    if start_leaf.type == 'operator':
-        next_leaf = start_leaf.get_next_leaf()
-        if next_leaf is not None and next_leaf.start_pos == pos:
-            start_leaf = next_leaf
+    start_node = module_node.get_leaf_for_position(pos, include_prefixes=True)
+
     if until_pos is None:
-        node = start_leaf
-        if node.type == 'operator':
-            node = node.parent
-        while node.parent.type in _EXTRACT_USE_PARENT:
-            node = node.parent
-        start_leaf
-        nodes = [node]
+        if start_node.type == 'operator':
+            next_leaf = start_node.get_next_leaf()
+            if next_leaf is not None and next_leaf.start_pos == pos:
+                start_node = next_leaf
+
+        if _is_not_extractable_syntax(start_node):
+            start_node = start_node.parent
+
+        while start_node.parent.type in _EXTRACT_USE_PARENT:
+            start_node = start_node.parent
+        nodes = [start_node]
     else:
+        # Get the next leaf if we are at the end of a leaf
+        if start_node.end_pos == pos:
+            next_leaf = start_node.get_next_leaf()
+            if next_leaf is not None:
+                start_node = next_leaf
+
+        # Some syntax is not exactable, just use its parent
+        if _is_not_extractable_syntax(start_node):
+            start_node = start_node.parent
+
+        # Find the end
         end_leaf = module_node.get_leaf_for_position(until_pos, include_prefixes=True)
         if end_leaf.start_pos > until_pos:
             end_leaf = end_leaf.get_previous_leaf()
             if end_leaf is None:
                 raise RefactoringError('Cannot extract anything from that')
-        parent_node = start_leaf
+
+        parent_node = start_node
         while parent_node.end_pos < end_leaf.end_pos:
             parent_node = parent_node.parent
 
         nodes = _remove_unwanted_expression_nodes(parent_node, pos, until_pos)
+
     if any(node.type == 'name' and node.is_definition() for node in nodes):
         raise RefactoringError('Cannot extract a name that defines something')
-    if nodes[0].type not in _VARIABLE_EXCTRACTABLE \
-            or nodes[0].type == 'keyword' and nodes[0].value not in ('None', 'True', 'False'):
-        print(nodes)
+    debug.dbg('Extracting nodes: %s', nodes)
+    if nodes[0].type not in _VARIABLE_EXCTRACTABLE:
         raise RefactoringError('Cannot extract a "%s"' % nodes[0].type)
 
     definition = _get_parent_definition(nodes[0])
@@ -317,9 +331,21 @@ def _remove_unwanted_expression_nodes(parent_node, pos, until_pos):
                 end_index = i
                 if n.type == 'operator':
                     end_index += 1
+
+                # Something like `not foo or bar` should not be cut after not
+                for n in nodes[i:]:
+                    if _is_not_extractable_syntax(n):
+                        end_index += 1
+                    else:
+                        break
                 break
         nodes = nodes[start_index:end_index + 1]
         nodes[0:1] = _remove_unwanted_expression_nodes(nodes[0], pos, until_pos)
         nodes[-1:] = _remove_unwanted_expression_nodes(nodes[-1], pos, until_pos)
         return nodes
     return [parent_node]
+
+
+def _is_not_extractable_syntax(node):
+    return node.type == 'operator' \
+        or node.type == 'keyword' and node.value not in ('None', 'True', 'False')

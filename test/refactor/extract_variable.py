@@ -97,12 +97,12 @@ class Foo(x):
 #? 12 error {'new_name': 'x'}
 def x(): pass
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a "keyword"
+Cannot extract a "simple_stmt"
 # -------------------------------------------------- keyword-continue
 #? 5 error {'new_name': 'x'}
 continue
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot extract a "keyword"
+Cannot extract a "simple_stmt"
 # -------------------------------------------------- keyword-None
 if 1:
     #? 4 text {'new_name': 'x'}
@@ -219,3 +219,10 @@ Cannot extract a "if_stmt"
 x = foo = 4
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot extract a name that defines something
+# -------------------------------------------------- keyword-None
+#? 4 text {'new_name': 'x', 'until_column': 7}
+yy = not foo or bar
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 4 text {'new_name': 'x', 'until_column': 7}
+x = not foo
+yy = x or bar
