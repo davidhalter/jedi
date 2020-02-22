@@ -592,8 +592,9 @@ class Script(object):
                 raise TypeError('If you provide until_line you have to provide until_column')
             until_pos = until_line, until_column
         return refactoring.extract_function(
-            self._inference_state, self.path, self._module_node, new_name,
-            (line, column), until_pos)
+            self._inference_state, self.path, self._get_module_context(),
+            new_name, (line, column), until_pos
+        )
 
     @no_py2_support
     def inline(self, line=None, column=None):

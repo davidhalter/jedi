@@ -18,3 +18,29 @@ def ab():
 
 
 ab()
+# -------------------------------------------------- in-function-1
+def f(x):
+#? 11 text {'new_name': 'ab'}
+    return x + 1 * 2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def ab():
+    return x + 1 * 2
+
+
+def f(x):
+#? 11 text {'new_name': 'ab'}
+    return ab()
+# -------------------------------------------------- in-function-with-dec
+@classmethod
+def f(x):
+#? 11 text {'new_name': 'ab'}
+    return x + 1 * 2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def ab():
+    return x + 1 * 2
+
+
+@classmethod
+def f(x):
+#? 11 text {'new_name': 'ab'}
+    return ab()
