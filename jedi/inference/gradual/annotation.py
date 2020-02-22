@@ -364,7 +364,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         )
                     )
     elif isinstance(annotation_value, GenericClass):
-        if annotation_name == 'Iterable':
+        if annotation_name == 'Iterable' and not is_class_value:
             given = annotation_value.get_generics()
             if given:
                 for nested_annotation_value in given[0]:
@@ -375,32 +375,52 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             value_set.merge_types_of_iterate(),
                         )
                     )
-        elif annotation_name == 'Mapping':
-            given = annotation_value.get_generics()
-            if len(given) == 2:
-                for value in value_set:
-                    try:
-                        method = value.get_mapping_item_values
-                    except AttributeError:
-                        continue
-                    key_values, value_values = method()
+        else:
+            # Note: we need to handle the MRO _in order_, so we need to extract
+            # the elements from the set first, then handle them, even if we put
+            # them back in a set afterwards.
+            for element in value_set:
+                if not hasattr(element, 'is_instance'):
+                    continue
 
-                    for nested_annotation_value in given[0]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                key_values,
-                            )
-                        )
-                    for nested_annotation_value in given[1]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                value_values,
-                            )
-                        )
+                if element.is_instance():
+                    py_class = element.py__class__()
+                else:
+                    py_class = element
+
+                # TODO: what about things like 'str', which likely aren't
+                # generic, but do implement 'Iterable[str]'?
+                if not isinstance(py_class, DefineGenericBase):
+                    continue
+
+                for klass in py_class.py__mro__():
+                    class_name = klass.py__name__()
+                    if annotation_name == class_name:
+                        annotation_generics = annotation_value.get_generics()
+                        actual_generics = klass.get_generics()
+
+                        if len(annotation_generics) != len(actual_generics):
+                            # TODO: might there be other matches elsewhere in the MRO?
+                            # TODO: what happens if _some_ of the generics are realised at
+                            #       this point, but not all (e.g: class `Foo(Dict[str, T])`)?
+                            break
+
+                        for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+                            for nested_annotation_value in annotation_generics_set:
+                                _merge_type_var_dicts(
+                                    type_var_dict,
+                                    _infer_type_vars(
+                                        nested_annotation_value,
+                                        actual_generic_set,
+                                        # This is a note to ourselves that we
+                                        # have already converted the instance
+                                        # representation to its class.
+                                        is_class_value=True,
+                                    ),
+                                )
+
+                        break
+
     return type_var_dict
 
 
