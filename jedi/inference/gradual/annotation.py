@@ -363,6 +363,35 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             value_set.execute_annotation(),
                         )
                     )
+        elif annotation_name == 'Tuple':
+            # TODO: check that this works both for fixed and variadic tuples
+            # (and maybe for combiantions of those).
+            # TODO: this logic is pretty similar to the general logic below, can
+            # we combine them?
+
+            for element in value_set:
+                py_class = element.py__class__()
+                if not isinstance(py_class, GenericClass):
+                    py_class = element
+
+                if not isinstance(py_class, DefineGenericBase):
+                    continue
+
+                annotation_generics = annotation_value.get_generics()
+                actual_generics = py_class.get_generics()
+                for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+                    for nested_annotation_value in annotation_generics_set:
+                        _merge_type_var_dicts(
+                            type_var_dict,
+                            _infer_type_vars(
+                                nested_annotation_value,
+                                actual_generic_set,
+                                # This is a note to ourselves that we
+                                # have already converted the instance
+                                # representation to its class.
+                                is_class_value=True,
+                            ),
+                        )
     elif isinstance(annotation_value, GenericClass):
         if annotation_name == 'Iterable' and not is_class_value:
             given = annotation_value.get_generics()
