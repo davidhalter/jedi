@@ -1,5 +1,14 @@
 # python >= 3.4
-from typing import Iterable, List, Type, TypeVar, Dict, Mapping, Generic
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    Type,
+    TypeVar,
+)
 
 K = TypeVar('K')
 T = TypeVar('T')
@@ -37,6 +46,25 @@ x1
 for b in list_type_t_to_list_t(list_of_int_type):
     #? int()
     b
+
+
+def foo(x: T) -> T:
+    return x
+
+
+list_of_funcs = [foo]  # type: List[Callable[[T], T]]
+
+def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Callable[[Type[T]], T]]:
+    def adapt(func: Callable[[T], T]) -> Callable[[Type[T]], T]:
+        def wrapper(typ: Type[T]) -> T:
+            return func(typ())
+        return wrapper
+    return [adapt(x) for x in the_list]
+
+
+for b in list_func_t_to_list_func_type_t(list_of_funcs):
+    #? int()
+    b(int)
 
 
 mapping_int_str = {42: 'a'}  # type: Dict[int, str]
