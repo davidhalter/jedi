@@ -129,6 +129,9 @@ class AbstractContext(object):
     def is_compiled(self):
         return False
 
+    def is_bound_method(self):
+        return False
+
     @abstractmethod
     def py__name__(self):
         raise NotImplementedError
@@ -189,6 +192,9 @@ class ValueContext(AbstractContext):
 
     def is_compiled(self):
         return self._value.is_compiled()
+
+    def is_bound_method(self):
+        return self._value.is_bound_method()
 
     def py__name__(self):
         return self._value.py__name__()

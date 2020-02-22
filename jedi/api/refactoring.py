@@ -251,6 +251,7 @@ def _find_nodes(module_node, pos, until_pos):
 
         while start_node.parent.type in _EXTRACT_USE_PARENT:
             start_node = start_node.parent
+
         nodes = [start_node]
     else:
         # Get the next leaf if we are at the end of a leaf
@@ -275,6 +276,12 @@ def _find_nodes(module_node, pos, until_pos):
             parent_node = parent_node.parent
 
         nodes = _remove_unwanted_expression_nodes(parent_node, pos, until_pos)
+
+    # If the user marks just a return statement, we return the expression
+    # instead of the whole statement, because the user obviously wants to
+    # extract that part.
+    if len(nodes) == 1 and start_node.type in ('return_stmt', 'yield_expr'):
+        return [nodes[0].children[1]]
     return nodes
 
 
@@ -373,12 +380,9 @@ def _is_not_extractable_syntax(node):
 
 
 def extract_function(inference_state, path, module_context, name, pos, until_pos):
-    # 1. extract expression
     is_class_method = False
     is_method = False
     is_expression = True
-    class_indentation = ''
-    # 2. extract statements
     nodes = _find_nodes(module_context.tree_node, pos, until_pos)
     return_variables = []
     params = _find_non_global_names(nodes)
@@ -395,20 +399,20 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
             node = node.parent
         insert_before_leaf = node.get_first_leaf()
     if is_expression:
-        code_block = 'return ' + _expression_nodes_to_string(nodes)
+        code_block = 'return ' + _expression_nodes_to_string(nodes) + '\n'
     else:
         raise 1
         output_var_str = ', '.join(return_variables)
-        code_block += '\nreturn ' + output_var_str
+        code_block += '\nreturn ' + output_var_str + '\n'
+
+    if not context.is_bound_method():
+        code_block += '\n'
 
     function_call = '%s(%s)' % (name, ', '.join(params))
     decorator = ''
     if is_class_method:
         decorator = '@classmethod\n'
-    function_code = '%sdef %s:\n%s\n\n' % (decorator, function_call, indent_block(code_block))
-
-    if is_method:
-        function_code = indent_block(function_code, indentation=class_indentation)
+    function_code = '%sdef %s:\n%s' % (decorator, function_call, indent_block(code_block))
 
     if is_expression:
         replacement = function_call

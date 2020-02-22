@@ -44,3 +44,20 @@ def ab():
 def f(x):
 #? 11 text {'new_name': 'ab'}
     return ab()
+# -------------------------------------------------- in-method-1
+class X:
+    def z(self): pass
+
+    def f(x):
+        #? 11 text {'new_name': 'ab'}
+        return x + 1 * 2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+class X:
+    def z(self): pass
+
+    def ab():
+        return x + 1 * 2
+
+    def f(x):
+        #? 11 text {'new_name': 'ab'}
+        return ab()
