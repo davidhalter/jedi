@@ -372,7 +372,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         type_var_dict,
                         _infer_type_vars(
                             nested_annotation_value,
-                            value_set.merge_types_of_iterate()
+                            value_set.merge_types_of_iterate(),
                         )
                     )
         elif name == 'Mapping':
