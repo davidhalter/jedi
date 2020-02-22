@@ -343,15 +343,36 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
         if annotation_name == 'Type':
             given = annotation_value.get_generics()
             if given:
-                for nested_annotation_value in given[0]:
-                    _merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set,
-                            is_class_value=True,
+                if is_class_value:
+                    for element in value_set:
+                        element_name = element.py__name__()
+                        if annotation_name == element_name:
+                            annotation_generics = annotation_value.get_generics()
+                            actual_generics = element.get_generics()
+
+                            for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+                                for nested_annotation_value in annotation_generics_set:
+                                    _merge_type_var_dicts(
+                                        type_var_dict,
+                                        _infer_type_vars(
+                                            nested_annotation_value,
+                                            actual_generic_set,
+                                            # This is a note to ourselves that we
+                                            # have already converted the instance
+                                            # representation to its class.
+                                            is_class_value=True,
+                                        ),
+                                    )
+                else:
+                    for nested_annotation_value in given[0]:
+                        _merge_type_var_dicts(
+                            type_var_dict,
+                            _infer_type_vars(
+                                nested_annotation_value,
+                                value_set,
+                                is_class_value=True,
+                            )
                         )
-                    )
         elif annotation_name == 'Callable':
             given = annotation_value.get_generics()
             if len(given) == 2:
