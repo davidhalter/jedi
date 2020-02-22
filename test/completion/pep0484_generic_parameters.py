@@ -8,6 +8,7 @@ from typing import (
     Mapping,
     Type,
     TypeVar,
+    Union,
 )
 
 K = TypeVar('K')
@@ -17,6 +18,7 @@ V = TypeVar('V')
 
 
 list_of_ints = [42]  # type: List[int]
+list_of_ints_and_strs = [42, 'abc']  # type: List[Union[int, str]]
 
 # Test that simple parameters are handled
 def list_t_to_list_t(the_list: List[T]) -> List[T]:
@@ -29,6 +31,15 @@ x0
 for a in list_t_to_list_t(list_of_ints):
     #? int()
     a
+
+# Test that unions are handled
+x2 = list_t_to_list_t(list_of_ints_and_strs)[0]
+#? int() str()
+x2
+
+for z in list_t_to_list_t(list_of_ints_and_strs):
+    #? int() str()
+    z
 
 
 list_of_int_type = [int]  # type: List[Type[int]]
