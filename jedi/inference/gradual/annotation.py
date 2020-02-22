@@ -438,14 +438,12 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 else:
                     py_class = element
 
-                # TODO: what about things like 'str', which likely aren't
-                # generic, but do implement 'Iterable[str]'?
-                if not isinstance(py_class, DefineGenericBase):
-                    continue
-
                 for klass in py_class.py__mro__():
                     class_name = klass.py__name__()
                     if annotation_name == class_name:
+                        if not isinstance(klass, DefineGenericBase):
+                            continue
+
                         annotation_generics = annotation_value.get_generics()
                         actual_generics = klass.get_generics()
 

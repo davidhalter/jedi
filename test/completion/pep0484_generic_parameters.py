@@ -86,6 +86,14 @@ def first(iterable: Iterable[T]) -> T:
 #? int()
 first(mapping_int_str)
 
+# Test inference of str as an iterable of str.
+#? str()
+first("abc")
+
+some_str = NotImplemented  # type: str
+#? str()
+first(some_str)
+
 
 # Test that the right type is chosen when a partially realised mapping is expected
 def values(mapping: Mapping[int, T]) -> List[T]:
@@ -177,3 +185,57 @@ x8
 for x9 in unwrap_custom2(custom_instance_list_int):
     #? int()
     x9
+
+
+# Test that classes which have gneeric parents but are not generic themselves
+# are still inferred correctly.
+class Specialised(Mapping[int, str]):
+    pass
+
+
+specialised_instance = NotImplemented  # type: Specialised
+
+#? int()
+first(specialised_instance)
+
+#? str()
+values(specialised_instance)[0]
+
+
+# Test that unbound generics are inferred as much as possible
+class CustomPartialGeneric1(Mapping[str, T]):
+    pass
+
+
+custom_partial1_instance = NotImplemented  # type: CustomPartialGeneric1[int]
+
+#? str()
+first(custom_partial1_instance)
+
+
+custom_partial1_unbound_instance = NotImplemented  # type: CustomPartialGeneric1
+
+#? str()
+first(custom_partial1_unbound_instance)
+
+
+class CustomPartialGeneric2(Mapping[T, str]):
+    pass
+
+
+custom_partial2_instance = NotImplemented  # type: CustomPartialGeneric2[int]
+
+#? int()
+first(custom_partial2_instance)
+
+#? str()
+values(custom_partial2_instance)[0]
+
+
+custom_partial2_unbound_instance = NotImplemented  # type: CustomPartialGeneric2
+
+#? []
+first(custom_partial2_unbound_instance)
+
+#? str()
+values(custom_partial2_unbound_instance)[0]
