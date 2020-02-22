@@ -61,3 +61,19 @@ class X:
     def f(x):
         #? 11 text {'new_name': 'ab'}
         return ab()
+# -------------------------------------------------- in-classmethod-1
+class X:
+    @classmethod
+    def f(x):
+        #? 16 text {'new_name': 'ab'}
+        return 25
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+class X:
+    @classmethod
+    def ab():
+        return 25
+
+    @classmethod
+    def f(x):
+        #? 16 text {'new_name': 'ab'}
+        return x.ab()
