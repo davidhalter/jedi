@@ -447,12 +447,6 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         annotation_generics = annotation_value.get_generics()
                         actual_generics = klass.get_generics()
 
-                        if len(annotation_generics) != len(actual_generics):
-                            # TODO: might there be other matches elsewhere in the MRO?
-                            # TODO: what happens if _some_ of the generics are realised at
-                            #       this point, but not all (e.g: class `Foo(Dict[str, T])`)?
-                            break
-
                         for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
                             for nested_annotation_value in annotation_generics_set:
                                 _merge_type_var_dicts(
