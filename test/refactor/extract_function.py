@@ -127,3 +127,17 @@ class Ya():
     a = 3
     #? 11 text {'new_name': 'f'}
     c = f(a)
+# -------------------------------------------------- in-closure
+def x(z):
+    def y(x):
+        #? 15 text {'new_name': 'f'}
+        return -x * z
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def f(x, z):
+    return -x * z
+
+
+def x(z):
+    def y(x):
+        #? 15 text {'new_name': 'f'}
+        return f(x, z)
