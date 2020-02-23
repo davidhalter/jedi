@@ -389,7 +389,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
             # we combine them?
 
             for element in value_set:
-                py_class = element.py__class__()
+                py_class = element.get_annotated_class_object()
                 if not isinstance(py_class, GenericClass):
                     py_class = element
 
@@ -444,7 +444,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                     continue
 
                 if element.is_instance():
-                    py_class = element.py__class__()
+                    py_class = element.get_annotated_class_object()
                 else:
                     py_class = element
 

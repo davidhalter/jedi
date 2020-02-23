@@ -180,6 +180,16 @@ for x7 in unwrap_custom(list_custom_instances):
     x7
 
 
+for xc in unwrap_custom([CustomGeneric(s) for s in 'abc']):
+    #? str()
+    xc
+
+
+for xg in unwrap_custom(CustomGeneric(s) for s in 'abc'):
+    #? str()
+    xg
+
+
 # Test extraction of type from type parameer nested within a custom generic type
 custom_instance_list_int = CustomGeneric([42])  # type: CustomGeneric[List[int]]
 
