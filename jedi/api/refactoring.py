@@ -384,12 +384,12 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     is_expression = True
     nodes = _find_nodes(module_context.tree_node, pos, until_pos)
     return_variables = []
-    params = _find_non_global_names(nodes)
+    context = module_context.create_context(nodes[0])
+    params = list(_find_non_global_names(context, nodes))
 
     dct = {}
     # Find variables
     # Is a class method / method
-    context = module_context.create_context(nodes[0])
     if context.is_module():
         insert_before_leaf = None  # Leaf will be determined later
     else:
@@ -424,8 +424,16 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     return Refactoring(inference_state.grammar, file_to_node_changes)
 
 
-def _find_non_global_names(nodes):
-    return []
+def _find_non_global_names(context, nodes):
+    for node in nodes:
+        try:
+            children = node.children
+        except AttributeError:
+            if node.type == 'name':
+                yield node.value
+        else:
+            for x in _find_non_global_names(context, children):  # Python 2...
+                yield x
 
 
 def _get_code_insertion_node(context):

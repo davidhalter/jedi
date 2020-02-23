@@ -3,11 +3,11 @@
 test(100, (30 + b, c) + 1)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 #? 11 text {'new_name': 'a'}
-def a():
+def a(b):
     return 30 + b
 
 
-test(100, (a(), c) + 1)
+test(100, (a(b), c) + 1)
 # -------------------------------------------------- in-module-2
 #? 0 text {'new_name': 'ab'}
 100 + 1 * 2
@@ -23,27 +23,27 @@ def f(x):
 #? 11 text {'new_name': 'ab'}
     return x + 1 * 2
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-def ab():
+def ab(x):
     return x + 1 * 2
 
 
 def f(x):
 #? 11 text {'new_name': 'ab'}
-    return ab()
+    return ab(x)
 # -------------------------------------------------- in-function-with-dec
 @classmethod
 def f(x):
 #? 11 text {'new_name': 'ab'}
     return x + 1 * 2
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-def ab():
+def ab(x):
     return x + 1 * 2
 
 
 @classmethod
 def f(x):
 #? 11 text {'new_name': 'ab'}
-    return ab()
+    return ab(x)
 # -------------------------------------------------- in-method-1
 class X:
     def z(self): pass
@@ -55,12 +55,12 @@ class X:
 class X:
     def z(self): pass
 
-    def ab():
+    def ab(x):
         return x + 1 * 2
 
     def f(x):
         #? 11 text {'new_name': 'ab'}
-        return ab()
+        return ab(x)
 # -------------------------------------------------- in-classmethod-1
 class X:
     @classmethod
@@ -98,11 +98,11 @@ class Ya():
     #? 11 text {'new_name': 'f'}
     c = a + 2
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-def f():
+def f(a):
     return a + 2
 
 
 class Ya():
     a = 3
     #? 11 text {'new_name': 'f'}
-    c = f()
+    c = f(a)
