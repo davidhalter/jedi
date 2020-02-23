@@ -1,5 +1,5 @@
 # python >= 3.4
-from typing import Any, Iterable, List, Tuple, TypeVar
+from typing import Any, Iterable, List, Sequence, Tuple, TypeVar, Union
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -14,6 +14,9 @@ typed_tuple_str = ('abc',)  # type: Tuple[str]
 untyped_tuple_str_int = ('abc', 4)
 typed_tuple_str_int = ('abc', 4)  # type: Tuple[str, int]
 
+variadic_tuple_str = ('abc',)  # type: Tuple[str, ...]
+variadic_tuple_str_int = ('abc', 4)  # type: Tuple[Union[str, int], ...]
+
 
 def untyped_passthrough(x):
     return x
@@ -26,6 +29,9 @@ def typed_tuple_generic_passthrough(x: Tuple[T]) -> Tuple[T]:
 
 def typed_multi_typed_tuple_generic_passthrough(x: Tuple[T, U]) -> Tuple[U, T]:
     return x[1], x[0]
+
+def typed_variadic_tuple_generic_passthrough(x: Tuple[T, ...]) -> Sequence[T]:
+    return x
 
 def typed_iterable_generic_passthrough(x: Iterable[T]) -> Iterable[T]:
     return x
@@ -85,6 +91,23 @@ out_typed = typed_multi_typed_tuple_generic_passthrough(typed_tuple_str_int)
 out_typed[0]
 #? str()
 out_typed[1]
+
+
+for j in typed_variadic_tuple_generic_passthrough(untyped_tuple_str_int):
+    #? str() int()
+    j
+
+for k in typed_variadic_tuple_generic_passthrough(typed_tuple_str_int):
+    #? str() int()
+    k
+
+for l in typed_variadic_tuple_generic_passthrough(variadic_tuple_str):
+    #? str()
+    l
+
+for m in typed_variadic_tuple_generic_passthrough(variadic_tuple_str_int):
+    #? str() int()
+    m
 
 
 for n in typed_fully_generic_passthrough(untyped_list_str):
