@@ -2,6 +2,7 @@
 from typing import Any, Iterable, List, Tuple, TypeVar
 
 T = TypeVar('T')
+U = TypeVar('U')
 TList = TypeVar('TList', bound=List[Any])
 
 untyped_list_str = ['abc', 'def']
@@ -9,6 +10,9 @@ typed_list_str = ['abc', 'def']  # type: List[str]
 
 untyped_tuple_str = ('abc',)
 typed_tuple_str = ('abc',)  # type: Tuple[str]
+
+untyped_tuple_str_int = ('abc', 4)
+typed_tuple_str_int = ('abc', 4)  # type: Tuple[str, int]
 
 
 def untyped_passthrough(x):
@@ -19,6 +23,9 @@ def typed_list_generic_passthrough(x: List[T]) -> List[T]:
 
 def typed_tuple_generic_passthrough(x: Tuple[T]) -> Tuple[T]:
     return x
+
+def typed_multi_typed_tuple_generic_passthrough(x: Tuple[T, U]) -> Tuple[U, T]:
+    return x[1], x[0]
 
 def typed_iterable_generic_passthrough(x: Iterable[T]) -> Iterable[T]:
     return x
@@ -64,6 +71,20 @@ for g in typed_tuple_generic_passthrough(untyped_tuple_str):
 for h in typed_tuple_generic_passthrough(typed_tuple_str):
     #? str()
     h
+
+
+out_untyped = typed_multi_typed_tuple_generic_passthrough(untyped_tuple_str_int)
+#? int()
+out_untyped[0]
+#? str()
+out_untyped[1]
+
+
+out_typed = typed_multi_typed_tuple_generic_passthrough(typed_tuple_str_int)
+#? int()
+out_typed[0]
+#? str()
+out_typed[1]
 
 
 for n in typed_fully_generic_passthrough(untyped_list_str):
