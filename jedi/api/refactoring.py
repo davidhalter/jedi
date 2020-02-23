@@ -393,9 +393,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     if context.is_module():
         insert_before_leaf = None  # Leaf will be determined later
     else:
-        node = context.tree_node
-        while node.parent.type in ('async_funcdef', 'decorated', 'async_stmt'):
-            node = node.parent
+        node = _get_code_insertion_node(context)
         insert_before_leaf = node.get_first_leaf()
     if is_expression:
         code_block = 'return ' + _expression_nodes_to_string(nodes) + '\n'
@@ -428,3 +426,14 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
 
 def _find_non_global_names(nodes):
     return []
+
+
+def _get_code_insertion_node(context):
+    node = context.tree_node
+    if not context.is_bound_method() or function_is_staticmethod(node):
+        while node.parent.type != 'file_input':
+            node = node.parent
+
+    while node.parent.type in ('async_funcdef', 'decorated', 'async_stmt'):
+        node = node.parent
+    return node

@@ -77,3 +77,18 @@ class X:
     def f(x):
         #? 16 text {'new_name': 'ab'}
         return x.ab()
+# -------------------------------------------------- in-staticmethod-1
+class X(int):
+    @staticmethod
+    def f(x):
+        #? 16 text {'new_name': 'ab'}
+        return 25 | 3
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def ab():
+    return 25 | 3
+
+class X(int):
+    @staticmethod
+    def f(x):
+        #? 16 text {'new_name': 'ab'}
+        return ab()
