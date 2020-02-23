@@ -48,19 +48,19 @@ def f(x):
 class X:
     def z(self): pass
 
-    def f(x):
+    def f(x, b):
         #? 11 text {'new_name': 'ab'}
-        return x + 1 * 2
+        return x + b * 2
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 class X:
     def z(self): pass
 
-    def ab(x):
-        return x + 1 * 2
+    def ab(x, b):
+        return x + b * 2
 
-    def f(x):
+    def f(x, b):
         #? 11 text {'new_name': 'ab'}
-        return ab(x)
+        return x.ab(b)
 # -------------------------------------------------- in-classmethod-1
 class X:
     @classmethod
