@@ -1,10 +1,12 @@
 # -------------------------------------------------- in-module-1
+glob = 3
 #? 11 text {'new_name': 'a'}
-test(100, (30 + b, c) + 1)
+test(100, (glob.a + b, c) + 1)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob = 3
 #? 11 text {'new_name': 'a'}
 def a(b):
-    return 30 + b
+    return glob.a + b
 
 
 test(100, (a(b), c) + 1)

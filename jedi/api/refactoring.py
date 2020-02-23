@@ -442,8 +442,16 @@ def _find_non_global_names(context, nodes):
             children = node.children
         except AttributeError:
             if node.type == 'name':
-                yield node.value
+                name_definitions = context.goto(node, node.start_pos)
+                if not name_definitions \
+                        or any(not n.parent_context.is_module() or n.api_type == 'param'
+                               for n in name_definitions):
+                    yield node.value
         else:
+            # We only want to check foo in foo.bar
+            if node.type == 'trailer' and node.children[0] == '.':
+                continue
+
             for x in _find_non_global_names(context, children):  # Python 2...
                 yield x
 
