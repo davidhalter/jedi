@@ -20,8 +20,7 @@ Run a specific operation
 
     ./sith.py run <operation> </path/to/source/file.py> <line> <col>
 
-Where operation is one of completions, goto_assignments, goto_definitions,
-usages, or call_signatures.
+Where operation is one of complete, goto, infer, get_references or get_signatures.
 
 Note: Line numbers start at 1; columns start at 0 (this is consistent with
 many text editors, including Emacs).
@@ -95,6 +94,7 @@ class TestCase(object):
             args = json.load(f)
         return cls(*args)
 
+    # Changing this? Also update the module docstring above.
     operations = ['complete', 'goto', 'infer', 'get_references', 'get_signatures']
 
     @classmethod
