@@ -63,6 +63,25 @@ class X:
     def f(x, b):
         #? 11 text {'new_name': 'ab'}
         return x.ab(b)
+# -------------------------------------------------- in-method-2
+glob1 = 1
+class X:
+    def g(self): pass
+
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab'}
+        return self.g() or self.f(b) ^ glob1 & b
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob1 = 1
+class X:
+    def g(self): pass
+
+    def ab(self, b):
+        return self.g() or self.f(b) ^ glob1 & b
+
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab'}
+        return self.ab(b)
 # -------------------------------------------------- in-classmethod-1
 class X:
     @classmethod
