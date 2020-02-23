@@ -92,3 +92,17 @@ class X(int):
     def f(x):
         #? 16 text {'new_name': 'ab'}
         return ab()
+# -------------------------------------------------- in-class-1
+class Ya():
+    a = 3
+    #? 11 text {'new_name': 'f'}
+    c = a + 2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def f():
+    return a + 2
+
+
+class Ya():
+    a = 3
+    #? 11 text {'new_name': 'f'}
+    c = f()
