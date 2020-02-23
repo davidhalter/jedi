@@ -82,6 +82,19 @@ class X:
     def f(self, b, c):
         #? 11 text {'new_name': 'ab'}
         return self.ab(b)
+# -------------------------------------------------- in-method-order
+class X:
+    def f(self, b, c):
+        #? 18 text {'new_name': 'b'}
+        return b | self.a
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+class X:
+    def b(self, b):
+        return b | self.a
+
+    def f(self, b, c):
+        #? 18 text {'new_name': 'b'}
+        return self.b(b)
 # -------------------------------------------------- in-classmethod-1
 class X:
     @classmethod
@@ -91,7 +104,7 @@ class X:
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 class X:
     @classmethod
-    def ab():
+    def ab(x):
         return 25
 
     @classmethod

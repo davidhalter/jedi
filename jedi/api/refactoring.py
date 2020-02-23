@@ -409,6 +409,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
             function_param_names = context.get_value().get_param_names()
             if len(function_param_names):
                 self_param = function_param_names[0].string_name
+                params = [p for p in params if p != self_param]
 
         if function_is_classmethod(context.tree_node):
             decorator = '@classmethod\n'
@@ -416,12 +417,15 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
         code_block += '\n'
 
     function_code = '%sdef %s(%s):\n%s' % (
-        decorator, name, ', '.join(params), indent_block(code_block)
+        decorator,
+        name,
+        ', '.join(params if self_param is None else [self_param] + params),
+        indent_block(code_block)
     )
 
     function_call = '%s(%s)' % (
         ('' if self_param is None else self_param + '.') + name,
-        ', '.join(p for p in params if p != self_param)
+        ', '.join(params)
     )
     if is_expression:
         replacement = function_call
