@@ -154,3 +154,18 @@ def x(z):
     def y(x):
         #? 15 text {'new_name': 'f'}
         return f(x, z)
+# -------------------------------------------------- with-range-1
+#? 0 text {'new_name': 'a', 'until_line': 4}
+v1 = 3
+v2 = 2
+x = test(v1 + v2 * v3)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 0 text {'new_name': 'a', 'until_line': 4}
+def a(test, v3):
+    v1 = 3
+    v2 = 2
+    x = test(v1 + v2 * v3)
+    return x
+
+
+a(test, v3)

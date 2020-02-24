@@ -567,8 +567,8 @@ class Script(object):
         else:
             if until_line is None:
                 until_line = line
-            if until_line is None:
-                raise TypeError('If you provide until_line you have to provide until_column')
+            if until_column is None:
+                until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
         return refactoring.extract_variable(
             self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)
@@ -588,8 +588,8 @@ class Script(object):
         else:
             if until_line is None:
                 until_line = line
-            if until_line is None:
-                raise TypeError('If you provide until_line you have to provide until_column')
+            if until_column is None:
+                until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
         return refactoring.extract_function(
             self._inference_state, self.path, self._get_module_context(),
