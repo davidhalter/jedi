@@ -159,6 +159,7 @@ def x(z):
 v1 = 3
 v2 = 2
 x = test(v1 + v2 * v3)
+
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 #? 0 text {'new_name': 'a', 'until_line': 4}
 def a(test, v3):
@@ -168,4 +169,25 @@ def a(test, v3):
     return x
 
 
-a(test, v3)
+x = a(test, v3)
+# -------------------------------------------------- with-range-2
+#? 2 text {'new_name': 'a', 'until_line': 6, 'until_column': 4}
+#foo
+v1 = 3
+v2 = 2
+x, y = test(v1 + v2 * v3)
+#raaaa
+y
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#? 2 text {'new_name': 'a', 'until_line': 6, 'until_column': 4}
+def a(test, v3):
+    #foo
+    v1 = 3
+    v2 = 2
+    x, y = test(v1 + v2 * v3)
+    #raaaa
+    return y
+
+
+y = a(test, v3)
+y
