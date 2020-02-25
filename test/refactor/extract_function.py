@@ -242,3 +242,36 @@ def x(v1):
     x, y = a(v1, v2, v3)
     #bar
     return x, y
+# -------------------------------------------------- with-range-func-2
+import os
+# comment1
+@dec
+# comment2
+def x(v1):
+    #? 2 text {'new_name': 'a', 'until_line': 11, 'until_column': 0}
+    #foo
+    v2 = 2
+    if 1:
+        x, y = os.listdir(v1 + v2 * v3)
+    #bar
+    return y
+x
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+import os
+# comment1
+def a(v1, v2, v3):
+    #foo
+    v2 = 2
+    if 1:
+        x, y = os.listdir(v1 + v2 * v3)
+    #bar
+    return y
+
+
+@dec
+# comment2
+def x(v1):
+    #? 2 text {'new_name': 'a', 'until_line': 11, 'until_column': 0}
+    y = a(v1, v2, v3)
+    return y
+x

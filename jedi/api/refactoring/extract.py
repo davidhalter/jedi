@@ -114,7 +114,11 @@ def _replace(nodes, expression_replacement, extracted, pos,
     if first_node_leaf is insert_before_leaf:
         replacement_dct[nodes[0]] = extracted_prefix + expression_replacement
     else:
-        replacement_dct[nodes[0]] = first_node_leaf.prefix + expression_replacement
+        if remaining_prefix is None:
+            p = first_node_leaf.prefix
+        else:
+            p = remaining_prefix + _get_indentation(nodes[0])
+        replacement_dct[nodes[0]] = p + expression_replacement
         replacement_dct[insert_before_leaf] = extracted_prefix + insert_before_leaf.value
 
     for node in nodes[1:]:
