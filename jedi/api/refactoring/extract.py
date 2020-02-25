@@ -210,7 +210,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     is_expression, _ = _is_expression_with_error(nodes)
     context = module_context.create_context(nodes[0])
     is_bound_method = context.is_bound_method()
-    params, return_variables = list(_find_inputs_and_outputs(context, nodes))
+    params, return_variables = list(_find_inputs_and_outputs(module_context, context, nodes))
 
     # Find variables
     # Is a class method / method
@@ -280,7 +280,22 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     return Refactoring(inference_state.grammar, file_to_node_changes)
 
 
-def _find_inputs_and_outputs(context, nodes):
+def _is_name_input(module_context, names, first, last):
+    for name in names:
+        if name.api_type == 'param' or not name.parent_context.is_module():
+            if name.get_root_context() is not module_context:
+                print('true')
+                return True
+            if name.start_pos is None or not (first <= name.start_pos < last):
+                print('true1', first, name.start_pos, last)
+                return True
+    return False
+
+
+def _find_inputs_and_outputs(module_context, context, nodes):
+    first = nodes[0].start_pos
+    last = nodes[-1].end_pos
+
     inputs = []
     outputs = []
     for name in _find_non_global_names(nodes):
@@ -291,8 +306,7 @@ def _find_inputs_and_outputs(context, nodes):
             if name.value not in inputs:
                 name_definitions = context.goto(name, name.start_pos)
                 if not name_definitions \
-                        or any(not n.parent_context.is_module() or n.api_type == 'param'
-                               for n in name_definitions):
+                        or _is_name_input(module_context, name_definitions, first, last):
                     inputs.append(name.value)
 
     # Check if outputs are really needed:
