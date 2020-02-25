@@ -228,7 +228,7 @@ def extract_variable(grammar, path, module_node, name, pos, until_pos):
     nodes = _find_nodes(module_node, pos, until_pos)
     debug.dbg('Extracting nodes: %s', nodes)
 
-    is_expression, message = _is_expression_with_issue(nodes)
+    is_expression, message = _is_expression_with_error(nodes)
     if not is_expression:
         raise RefactoringError(message)
 
@@ -237,7 +237,10 @@ def extract_variable(grammar, path, module_node, name, pos, until_pos):
     return Refactoring(grammar, file_to_node_changes)
 
 
-def _is_expression_with_issue(nodes):
+def _is_expression_with_error(nodes):
+    """
+    Returns a tuple (is_expression, error_string).
+    """
     if any(node.type == 'name' and node.is_definition() for node in nodes):
         return False, 'Cannot extract a name that defines something'
 
@@ -247,6 +250,10 @@ def _is_expression_with_issue(nodes):
 
 
 def _find_nodes(module_node, pos, until_pos):
+    """
+    Looks up a module and tries to find the appropriate amount of nodes that
+    are in there.
+    """
     start_node = module_node.get_leaf_for_position(pos, include_prefixes=True)
 
     if until_pos is None:
@@ -398,7 +405,7 @@ def _is_not_extractable_syntax(node):
 
 def extract_function(inference_state, path, module_context, name, pos, until_pos):
     nodes = _find_nodes(module_context.tree_node, pos, until_pos)
-    is_expression, _ = _is_expression_with_issue(nodes)
+    is_expression, _ = _is_expression_with_error(nodes)
     context = module_context.create_context(nodes[0])
     is_bound_method = context.is_bound_method()
     params, return_variables = list(_find_inputs_and_outputs(context, nodes))
