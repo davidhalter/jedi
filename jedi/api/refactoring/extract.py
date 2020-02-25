@@ -93,7 +93,8 @@ def _find_nodes(module_node, pos, until_pos):
     return nodes
 
 
-def _replace(nodes, expression_replacement, extracted, pos, insert_before_leaf=None):
+def _replace(nodes, expression_replacement, extracted, pos,
+             insert_before_leaf=None, remaining_prefix=None):
     # Now try to replace the nodes found with a variable and move the code
     # before the current statement.
     definition = _get_parent_definition(nodes[0])
@@ -103,8 +104,9 @@ def _replace(nodes, expression_replacement, extracted, pos, insert_before_leaf=N
 
     lines = split_lines(insert_before_leaf.prefix, keepends=True)
     if first_node_leaf is insert_before_leaf:
-        removed_line_count = nodes[0].start_pos[0] - pos[0]
-        lines = lines[:-removed_line_count - 1] + [lines[-1]]
+        if remaining_prefix is not None:
+            # The remaining prefix has already been calculated.
+            lines[:-1] = remaining_prefix
     lines[-1:-1] = [indent_block(extracted, lines[-1]) + '\n']
     extracted_prefix = ''.join(lines)
 
@@ -126,10 +128,21 @@ def _expression_nodes_to_string(nodes):
 
 def _suite_nodes_to_string(nodes, pos):
     n = nodes[0]
-    included_line_count = n.start_pos[0] - pos[0]
-    lines = split_lines(n.get_first_leaf().prefix, keepends=True)[-included_line_count - 1]
-    return ''.join(lines) + n.get_code(include_prefix=False) \
+    prefix, part_of_code = _split_prefix_at(n.get_first_leaf(), pos[0] - 1)
+    code = part_of_code + n.get_code(include_prefix=False) \
         + ''.join(n.get_code() for n in nodes[1:])
+    return prefix, code
+
+
+def _split_prefix_at(leaf, until_line):
+    """
+    Returns a tuple of the leaf's prefix, split at the until_line
+    position.
+    """
+    # second means the second returned part
+    second_line_count = leaf.start_pos[0] - until_line
+    lines = split_lines(leaf.prefix, keepends=True)
+    return ''.join(lines[:-second_line_count]), ''.join(lines[-second_line_count:])
 
 
 def _get_indentation(node):
@@ -204,6 +217,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
         insert_before_leaf = node.get_first_leaf()
     if is_expression:
         code_block = 'return ' + _expression_nodes_to_string(nodes) + '\n'
+        remaining_prefix = None
     else:
         # Find the actually used variables (of the defined ones). If none are
         # used (e.g. if the range covers the whole function), return the last
@@ -215,8 +229,13 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
             return_variables
         )) or [return_variables[-1]]
 
+        remaining_prefix, code_block = _suite_nodes_to_string(nodes, pos)
+        after_leaf = nodes[-1].get_next_leaf()
+        first, second = _split_prefix_at(after_leaf, until_pos[0])
+        code_block += first
+
+        code_block = dedent(code_block)
         output_var_str = ', '.join(return_variables)
-        code_block = dedent(_suite_nodes_to_string(nodes, pos))
         code_block += 'return ' + output_var_str + '\n'
 
     decorator = ''
@@ -249,8 +268,11 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     else:
         replacement = _get_indentation(nodes[0]) + output_var_str + ' = ' + function_call
 
-    replaced_str = _replace(nodes, replacement, function_code, pos, insert_before_leaf)
-    file_to_node_changes = {path: replaced_str}
+    replacement_dct = _replace(nodes, replacement, function_code, pos,
+                               insert_before_leaf, remaining_prefix)
+    if not is_expression:
+        replacement_dct[after_leaf] = second + after_leaf.value
+    file_to_node_changes = {path: replacement_dct}
     return Refactoring(inference_state.grammar, file_to_node_changes)
 
 
