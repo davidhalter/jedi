@@ -275,3 +275,28 @@ def x(v1):
     y = a(v1, v2, v3)
     return y
 x
+# -------------------------------------------------- with-range-func-3
+def x(v1):
+    #? 2 text {'new_name': 'func', 'until_line': 6, 'until_column': 4}
+    #foo
+    v2 = 2
+    x = v1 * 2
+    y = 3
+    #bar
+    return x
+x
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def func(v1):
+    #foo
+    v2 = 2
+    x = v1 * 2
+    return x
+
+
+def x(v1):
+    #? 2 text {'new_name': 'func', 'until_line': 6, 'until_column': 4}
+    x = func(v1)
+    y = 3
+    #bar
+    return x
+x
