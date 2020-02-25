@@ -32,6 +32,7 @@ from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.api.errors import parso_to_jedi_errors
 from jedi.api import refactoring
+from jedi.api.refactoring.extract import extract_function, extract_variable
 from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
@@ -570,7 +571,7 @@ class Script(object):
             if until_column is None:
                 until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
-        return refactoring.extract_variable(
+        return extract_variable(
             self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)
 
     @no_py2_support
@@ -591,7 +592,7 @@ class Script(object):
             if until_column is None:
                 until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
-        return refactoring.extract_function(
+        return extract_function(
             self._inference_state, self.path, self._get_module_context(),
             new_name, (line, column), until_pos
         )
