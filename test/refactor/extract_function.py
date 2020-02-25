@@ -190,3 +190,24 @@ def a(test, v3):
 
 y = a(test, v3)
 y
+# -------------------------------------------------- with-range-3
+#foo
+#? 2 text {'new_name': 'a', 'until_line': 5, 'until_column': 4}
+v1 = 3
+v2 = 2
+x, y = test(v1 + v2 * v3)
+#raaaa
+y
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+#foo
+#? 2 text {'new_name': 'a', 'until_line': 5, 'until_column': 4}
+def a(test, v3):
+    v1 = 3
+    v2 = 2
+    x, y = test(v1 + v2 * v3)
+    return y
+
+
+y = a(test, v3)
+#raaaa
+y
