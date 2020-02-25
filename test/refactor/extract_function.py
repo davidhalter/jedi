@@ -245,10 +245,9 @@ def x(v1):
 # -------------------------------------------------- with-range-func-2
 import os
 # comment1
-@dec
 # comment2
 def x(v1):
-    #? 2 text {'new_name': 'a', 'until_line': 11, 'until_column': 0}
+    #? 2 text {'new_name': 'a', 'until_line': 10, 'until_column': 0}
     #foo
     v2 = 2
     if 1:
@@ -259,6 +258,7 @@ x
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 import os
 # comment1
+# comment2
 def a(v1, v2, v3):
     #foo
     v2 = 2
@@ -268,10 +268,8 @@ def a(v1, v2, v3):
     return y
 
 
-@dec
-# comment2
 def x(v1):
-    #? 2 text {'new_name': 'a', 'until_line': 11, 'until_column': 0}
+    #? 2 text {'new_name': 'a', 'until_line': 10, 'until_column': 0}
     y = a(v1, v2, v3)
     return y
 x
