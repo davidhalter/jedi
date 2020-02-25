@@ -211,3 +211,34 @@ def a(test, v3):
 y = a(test, v3)
 #raaaa
 y
+# -------------------------------------------------- with-range-func-1
+import os
+# comment1
+@dec
+# comment2
+def x(v1):
+    #foo
+    #? 2 text {'new_name': 'a', 'until_line': 9, 'until_column': 5}
+    v2 = 2
+    if 1:
+        x, y = os.listdir(v1 + v2 * v3)
+    #bar
+    return x, y
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+import os
+# comment1
+def a(v1, v2, v3):
+    v2 = 2
+    if 1:
+        x, y = os.listdir(v1 + v2 * v3)
+    return x, y
+
+
+@dec
+# comment2
+def x(v1):
+    #foo
+    #? 2 text {'new_name': 'a', 'until_line': 9, 'until_column': 5}
+    x, y = a(v1, v2, v3)
+    #bar
+    return x, y

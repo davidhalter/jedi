@@ -266,7 +266,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     if is_expression:
         replacement = function_call
     else:
-        replacement = _get_indentation(nodes[0]) + output_var_str + ' = ' + function_call + '\n'
+        replacement = output_var_str + ' = ' + function_call + '\n'
 
     replacement_dct = _replace(nodes, replacement, function_code, pos,
                                insert_before_leaf, remaining_prefix)
