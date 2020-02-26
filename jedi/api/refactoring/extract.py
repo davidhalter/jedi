@@ -224,6 +224,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     if is_expression:
         code_block = 'return ' + _expression_nodes_to_string(nodes) + '\n'
         remaining_prefix = None
+        has_ending_return_stmt = False
     else:
         has_ending_return_stmt = _is_node_ending_return_stmt(nodes[-1])
         if not has_ending_return_stmt:
@@ -246,6 +247,9 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
         if not has_ending_return_stmt:
             output_var_str = ', '.join(return_variables)
             code_block += 'return ' + output_var_str + '\n'
+
+    # Check if we have to raise RefactoringError
+    _check_for_non_extractables(nodes[:-1] if has_ending_return_stmt else nodes)
 
     decorator = ''
     self_param = None
@@ -286,6 +290,16 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
         replacement_dct[after_leaf] = second + after_leaf.value
     file_to_node_changes = {path: replacement_dct}
     return Refactoring(inference_state.grammar, file_to_node_changes)
+
+
+def _check_for_non_extractables(nodes):
+    for n in nodes:
+        try:
+            children = n.children
+        except AttributeError:
+            pass
+        else:
+            _check_for_non_extractables(children)
 
 
 def _is_name_input(module_context, names, first, last):

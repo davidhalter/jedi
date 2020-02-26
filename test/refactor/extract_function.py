@@ -367,7 +367,31 @@ class X:
         local1 = 3
         local2 = 4
         return local1 * glob1 * b
+        # bar
 
     def f(self, b, c):
         #? 11 text {'new_name': 'ab', 'until_line': 11, 'until_column': 10}
         return self.ab(b)
+# -------------------------------------------------- in-method-range-3
+glob1 = 1
+class X:
+    def f(self, b, c):
+        local1, local2 = 3, 4
+        #foo
+        #? 11 text {'new_name': 'ab', 'until_line': 7, 'until_column': 29}
+        return local1 & glob1 & b
+        # bar
+    local2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob1 = 1
+class X:
+    def ab(self, local1, b):
+        return local1 & glob1 & b
+
+    def f(self, b, c):
+        local1, local2 = 3, 4
+        #foo
+        #? 11 text {'new_name': 'ab', 'until_line': 7, 'until_column': 29}
+        return self.ab(local1, b)
+        # bar
+    local2
