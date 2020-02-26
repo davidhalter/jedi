@@ -345,3 +345,29 @@ class X:
         #? 11 text {'new_name': 'ab', 'until_line': 12, 'until_column': 28}
         x = self.ab(b)
         # bar
+# -------------------------------------------------- in-method-range-2
+glob1 = 1
+class X:
+    # comment
+
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab', 'until_line': 11, 'until_column': 10}
+        #foo
+        local1 = 3
+        local2 = 4
+        return local1 * glob1 * b
+        # bar
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob1 = 1
+class X:
+    # comment
+
+    def ab(self, b):
+        #foo
+        local1 = 3
+        local2 = 4
+        return local1 * glob1 * b
+
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab', 'until_line': 11, 'until_column': 10}
+        return self.ab(b)
