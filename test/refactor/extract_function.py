@@ -298,7 +298,7 @@ def x(v1):
     #bar
     return x
 x
-# -------------------------------------------------- in-class-1
+# -------------------------------------------------- in-class-range-1
 class X1:
     #? 11 text {'new_name': 'f', 'until_line': 4}
     a = 3
@@ -313,3 +313,35 @@ def f():
 class X1:
     #? 11 text {'new_name': 'f', 'until_line': 4}
     c = f()
+# -------------------------------------------------- in-method-range-1
+glob1 = 1
+class X:
+    # ha
+    def g(self): pass
+
+    # haha
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab', 'until_line': 12, 'until_column': 28}
+        #foo
+        local1 = 3
+        local2 = 4
+        x= self.g() or self.f(b) ^ glob1 & b is local1
+        # bar
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob1 = 1
+class X:
+    # ha
+    def g(self): pass
+
+    # haha
+    def ab(self, b):
+        #foo
+        local1 = 3
+        local2 = 4
+        x= self.g() or self.f(b) ^ glob1 & b is local1
+        return x
+
+    def f(self, b, c):
+        #? 11 text {'new_name': 'ab', 'until_line': 12, 'until_column': 28}
+        x = self.ab(b)
+        # bar
