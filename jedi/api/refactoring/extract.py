@@ -236,7 +236,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
                 nodes[0].parent,
                 nodes[-1].end_pos,
                 return_variables
-            )) or [return_variables[-1]]
+            )) or [return_variables[-1]] if return_variables else []
 
         remaining_prefix, code_block = _suite_nodes_to_string(nodes, pos)
         after_leaf = nodes[-1].get_next_leaf()
@@ -297,7 +297,11 @@ def _check_for_non_extractables(nodes):
         try:
             children = n.children
         except AttributeError:
-            pass
+            if n.value in ('return', 'yield'):
+                raise RefactoringError(
+                    'Can only extract %s statements if they are at the end.'
+                    % n.value
+                )
         else:
             _check_for_non_extractables(children)
 
@@ -306,10 +310,8 @@ def _is_name_input(module_context, names, first, last):
     for name in names:
         if name.api_type == 'param' or not name.parent_context.is_module():
             if name.get_root_context() is not module_context:
-                print('true')
                 return True
             if name.start_pos is None or not (first <= name.start_pos < last):
-                print('true1', first, name.start_pos, last)
                 return True
     return False
 

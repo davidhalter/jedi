@@ -395,3 +395,38 @@ class X:
         return self.ab(local1, b)
         # bar
     local2
+# -------------------------------------------------- random-return-1
+def x():
+    #? 0 error {'new_name': 'ab', 'until_line': 5, 'until_column': 10}
+    if x:
+        return 1
+    return 1
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Can only extract return statements if they are at the end.
+# -------------------------------------------------- random-return-2
+def x():
+    #? 0 error {'new_name': 'ab', 'until_line': 5, 'until_column': 10}
+    #
+    return
+    pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Can only extract return statements if they are at the end.
+# -------------------------------------------------- random-yield-1
+def x():
+    #? 0 error {'new_name': 'ab', 'until_line': 5, 'until_column': 10}
+    #
+    if (yield 1):
+        return
+    pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Can only extract yield statements if they are at the end.
+# -------------------------------------------------- random-yield-2
+def x():
+    #? 0 error {'new_name': 'ab', 'until_line': 4, 'until_column': 10}
+    #
+    try:
+        yield
+    finally:
+        pass
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+Can only extract yield statements if they are at the end.
