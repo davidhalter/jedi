@@ -442,64 +442,6 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-if sys.version_info[:2] == (3, 3):
-    """
-    Monkeypatch the unpickler in Python 3.3. This is needed, because the
-    argument `encoding='bytes'` is not supported in 3.3, but badly needed to
-    communicate with Python 2.
-    """
-
-    class NewUnpickler(pickle._Unpickler):
-        dispatch = dict(pickle._Unpickler.dispatch)
-
-        def _decode_string(self, value):
-            # Used to allow strings from Python 2 to be decoded either as
-            # bytes or Unicode strings.  This should be used only with the
-            # STRING, BINSTRING and SHORT_BINSTRING opcodes.
-            if self.encoding == "bytes":
-                return value
-            else:
-                return value.decode(self.encoding, self.errors)
-
-        def load_string(self):
-            data = self.readline()[:-1]
-            # Strip outermost quotes
-            if len(data) >= 2 and data[0] == data[-1] and data[0] in b'"\'':
-                data = data[1:-1]
-            else:
-                raise pickle.UnpicklingError("the STRING opcode argument must be quoted")
-            self.append(self._decode_string(pickle.codecs.escape_decode(data)[0]))
-        dispatch[pickle.STRING[0]] = load_string
-
-        def load_binstring(self):
-            # Deprecated BINSTRING uses signed 32-bit length
-            len, = pickle.struct.unpack('<i', self.read(4))
-            if len < 0:
-                raise pickle.UnpicklingError("BINSTRING pickle has negative byte count")
-            data = self.read(len)
-            self.append(self._decode_string(data))
-        dispatch[pickle.BINSTRING[0]] = load_binstring
-
-        def load_short_binstring(self):
-            len = self.read(1)[0]
-            data = self.read(len)
-            self.append(self._decode_string(data))
-        dispatch[pickle.SHORT_BINSTRING[0]] = load_short_binstring
-
-    def load(file, fix_imports=True, encoding="ASCII", errors="strict"):
-        return NewUnpickler(file, fix_imports=fix_imports,
-                            encoding=encoding, errors=errors).load()
-
-    def loads(s, fix_imports=True, encoding="ASCII", errors="strict"):
-        if isinstance(s, str):
-            raise TypeError("Can't load pickle from unicode string")
-        file = pickle.io.BytesIO(s)
-        return NewUnpickler(file, fix_imports=fix_imports,
-                            encoding=encoding, errors=errors).load()
-
-    pickle.Unpickler = NewUnpickler
-    pickle.load = load
-    pickle.loads = loads
 
 
 def pickle_load(file):
