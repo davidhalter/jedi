@@ -56,7 +56,7 @@ def test_static_analysis(static_analysis_case, environment):
         static_analysis_case.run(assert_static_analysis, environment)
 
 
-def test_refactor(refactor_case, skip_pre_python36):
+def test_refactor(refactor_case, skip_pre_python36, environment):
     """
     Run refactoring test case.
 
@@ -64,13 +64,13 @@ def test_refactor(refactor_case, skip_pre_python36):
     """
     if refactor_case.type == 'error':
         with pytest.raises(RefactoringError) as e:
-            refactor_case.refactor()
+            refactor_case.refactor(environment)
         assert e.value.args[0] == refactor_case.desired_result.strip()
     elif refactor_case.type == 'text':
-        refactoring = refactor_case.refactor()
+        refactoring = refactor_case.refactor(environment)
         assert not refactoring.get_renames()
         text = ''.join(f.get_new_code() for f in refactoring.get_changed_files().values())
         assert_case_equal(refactor_case, text, refactor_case.desired_result)
     else:
-        diff = refactor_case.refactor().get_diff()
+        diff = refactor_case.refactor(environment).get_diff()
         assert_case_equal(refactor_case, diff, refactor_case.desired_result)

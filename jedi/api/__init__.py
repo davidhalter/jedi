@@ -54,11 +54,11 @@ sys.setrecursionlimit(3000)
 def no_py2_support(func):
     # TODO remove when removing Python 2/3.5
     def wrapper(self, *args, **kwargs):
-        if self._grammar.version_info.major == 2:
+        if self._inference_state.grammar.version_info.major == 2:
             raise NotImplementedError(
                 "Python 2 is deprecated and won't support this feature anymore"
             )
-        if self._grammar.version_info[:2] == (3, 5):
+        if self._inference_state.grammar.version_info[:2] == (3, 5):
             raise NotImplementedError(
                 "No support for refactorings on Python 3.5"
             )
@@ -114,9 +114,6 @@ class Script(object):
             # TODO add a better warning than the traceback!
             with open(path, 'rb') as f:
                 source = f.read()
-
-        # Load the Python grammar of the current interpreter.
-        self._grammar = parso.load_grammar()
 
         if sys_path is not None and not is_py3:
             sys_path = list(map(force_unicode, sys_path))
@@ -360,7 +357,7 @@ class Script(object):
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))
         if leaf.type in ('keyword', 'operator', 'error_leaf'):
-            reserved = self._grammar._pgen_grammar.reserved_syntax_strings.keys()
+            reserved = self._inference_state.grammar._pgen_grammar.reserved_syntax_strings.keys()
             if leaf.value in reserved:
                 name = KeywordName(self._inference_state, leaf.value)
                 return [classes.Definition(self._inference_state, name)]
@@ -523,7 +520,7 @@ class Script(object):
         return self._names(**kwargs)  # Python 2...
 
     def get_syntax_errors(self):
-        return parso_to_jedi_errors(self._grammar, self._module_node)
+        return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):
         def def_ref_filter(_def):
@@ -554,7 +551,7 @@ class Script(object):
 
     def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
-        return refactoring.rename(self._grammar, definitions, new_name)
+        return refactoring.rename(self._inference_state.grammar, definitions, new_name)
 
     @no_py2_support
     @validate_line_column
@@ -576,7 +573,9 @@ class Script(object):
                 until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
         return extract_variable(
-            self._grammar, self.path, self._module_node, new_name, (line, column), until_pos)
+            self._inference_state.grammar, self.path, self._module_node,
+            new_name, (line, column), until_pos
+        )
 
     @no_py2_support
     def extract_function(self, line, column, **kwargs):
@@ -607,7 +606,7 @@ class Script(object):
         Inlines a variable under the cursor.
         """
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
-        return refactoring.inline(self._grammar, names)
+        return refactoring.inline(self._inference_state.grammar, names)
 
 
 class Interpreter(Script):

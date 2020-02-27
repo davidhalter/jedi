@@ -31,9 +31,9 @@ class RefactoringCase(object):
         f_name = os.path.basename(self._path)
         return f_name.replace('.py', '')
 
-    def refactor(self):
+    def refactor(self, environment):
         project = jedi.Project(os.path.join(test_dir, 'refactor'))
-        script = jedi.Script(self._code, path=self._path, project=project)
+        script = jedi.Script(self._code, path=self._path, project=project, environment=environment)
         refactor_func = getattr(script, self.refactor_type)
         return refactor_func(self._line_nr, self._index, **self._kwargs)
 
