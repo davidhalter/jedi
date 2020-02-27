@@ -297,11 +297,11 @@ def _check_for_non_extractables(nodes):
         try:
             children = n.children
         except AttributeError:
-            if n.value in ('return', 'yield'):
+            if n.value == 'return':
                 raise RefactoringError(
-                    'Can only extract %s statements if they are at the end.'
-                    % n.value
-                )
+                    'Can only extract return statements if they are at the end.')
+            if n.value == 'yield':
+                raise RefactoringError('Cannot extract yield statements.')
         else:
             _check_for_non_extractables(children)
 

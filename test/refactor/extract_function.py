@@ -419,7 +419,7 @@ def x():
         return
     pass
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Can only extract yield statements if they are at the end.
+Cannot extract yield statements.
 # -------------------------------------------------- random-yield-2
 def x():
     #? 0 error {'new_name': 'ab', 'until_line': 4, 'until_column': 10}
@@ -429,4 +429,4 @@ def x():
     finally:
         pass
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Can only extract yield statements if they are at the end.
+Cannot extract yield statements.
