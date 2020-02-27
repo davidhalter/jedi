@@ -1,4 +1,4 @@
-from os.path import dirname, basename, join
+from os.path import dirname, basename, join, relpath
 import os
 import re
 import difflib
@@ -26,8 +26,8 @@ class ChangedFile(object):
         new_lines = split_lines(self.get_new_code(), keepends=True)
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=self._from_path,
-            tofile=self._to_path
+            fromfile=relpath(self._from_path),
+            tofile=relpath(self._to_path),
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
@@ -90,7 +90,7 @@ class Refactoring(object):
     def get_diff(self):
         text = ''
         for from_, to in self.get_renames():
-            text += 'rename from %s\nrename to %s\n' % (from_, to)
+            text += 'rename from %s\nrename to %s\n' % (relpath(from_), relpath(to))
 
         return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
