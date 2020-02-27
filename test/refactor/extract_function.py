@@ -395,6 +395,21 @@ class X:
         return self.ab(local1, b)
         # bar
     local2
+# -------------------------------------------------- in-method-no-param
+glob1 = 1
+class X:
+    def f():
+        #? 11 text {'new_name': 'ab', 'until_line': 5, 'until_column': 22}
+        return glob1 + 2
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+glob1 = 1
+class X:
+    def ab():
+        return glob1 + 2
+
+    def f():
+        #? 11 text {'new_name': 'ab', 'until_line': 5, 'until_column': 22}
+        return ab()
 # -------------------------------------------------- random-return-1
 def x():
     #? 0 error {'new_name': 'ab', 'until_line': 5, 'until_column': 10}
