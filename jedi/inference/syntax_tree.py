@@ -388,6 +388,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
 
     debug.dbg('infer_expr_stmt %s (%s)', stmt, seek_name)
     rhs = stmt.get_rhs()
+
     value_set = context.infer_node(rhs)
 
     if seek_name:
@@ -655,16 +656,18 @@ def tree_name_to_values(inference_state, context, tree_name):
     # First check for annotations, like: `foo: int = 3`
     if module_node is not None:
         names = module_node.get_used_names().get(tree_name.value, [])
+        found_annotation = False
         for name in names:
             expr_stmt = name.parent
 
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 if correct_scope:
+                    found_annotation = True
                     value_set |= annotation.infer_annotation(
                         context, expr_stmt.children[1].children[1]
                     ).execute_annotation()
-        if value_set:
+        if found_annotation:
             return value_set
 
     types = []
