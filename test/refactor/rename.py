@@ -15,8 +15,8 @@ def test1():
     AssertionError
     return test1, test1.not_existing
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,6 +1,6 @@
 -def test1():
 +def blabla():
@@ -31,8 +31,8 @@ undefined_var
 #? 0 {'new_name': 'lala'}
 undefined_var
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,4 +1,4 @@
  undefined_var
  #? 0 {'new_name': 'lala'}
@@ -47,8 +47,8 @@ def y():
     some_var = 3
     some_var
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,7 +1,7 @@
  def x():
      #? 7 {'new_name': 'v'}
@@ -67,8 +67,8 @@ mykeywordparam1(1)
 mykeywordparam1(param1=3)
 mykeywordparam1(x, param1=2)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,7 +1,7 @@
  #? 22 {'new_name': 'lala'}
 -def mykeywordparam1(param1):
@@ -88,8 +88,8 @@ mykeywordparam2(param1=3)
 #? 22 {'new_name': 'lala'}
 mykeywordparam2(x, param1=2)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,7 +1,7 @@
 -def mykeywordparam2(param1):
 -    str(param1)
@@ -106,15 +106,15 @@ from import_tree.some_mod import foobar
 #? 0 {'new_name': 'renamed'}
 foobar
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/import_tree/some_mod.py
-+++ refactor/import_tree/some_mod.py
+--- import_tree/some_mod.py
++++ import_tree/some_mod.py
 @@ -1,4 +1,4 @@
 -foobar = 3
 +renamed = 3
  
  inline_var = 5 + 3
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,4 +1,4 @@
 -from import_tree.some_mod import foobar
 +from import_tree.some_mod import renamed
@@ -126,10 +126,10 @@ from import_tree import some_mod
 #? 0 {'new_name': 'renamedm'}
 some_mod
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-rename from refactor/import_tree/some_mod.py
-rename to refactor/import_tree/renamedm.py
---- refactor/rename.py
-+++ refactor/rename.py
+rename from import_tree/some_mod.py
+rename to import_tree/renamedm.py
+--- rename.py
++++ rename.py
 @@ -1,4 +1,4 @@
 -from import_tree import some_mod
 +from import_tree import renamedm
@@ -141,8 +141,8 @@ rename to refactor/import_tree/renamedm.py
 import undefined_import
 haha( undefined_import)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,4 +1,4 @@
  #? 20 {'new_name': 'lala'}
 -import undefined_import
@@ -153,24 +153,24 @@ haha( undefined_import)
 #? 31 {'new_name': 'renamedm'}
 from import_tree.pkgx import pkgx
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/import_tree/pkgx/__init__.py
-+++ refactor/import_tree/pkgx/__init__.py
+--- import_tree/pkgx/__init__.py
++++ import_tree/pkgx/__init__.py
 @@ -1,3 +1,3 @@
 -def pkgx():
 +def renamedm():
      pass
---- refactor/import_tree/pkgx/__init__.pyi
-+++ refactor/import_tree/pkgx/__init__.pyi
+--- import_tree/pkgx/__init__.pyi
++++ import_tree/pkgx/__init__.pyi
 @@ -1,2 +1,2 @@
 -def pkgx() -> int: ...
 +def renamedm() -> int: ...
---- refactor/import_tree/pkgx/mod.pyi
-+++ refactor/import_tree/pkgx/mod.pyi
+--- import_tree/pkgx/mod.pyi
++++ import_tree/pkgx/mod.pyi
 @@ -1,2 +1,2 @@
 -from . import pkgx
 +from . import renamedm
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,3 +1,3 @@
  #? 31 {'new_name': 'renamedm'}
 -from import_tree.pkgx import pkgx
@@ -179,15 +179,15 @@ from import_tree.pkgx import pkgx
 #? 18 {'new_name': 'renamedp'}
 from import_tree.pkgx
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-rename from refactor/import_tree/pkgx
-rename to refactor/import_tree/renamedp
---- refactor/import_tree/pkgx/mod2.py
-+++ refactor/import_tree/renamedp/mod2.py
+rename from import_tree/pkgx
+rename to import_tree/renamedp
+--- import_tree/pkgx/mod2.py
++++ import_tree/renamedp/mod2.py
 @@ -1,2 +1,2 @@
 -from .. import pkgx
 +from .. import renamedp
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,3 +1,3 @@
  #? 18 {'new_name': 'renamedp'}
 -from import_tree.pkgx
@@ -200,31 +200,31 @@ else:
 #? 4 {'new_name': 'rename'}
 pkgx
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-rename from refactor/import_tree/pkgx
-rename to refactor/import_tree/rename
---- refactor/import_tree/pkgx/__init__.py
-+++ refactor/import_tree/rename/__init__.py
+rename from import_tree/pkgx
+rename to import_tree/rename
+--- import_tree/pkgx/__init__.py
++++ import_tree/rename/__init__.py
 @@ -1,3 +1,3 @@
 -def pkgx():
 +def rename():
      pass
---- refactor/import_tree/pkgx/__init__.pyi
-+++ refactor/import_tree/rename/__init__.pyi
+--- import_tree/pkgx/__init__.pyi
++++ import_tree/rename/__init__.pyi
 @@ -1,2 +1,2 @@
 -def pkgx() -> int: ...
 +def rename() -> int: ...
---- refactor/import_tree/pkgx/mod.pyi
-+++ refactor/import_tree/rename/mod.pyi
+--- import_tree/pkgx/mod.pyi
++++ import_tree/rename/mod.pyi
 @@ -1,2 +1,2 @@
 -from . import pkgx
 +from . import rename
---- refactor/import_tree/pkgx/mod2.py
-+++ refactor/import_tree/rename/mod2.py
+--- import_tree/pkgx/mod2.py
++++ import_tree/rename/mod2.py
 @@ -1,2 +1,2 @@
 -from .. import pkgx
 +from .. import rename
---- refactor/rename.py
-+++ refactor/rename.py
+--- rename.py
++++ rename.py
 @@ -1,7 +1,7 @@
  if random_undefined_variable:
 -    from import_tree.pkgx import pkgx

@@ -547,7 +547,7 @@ class Script(object):
 
     def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
-        return refactoring.rename(self._inference_state.grammar, definitions, new_name)
+        return refactoring.rename(self._inference_state, definitions, new_name)
 
     @no_py2_support
     @validate_line_column
@@ -569,7 +569,7 @@ class Script(object):
                 until_column = len(self._code_lines[until_line - 1])
             until_pos = until_line, until_column
         return extract_variable(
-            self._inference_state.grammar, self.path, self._module_node,
+            self._inference_state, self.path, self._module_node,
             new_name, (line, column), until_pos
         )
 
@@ -602,7 +602,7 @@ class Script(object):
         Inlines a variable under the cursor.
         """
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
-        return refactoring.inline(self._inference_state.grammar, names)
+        return refactoring.inline(self._inference_state, names)
 
 
 class Interpreter(Script):

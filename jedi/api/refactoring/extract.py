@@ -16,7 +16,7 @@ _VARIABLE_EXCTRACTABLE = EXPRESSION_PARTS + \
      'keyword name number string fstring').split()
 
 
-def extract_variable(grammar, path, module_node, name, pos, until_pos):
+def extract_variable(inference_state, path, module_node, name, pos, until_pos):
     nodes = _find_nodes(module_node, pos, until_pos)
     debug.dbg('Extracting nodes: %s', nodes)
 
@@ -26,7 +26,7 @@ def extract_variable(grammar, path, module_node, name, pos, until_pos):
 
     generated_code = name + ' = ' + _expression_nodes_to_string(nodes)
     file_to_node_changes = {path: _replace(nodes, name, generated_code, pos)}
-    return Refactoring(grammar, file_to_node_changes)
+    return Refactoring(inference_state, file_to_node_changes)
 
 
 def _is_expression_with_error(nodes):
@@ -289,7 +289,7 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     if not is_expression:
         replacement_dct[after_leaf] = second + after_leaf.value
     file_to_node_changes = {path: replacement_dct}
-    return Refactoring(inference_state.grammar, file_to_node_changes)
+    return Refactoring(inference_state, file_to_node_changes)
 
 
 def _check_for_non_extractables(nodes):

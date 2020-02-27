@@ -41,16 +41,16 @@ def test_rename_mod(Script, dir_with_content):
     assert refactoring.get_changed_files()[p1].get_new_code() == expected_code
 
     assert refactoring.get_diff() == dedent('''\
-        rename from {dir}/modx.py
-        rename to {dir}/modr.py
-        --- {dir}/modx.py
-        +++ {dir}/modr.py
+        rename from modx.py
+        rename to modr.py
+        --- modx.py
+        +++ modr.py
         @@ -1,3 +1,3 @@
         -import modx
         +import modr
          foo
-        --- {dir}/some_script.py
-        +++ {dir}/some_script.py
+        --- some_script.py
+        +++ some_script.py
         @@ -1,2 +1,2 @@
         -import modx; modx
         +import modr; modr

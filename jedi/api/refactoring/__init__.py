@@ -14,8 +14,9 @@ EXPRESSION_PARTS = (
 
 
 class ChangedFile(object):
-    def __init__(self, grammar, from_path, to_path, module_node, node_to_str_map):
-        self._grammar = grammar
+    def __init__(self, inference_state, from_path, to_path,
+                 module_node, node_to_str_map):
+        self._inference_state = inference_state
         self._from_path = from_path
         self._to_path = to_path
         self._module_node = module_node
@@ -24,17 +25,18 @@ class ChangedFile(object):
     def get_diff(self):
         old_lines = split_lines(self._module_node.get_code(), keepends=True)
         new_lines = split_lines(self.get_new_code(), keepends=True)
+        project_path = self._inference_state.project._path
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=relpath(self._from_path),
-            tofile=relpath(self._to_path),
+            fromfile=relpath(self._from_path, project_path),
+            tofile=relpath(self._to_path, project_path),
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
         return ''.join(diff).rstrip(' ')
 
     def get_new_code(self):
-        return self._grammar.refactor(self._module_node, self._node_to_str_map)
+        return self._inference_state.grammar.refactor(self._module_node, self._node_to_str_map)
 
     def apply(self):
         if self._from_path is None:
@@ -50,15 +52,14 @@ class ChangedFile(object):
 
 
 class Refactoring(object):
-    def __init__(self, grammar, file_to_node_changes, renames=()):
-        self._grammar = grammar
+    def __init__(self, inference_state, file_to_node_changes, renames=()):
+        self._inference_state = inference_state
         self._renames = renames
         self._file_to_node_changes = file_to_node_changes
 
     def get_changed_files(self):
         """
-        Returns a path to ``ChangedFile`` map. The files can be used
-        ``Dict[str
+        Returns a path to ``ChangedFile`` map.
         """
         def calculate_to_path(p):
             if p is None:
@@ -71,7 +72,7 @@ class Refactoring(object):
         renames = self.get_renames()
         return {
             path: ChangedFile(
-                self._grammar,
+                self._inference_state,
                 from_path=path,
                 to_path=calculate_to_path(path),
                 module_node=next(iter(map_)).get_root_node(),
@@ -89,8 +90,10 @@ class Refactoring(object):
 
     def get_diff(self):
         text = ''
+        project_path = self._inference_state.project._path
         for from_, to in self.get_renames():
-            text += 'rename from %s\nrename to %s\n' % (relpath(from_), relpath(to))
+            text += 'rename from %s\nrename to %s\n' \
+                % (relpath(from_, project_path), relpath(to, project_path))
 
         return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
@@ -115,7 +118,7 @@ def _calculate_rename(path, new_name):
     return path, join(dir_, new_name + ending)
 
 
-def rename(grammar, definitions, new_name):
+def rename(inference_state, definitions, new_name):
     file_renames = set()
     file_tree_name_map = {}
 
@@ -132,10 +135,10 @@ def rename(grammar, definitions, new_name):
             if tree_name is not None:
                 fmap = file_tree_name_map.setdefault(d.module_path, {})
                 fmap[tree_name] = tree_name.prefix + new_name
-    return Refactoring(grammar, file_tree_name_map, file_renames)
+    return Refactoring(inference_state, file_tree_name_map, file_renames)
 
 
-def inline(grammar, names):
+def inline(inference_state, names):
     if not names:
         raise RefactoringError("There is no name under the cursor")
     if any(n.api_type == 'module' for n in names):
@@ -212,7 +215,7 @@ def inline(grammar, names):
     if next_leaf.prefix.strip(' \t') == '' \
             and (next_leaf.type == 'newline' or next_leaf == ';'):
         changes[next_leaf] = ''
-    return Refactoring(grammar, file_to_node_changes)
+    return Refactoring(inference_state, file_to_node_changes)
 
 
 def _remove_indent_of_prefix(prefix):

@@ -39,8 +39,8 @@ foobarb: int = 1
 #? 5
 test(foobarb)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -foobarb: int = 1
  #? 5
@@ -69,15 +69,15 @@ from import_tree import some_mod
 #? 20
 test(x, some_mod.  inline_var.conjugate)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,4 @@
  from import_tree import some_mod
  #? 20
 -test(x, some_mod.  inline_var.conjugate)
 +test(x, (5 + 3).conjugate)
---- refactor/import_tree/some_mod.py
-+++ refactor/import_tree/some_mod.py
+--- import_tree/some_mod.py
++++ import_tree/some_mod.py
 @@ -1,4 +1,3 @@
  foobar = 3
  
@@ -107,8 +107,8 @@ def test():
     a = (30 + b, c) + 1
     return test(100, a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,5 +1,4 @@
  def test():
      #? 4
@@ -121,8 +121,8 @@ if 1:
     a = 1, 2
     return test(100, a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,5 +1,4 @@
  if 1:
      #? 4
@@ -134,8 +134,8 @@ a = 1+2
 #? 11
 test(100 * a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -a = 1+2
  #? 11
@@ -146,8 +146,8 @@ a = 1+2
 #? 11
 (x, 100 * a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -a = 1+2
  #? 11
@@ -159,8 +159,8 @@ a = 1+2
 #? 9
 (100 ** a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,5 +1,4 @@
  x
 -a = 1+2
@@ -173,8 +173,8 @@ a = 1+2
 #? 5
 test(a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,5 +1,4 @@
  x
 -a = 1+2
@@ -186,8 +186,8 @@ a = 1+2
 #? 9
 test(3, a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -a = 1+2
  #? 9
@@ -198,8 +198,8 @@ a = 1|2
 #? 5
 (3, a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -a = 1|2
  #? 5
@@ -210,8 +210,8 @@ a = 1 and 2 # foo
 #? 9
 (3, 3 * a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,4 @@
 -a = 1 and 2 # foo
 + # foo
@@ -223,8 +223,8 @@ a = 1, 2	; b = 3
 #? 9
 (3, 3 == a)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,4 @@
 -a = 1, 2	; b = 3
 + b = 3
@@ -236,8 +236,8 @@ a = 1 + 2
 #? 0
 a.conjugate
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
---- refactor/inline.py
-+++ refactor/inline.py
+--- inline.py
++++ inline.py
 @@ -1,4 +1,3 @@
 -a = 1 + 2 
  #? 0
