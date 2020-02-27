@@ -1,9 +1,16 @@
 import os
+import sys
 from textwrap import dedent
 
 import pytest
 
 import jedi
+
+
+@pytest.fixture(autouse=True)
+def skip_old_python(skip_pre_python36):
+    if sys.version_info < (3, 6):
+        pytest.skip()
 
 
 @pytest.fixture()
@@ -13,7 +20,7 @@ def dir_with_content(tmpdir):
     return tmpdir.strpath
 
 
-def test_rename_mod(Script, dir_with_content, skip_pre_python36):
+def test_rename_mod(Script, dir_with_content):
     script = Script(
         'import modx; modx\n',
         path=os.path.join(dir_with_content, 'some_script.py'),
@@ -50,7 +57,7 @@ def test_rename_mod(Script, dir_with_content, skip_pre_python36):
         ''').format(dir=dir_with_content)
 
 
-def test_rename_none_path(Script, skip_pre_python36):
+def test_rename_none_path(Script):
     refactoring = Script('foo', path=None).rename(new_name='bar')
     with pytest.raises(jedi.RefactoringError, match='on a Script with path=None'):
         refactoring.apply()

@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -62,6 +63,9 @@ def test_refactor(refactor_case, skip_pre_python36, environment):
 
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
+    if sys.version_info < (3, 6):
+        pytest.skip()
+
     if refactor_case.type == 'error':
         with pytest.raises(RefactoringError) as e:
             refactor_case.refactor(environment)

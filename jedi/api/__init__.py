@@ -54,11 +54,7 @@ sys.setrecursionlimit(3000)
 def no_py2_support(func):
     # TODO remove when removing Python 2/3.5
     def wrapper(self, *args, **kwargs):
-        if self._inference_state.grammar.version_info.major == 2:
-            raise NotImplementedError(
-                "Python 2 is deprecated and won't support this feature anymore"
-            )
-        if self._inference_state.grammar.version_info[:2] == (3, 5):
+        if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
             raise NotImplementedError(
                 "No support for refactorings on Python 3.5"
             )
