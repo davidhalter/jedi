@@ -108,9 +108,11 @@ foobar
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 --- /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
 +++ /home/dave/source/jedi/test/refactor/import_tree/some_mod.py
-@@ -1,2 +1,2 @@
+@@ -1,4 +1,4 @@
 -foobar = 3
 +renamed = 3
+ 
+ inline_var = 5 + 3
 --- /home/dave/source/jedi/test/refactor/rename.py
 +++ /home/dave/source/jedi/test/refactor/rename.py
 @@ -1,4 +1,4 @@
