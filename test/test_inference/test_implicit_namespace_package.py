@@ -8,7 +8,7 @@ from jedi import Project
 
 @pytest.fixture(autouse=True)
 def skip_not_supported_versions(environment):
-    if environment.version_info < (3, 4):
+    if environment.version_info < (3, 5):
         pytest.skip()
 
 

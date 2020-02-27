@@ -24,9 +24,6 @@ def test_get_typeshed_directories():
     dirs = get_dirs(PythonVersionInfo(2, 7))
     assert dirs == transform({'stdlib/2and3', 'stdlib/2', 'third_party/2and3', 'third_party/2'})
 
-    dirs = get_dirs(PythonVersionInfo(3, 4))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'third_party/2and3', 'third_party/3'})
-
     dirs = get_dirs(PythonVersionInfo(3, 5))
     assert dirs == transform({'stdlib/2and3', 'stdlib/3',
                               'third_party/2and3', 'third_party/3'})

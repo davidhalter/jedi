@@ -82,7 +82,7 @@ def test_relative_import(Script, environment, tmpdir):
     """
     Attempt a relative import in a very simple namespace package.
     """
-    if environment.version_info < (3, 4):
+    if environment.version_info < (3, 5):
         pytest.skip()
 
     directory = get_example_dir('namespace_package_relative_import')
