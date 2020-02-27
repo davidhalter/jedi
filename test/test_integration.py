@@ -21,7 +21,7 @@ actual  =
 %s
 desired =
 %s
-""" % (case, indent_block(actual), indent_block(desired))
+""" % (case, indent_block(str(actual)), indent_block(str(desired)))
 
 
 def assert_static_analysis(case, actual, desired):
