@@ -2,7 +2,6 @@ dist: xenial
 language: python
 python:
   - 2.7
-  - 3.4
   - 3.5
   - 3.6
   - 3.7
@@ -10,7 +9,6 @@ python:
 
 env:
   - JEDI_TEST_ENVIRONMENT=27
-  - JEDI_TEST_ENVIRONMENT=34
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
   - JEDI_TEST_ENVIRONMENT=37
@@ -41,13 +39,7 @@ script:
       if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ] && [ "$JEDI_TEST_ENVIRONMENT" != "interpreter" ]; then
         python_bin=python$test_env_version
         python_path="$(which $python_bin || true)"
-        if [ -z "$python_path" ]; then
-          # Only required for JEDI_TEST_ENVIRONMENT=34.
-          download_name=python-$test_env_version
-          wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
-          sudo tar xjf $download_name.tar.bz2 --directory / opt/python
-          ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
-        elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
+        if [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
           # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=36).
           pyenv_bin="$(pyenv whence --path "$python_bin" | head -n1)"
           ln -s "$pyenv_bin" /home/travis/bin/$python_bin

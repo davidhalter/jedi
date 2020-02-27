@@ -359,7 +359,7 @@ class Test(metaclass=Meta):
 # Enum
 # -----------------
 
-# python >= 3.4
+# python > 2.7
 import enum
 
 class X(enum.Enum):

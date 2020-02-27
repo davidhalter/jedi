@@ -815,7 +815,7 @@ class ParamDefinition(Definition):
         Returns an enum instance. Returns the same values as the builtin
         :py:attr:`inspect.Parameter.kind`.
 
-        No support for Python < 3.4 anymore.
+        No support for Python < 3.5 anymore.
         """
         if sys.version_info < (3, 5):
             raise NotImplementedError(

@@ -275,7 +275,7 @@ def _iter_modules(paths, prefix=''):
         # END COPY
 
 
-iter_modules = _iter_modules if py_version >= 34 else pkgutil.iter_modules
+iter_modules = _iter_modules if py_version >= 35 else pkgutil.iter_modules
 
 
 class ImplicitNSInfo(object):

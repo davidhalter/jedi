@@ -67,7 +67,7 @@ def test_path_from_sys_path_assignment(Script):
 
         import sys
         sys.path[0:0] = [
-          '/usr/lib/python3.4/site-packages',
+          '/usr/lib/python3.8/site-packages',
           '/home/test/.buildout/eggs/important_package.egg'
           ]
 

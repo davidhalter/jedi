@@ -1,6 +1,6 @@
 """ Pep-0484 type hinting """
 
-# python >= 3.4
+# python > 2.7
 
 
 class A():

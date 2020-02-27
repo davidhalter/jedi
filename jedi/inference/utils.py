@@ -107,7 +107,7 @@ class PushBackIterator(object):
 def ignored(*exceptions):
     """
     Value manager that ignores all of the specified exceptions. This will
-    be in the standard library starting with Python 3.4.
+    be in the standard library starting with Python 3.5.
     """
     try:
         yield

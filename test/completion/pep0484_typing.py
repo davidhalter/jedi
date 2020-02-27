@@ -283,7 +283,7 @@ def testnewtype2(y):
     y
     #? []
     y.
-# python >= 3.4
+# python > 2.7
 
 class TestDefaultDict(typing.DefaultDict[str, int]):
     def setdud(self):
@@ -311,7 +311,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.4
+# python > 2.7
 
 
 """
