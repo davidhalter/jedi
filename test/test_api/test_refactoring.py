@@ -13,7 +13,7 @@ def dir_with_content(tmpdir):
     return tmpdir.strpath
 
 
-def test_rename_mod(Script, dir_with_content, skip_python2):
+def test_rename_mod(Script, dir_with_content, skip_pre_python36):
     script = Script(
         'import modx; modx\n',
         path=os.path.join(dir_with_content, 'some_script.py'),
@@ -50,7 +50,7 @@ def test_rename_mod(Script, dir_with_content, skip_python2):
         ''').format(dir=dir_with_content)
 
 
-def test_rename_none_path(Script, skip_python2):
+def test_rename_none_path(Script, skip_pre_python36):
     refactoring = Script('foo', path=None).rename(new_name='bar')
     with pytest.raises(jedi.RefactoringError, match='on a Script with path=None'):
         refactoring.apply()
