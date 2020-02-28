@@ -1,18 +1,18 @@
 dist: xenial
 language: python
 python:
-  - 2.7
-  - 3.5
-  - 3.6
-  - 3.7
   - 3.8
+  - 3.7
+  - 3.6
+  - 3.5
+  - 2.7
 
 env:
-  - JEDI_TEST_ENVIRONMENT=27
-  - JEDI_TEST_ENVIRONMENT=35
-  - JEDI_TEST_ENVIRONMENT=36
-  - JEDI_TEST_ENVIRONMENT=37
   - JEDI_TEST_ENVIRONMENT=38
+  - JEDI_TEST_ENVIRONMENT=37
+  - JEDI_TEST_ENVIRONMENT=36
+  - JEDI_TEST_ENVIRONMENT=35
+  - JEDI_TEST_ENVIRONMENT=27
   - JEDI_TEST_ENVIRONMENT=interpreter
 
 matrix:
