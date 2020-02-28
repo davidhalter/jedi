@@ -7,7 +7,10 @@ valuable - just ignore them.**
 """
 from __future__ import with_statement
 import os
+import platform
 import re
+
+from parso import split_lines
 
 from functools import reduce
 import jedi
@@ -24,7 +27,18 @@ class RefactoringCase(object):
         self._path = path
         self._kwargs = kwargs
         self.type = type_
-        self.desired_result = desired_result
+        self._desired_result = desired_result
+
+    def get_desired_result(self):
+
+        if platform.system().lower() == 'windows' and self.type == 'diff':
+            # Windows uses backslashes to separate paths.
+            lines = split_lines(self._desired_result, keepends=True)
+            for i, line in enumerate(lines):
+                if re.search(' import_tree/', line):
+                    lines[i] = line.replace('/', '\\')
+            return ''.join(lines)
+        return self._desired_result
 
     @property
     def refactor_type(self):
@@ -58,7 +72,7 @@ def _collect_file_tests(code, path, lines_to_execute):
             continue
         until = p.group(1)
         index = int(p.group(2))
-        type_ = p.group(3).strip()
+        type_ = p.group(3).strip() or 'diff'
         if p.group(4):
             kwargs = eval(p.group(4))
         else:
