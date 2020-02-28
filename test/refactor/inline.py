@@ -59,28 +59,26 @@ math.cos
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline builtins/extensions
 # -------------------------------------------------- module-error
-from import_tree import some_mod
+from import_tree import inline_mod
 #? 11 error
-test(some_mod)
+test(inline_mod)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 Cannot inline imports or modules
 # -------------------------------------------------- module-works
-from import_tree import some_mod
-#? 20
-test(x, some_mod.  inline_var.conjugate)
+from import_tree import inline_mod
+#? 22
+test(x, inline_mod.  inline_var.conjugate)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 --- inline.py
 +++ inline.py
 @@ -1,4 +1,4 @@
- from import_tree import some_mod
- #? 20
--test(x, some_mod.  inline_var.conjugate)
+ from import_tree import inline_mod
+ #? 22
+-test(x, inline_mod.  inline_var.conjugate)
 +test(x, (5 + 3).conjugate)
---- import_tree/some_mod.py
-+++ import_tree/some_mod.py
-@@ -1,4 +1,3 @@
- foobar = 3
- 
+--- import_tree/inline_mod.py
++++ import_tree/inline_mod.py
+@@ -1,2 +1 @@
 -inline_var = 5 + 3
 # -------------------------------------------------- class
 class A: pass

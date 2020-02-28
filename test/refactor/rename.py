@@ -108,11 +108,9 @@ foobar
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 --- import_tree/some_mod.py
 +++ import_tree/some_mod.py
-@@ -1,4 +1,4 @@
+@@ -1,2 +1,2 @@
 -foobar = 3
 +renamed = 3
- 
- inline_var = 5 + 3
 --- rename.py
 +++ rename.py
 @@ -1,4 +1,4 @@
