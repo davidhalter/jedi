@@ -15,7 +15,7 @@ def skip_old_python(skip_pre_python36):
 
 @pytest.fixture()
 def dir_with_content(tmpdir):
-    with open(os.path.join(tmpdir.strpath, 'modx.py'), 'w') as f:
+    with open(os.path.join(tmpdir.strpath, 'modx.py'), 'w', newline='') as f:
         f.write('import modx\nfoo\n')  # self reference
     return tmpdir.strpath
 

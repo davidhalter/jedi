@@ -44,7 +44,7 @@ class ChangedFile(object):
                 'Cannot apply a refactoring on a Script with path=None'
             )
 
-        with open(self._from_path, 'w') as f:
+        with open(self._from_path, 'w', newline='') as f:
             f.write(self.get_new_code())
 
     def __repr__(self):
@@ -77,7 +77,7 @@ class Refactoring(object):
                 to_path=calculate_to_path(path),
                 module_node=next(iter(map_)).get_root_node(),
                 node_to_str_map=map_
-            ) for path, map_ in self._file_to_node_changes.items()
+            ) for path, map_ in sorted(self._file_to_node_changes.items())
         }
 
     def get_renames(self):
@@ -86,7 +86,7 @@ class Refactoring(object):
 
         Returns ``Iterable[Tuple[str, str]]``.
         """
-        return sorted(self._renames, key=lambda x: (-len(x), x))
+        return sorted(self._renames)
 
     def get_diff(self):
         text = ''

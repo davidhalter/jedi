@@ -69,6 +69,10 @@ from import_tree import inline_mod
 #? 22
 test(x, inline_mod.  inline_var.conjugate)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
+--- import_tree/inline_mod.py
++++ import_tree/inline_mod.py
+@@ -1,2 +1 @@
+-inline_var = 5 + 3
 --- inline.py
 +++ inline.py
 @@ -1,4 +1,4 @@
@@ -76,10 +80,6 @@ test(x, inline_mod.  inline_var.conjugate)
  #? 22
 -test(x, inline_mod.  inline_var.conjugate)
 +test(x, (5 + 3).conjugate)
---- import_tree/inline_mod.py
-+++ import_tree/inline_mod.py
-@@ -1,2 +1 @@
--inline_var = 5 + 3
 # -------------------------------------------------- class
 class A: pass
 #? 5 error
