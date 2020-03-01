@@ -547,10 +547,10 @@ class InstanceClassFilter(AbstractFilter):
         self._class_filter = class_filter
 
     def get(self, name):
-        return self._convert(self._class_filter.get(name, from_instance=True))
+        return self._convert(self._class_filter.get(name))
 
     def values(self):
-        return self._convert(self._class_filter.values(from_instance=True))
+        return self._convert(self._class_filter.values())
 
     def _convert(self, names):
         return [
@@ -586,7 +586,7 @@ class SelfAttributeFilter(ClassFilter):
             if trailer.type == 'trailer' \
                     and len(trailer.parent.children) == 2 \
                     and trailer.children[0] == '.':
-                if name.is_definition() and self._access_possible(name, from_instance=True):
+                if name.is_definition() and self._access_possible(name):
                     # TODO filter non-self assignments instead of this bad
                     #      filter.
                     if self._is_in_right_scope(trailer.parent.children[0], name):
