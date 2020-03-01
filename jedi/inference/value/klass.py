@@ -230,6 +230,36 @@ class ClassMixin(object):
             return 'Type[%s]' % self.py__name__()
         return self.py__name__()
 
+    @inference_state_method_cache(default=False)
+    def is_typeddict(self):
+        # TODO Do a proper mro resolution. Currently we are just listing
+        # classes. However, it's a complicated algorithm.
+        from jedi.inference.gradual.typing import TypedDictBase
+        for lazy_cls in self.py__bases__():
+            if not isinstance(lazy_cls, LazyTreeValue):
+                return False
+            tree_node = lazy_cls.data
+            # Only resolve simple classes, stuff like Iterable[str] are more
+            # intensive to resolve and if generics are involved, we know it's
+            # not a TypedDict.
+            if not expr_is_dotted(tree_node):
+                return False
+
+            for cls in lazy_cls.infer():
+                if isinstance(cls, TypedDictBase):
+                    return True
+                try:
+                    method = cls.is_typeddict
+                except AttributeError:
+                    # We're only dealing with simple classes, so just returning
+                    # here should be fine. This only happens with e.g. compiled
+                    # classes.
+                    return False
+                else:
+                    if method():
+                        return True
+        return False
+
 
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'
@@ -273,36 +303,6 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         return [LazyKnownValues(
             self.inference_state.builtins_module.py__getattribute__('object')
         )]
-
-    @inference_state_method_cache(default=False)
-    def is_typeddict(self):
-        # TODO Do a proper mro resolution. Currently we are just listing
-        # classes. However, it's a complicated algorithm.
-        from jedi.inference.gradual.typing import TypedDictBase
-        for lazy_cls in self.py__bases__():
-            if not isinstance(lazy_cls, LazyTreeValue):
-                return False
-            tree_node = lazy_cls.data
-            # Only resolve simple classes, stuff like Iterable[str] are more
-            # intensive to resolve and if generics are involved, we know it's
-            # not a TypedDict.
-            if not expr_is_dotted(tree_node):
-                return False
-
-            for cls in lazy_cls.infer():
-                if isinstance(cls, TypedDictBase):
-                    return True
-                try:
-                    method = cls.is_typeddict
-                except AttributeError:
-                    # We're only dealing with simple classes, so just returning
-                    # here should be fine. This only happens with e.g. compiled
-                    # classes.
-                    return False
-                else:
-                    if method():
-                        return True
-        return False
 
     def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference.gradual.base import GenericClass
