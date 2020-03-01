@@ -6,6 +6,8 @@ values.
 This file deals with all the typing.py cases.
 """
 import itertools
+
+from jedi._compatibility import unicode
 from jedi import debug
 from jedi.inference.compiled import builtin_from_name, create_simple_object
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
@@ -363,7 +365,7 @@ class TypedDict(LazyValueWrapper):
         return ValueName(self, self.tree_node.name)
 
     def py__simple_getitem__(self, index):
-        if isinstance(index, str):
+        if isinstance(index, unicode):
             return ValueSet.from_sets(
                 name.infer()
                 for filter in self._definition_class.get_filters(is_instance=True)
