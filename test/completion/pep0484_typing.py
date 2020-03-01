@@ -573,25 +573,13 @@ class Bar(Foo):
     an_int
 
 def typed_dict_test_foo(arg: Bar):
-    a_string = arg['foo']
-    a_list_of_floats = arg['bar']
-    an_int = arg['an_int']
-    another_variable = arg['another_variable']
-
     #? str()
-    a_string
+    arg['foo']
     #? list()
-    a_list_of_floats
+    arg['bar']
     #? float()
-    a_list_of_floats[0]
+    arg['bar'][0]
     #? int()
-    an_int
+    arg['an_int']
     #? int()
-    another_variable
-
-    #? ['isupper']
-    a_string.isuppe
-    #? ['pop']
-    a_list_of_floats.po
-    #? ['as_integer_ratio']
-    an_int.as_integer_rati
+    arg['another_variable']
