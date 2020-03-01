@@ -25,7 +25,7 @@ class Bar:
 
 
 @pytest.fixture
-def pyc_project_path(tmpdir, skip_python2):
+def pyc_project_path(tmpdir):
     path = tmpdir.strpath
     dummy_package_path = os.path.join(path, "dummy_package")
     os.mkdir(dummy_package_path)
@@ -56,6 +56,7 @@ def pyc_project_path(tmpdir, skip_python2):
 
 
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_pyc(pyc_project_path, environment, load_unsafe_extensions):
     """
     The list of completion must be greater than 2.
