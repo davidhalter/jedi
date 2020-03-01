@@ -341,7 +341,7 @@ class BaseDefinition(object):
 
         names = self._name.get_qualified_names(include_module_names=True)
         if names is None:
-            return names
+            return None
 
         names = list(names)
         try:

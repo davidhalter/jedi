@@ -57,7 +57,7 @@ def no_py2_support(func):
     def wrapper(self, *args, **kwargs):
         if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
             raise NotImplementedError(
-                "No support for refactorings on Python 3.5"
+                "No support for refactorings/search on Python 2/3.5"
             )
         return func(self, *args, **kwargs)
     return wrapper
@@ -337,7 +337,8 @@ class Script(object):
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def search(self, name, **kwargs):
+    @no_py2_support
+    def search(self, string, **kwargs):
         """
         Searches a symbol in the current file.
 
@@ -348,14 +349,14 @@ class Script(object):
         :param references: If True lists all the names that are not listed by
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
         """
-        return self._search(name, **kwargs)  # Python 2 ...
+        return self._search(string, **kwargs)  # Python 2 ...
 
     @to_list
-    def _search(self, line, column, name, complete=False, all_scopes=False,
+    def _search(self, string, complete=False, all_scopes=False,
                 fuzzy=False):
-        wanted_type, wanted_names = helpers.split_search_string(name)
+        wanted_type, wanted_names = helpers.split_search_string(string)
 
-        names = [d._name for d in self._names(all_scopes=all_scopes)]
+        names = self._names(all_scopes=all_scopes)
         for s in wanted_names[:-1]:
             new_names = []
             for n in names:
@@ -366,12 +367,13 @@ class Script(object):
                     )
             names = new_names
 
-        last_name = wanted_names[-1]
+        last_name = wanted_names[-1].lower()
         for n in names:
-            if complete and helpers.match(n.string_name, last_name, fuzzy=fuzzy) \
-                    or not complete and n.string_name == last_name:
+            string = n.string_name.lower()
+            if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
+                    or not complete and string == last_name:
                 def_ = classes.Definition(self._inference_state, n)
-                if wanted_type is None or wanted_type == def_.api_type:
+                if not wanted_type or wanted_type == def_.type:
                     yield def_
 
     @validate_line_column
