@@ -26,7 +26,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.helpers import validate_line_column
-from jedi.api.completion import Completion
+from jedi.api.completion import Completion, complete_trailer
 from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
@@ -45,6 +45,7 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.value.iterable import unpack_tuple_to_dict
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.gradual.utils import load_proper_stub_module
+from jedi.inference.utils import to_list
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -335,6 +336,43 @@ class Script(object):
 
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
+
+    def search(self, name, **kwargs):
+        """
+        Searches a symbol in the current file.
+
+        :param all_scopes: If True lists the symbols of all scopes instead of
+            only the module.
+        :param definitions: If True lists the names that have been defined by a
+            class, function or a statement (``a = b`` returns ``a``).
+        :param references: If True lists all the names that are not listed by
+            ``definitions=True``. E.g. ``a = b`` returns ``b``.
+        """
+        return self._search(name, **kwargs)  # Python 2 ...
+
+    @to_list
+    def _search(self, line, column, name, complete=False, all_scopes=False,
+                fuzzy=False):
+        wanted_type, wanted_names = helpers.split_search_string(name)
+
+        names = [d._name for d in self._names(all_scopes=all_scopes)]
+        for s in wanted_names[:-1]:
+            new_names = []
+            for n in names:
+                if s == n.string_name:
+                    new_names += complete_trailer(
+                        self._get_module_context(),
+                        n.infer()
+                    )
+            names = new_names
+
+        last_name = wanted_names[-1]
+        for n in names:
+            if complete and helpers.match(n.string_name, last_name, fuzzy=fuzzy) \
+                    or not complete and n.string_name == last_name:
+                def_ = classes.Definition(self._inference_state, n)
+                if wanted_type is None or wanted_type == def_.api_type:
+                    yield def_
 
     @validate_line_column
     def help(self, line=None, column=None):

@@ -462,3 +462,8 @@ def validate_line_column(func):
                                  column, line_len, line, line_string))
         return func(self, line, column, *args, **kwargs)
     return wrapper
+
+
+def split_search_string(name):
+    type, _, dotted_names = name.rpartition(' ')
+    return type, dotted_names.split('.')
