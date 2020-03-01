@@ -513,25 +513,24 @@ class Script(object):
         :param references: If True lists all the names that are not listed by
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
         """
-        return self._names(**kwargs)  # Python 2...
+        names = self._names(**kwargs)
+        return [classes.Definition(self._inference_state, n) for n in names]
 
     def get_syntax_errors(self):
         return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):
-        def def_ref_filter(_def):
-            is_def = _def._name.tree_name.is_definition()
+        def def_ref_filter(name):
+            is_def = name.tree_name.is_definition()
             return definitions and is_def or references and not is_def
 
         # Set line/column to a random position, because they don't matter.
         module_context = self._get_module_context()
         defs = [
-            classes.Definition(
-                self._inference_state,
-                module_context.create_name(name)
-            ) for name in get_module_names(self._module_node, all_scopes)
+            module_context.create_name(name)
+            for name in get_module_names(self._module_node, all_scopes)
         ]
-        return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
+        return sorted(filter(def_ref_filter, defs), key=lambda x: x.start_pos)
 
     @no_py2_support
     def rename(self, line=None, column=None, **kwargs):
