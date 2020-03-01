@@ -558,6 +558,8 @@ d.foo
 Foo.set
 #? ['setdefault']
 d.setdefaul
+#? []
+Foo.setdefaul
 
 #? 5 ["'foo"]
 d['fo']

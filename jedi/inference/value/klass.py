@@ -133,6 +133,10 @@ class ClassMixin(object):
 
     def py__call__(self, arguments=None):
         from jedi.inference.value import TreeInstance
+
+        from jedi.inference.gradual.typing import TypedDict
+        if self.is_typeddict():
+            return ValueSet([TypedDict(self)])
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):

@@ -350,33 +350,6 @@ class TypedDictBase(BaseTypingValue):
     """
 
 
-class TypedDictClass(Value):
-    """
-    This represents a class defined like:
-
-        class Foo(TypedDict):
-            bar: str
-    """
-    def __init__(self, definition_class):
-        super().__init__(definition_class.inference_state, definition_class.parent_context)
-        self.tree_node = definition_class.tree_node
-        self._definition_class = definition_class
-
-    def get_filters(self, origin_scope=None):
-        """
-        A TypedDict doesn't have attributes.
-        """
-        o, = self.inference_state.builtins_module.py__getattribute__('object')
-        return o.get_filters()
-
-    @property
-    def name(self):
-        return ValueName(self, self.tree_node.name)
-
-    def py__call__(self, arguments):
-        return ValueSet({TypedDict(self._definition_class)})
-
-
 class TypedDict(LazyValueWrapper):
     """Represents the instance version of ``TypedDictClass``."""
     def __init__(self, definition_class):

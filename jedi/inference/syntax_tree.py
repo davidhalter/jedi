@@ -26,7 +26,6 @@ from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
-from jedi.inference.gradual.typing import TypedDictClass
 from jedi.inference.names import TreeNameDefinition
 from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
@@ -749,8 +748,6 @@ def _apply_decorators(context, node):
             parent_context=context,
             tree_node=node
         )
-        if decoratee_value.is_typeddict():
-            decoratee_value = TypedDictClass(decoratee_value)
     else:
         decoratee_value = FunctionValue.from_context(context, node)
     initial = values = ValueSet([decoratee_value])
