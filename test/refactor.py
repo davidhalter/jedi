@@ -9,6 +9,7 @@ from __future__ import with_statement
 import os
 import platform
 import re
+import sys
 
 from parso import split_lines
 
@@ -90,12 +91,14 @@ def _collect_file_tests(code, path, lines_to_execute):
 
 
 def collect_dir_tests(base_dir, test_files):
+    if sys.version_info[0] == 2:
+        return
     for f_name in os.listdir(base_dir):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
             path = os.path.join(base_dir, f_name)
-            with open(path) as f:
+            with open(path, newline='') as f:
                 code = f.read()
             for case in _collect_file_tests(code, path, lines_to_execute):
                 yield case

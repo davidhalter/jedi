@@ -25,15 +25,15 @@ class Bar:
 
 
 @pytest.fixture
-def pyc_project_path(tmpdir):
+def pyc_project_path(tmpdir, skip_python2):
     path = tmpdir.strpath
     dummy_package_path = os.path.join(path, "dummy_package")
     os.mkdir(dummy_package_path)
-    with open(os.path.join(dummy_package_path, "__init__.py"), 'w'):
+    with open(os.path.join(dummy_package_path, "__init__.py"), 'w', newline=''):
         pass
 
     dummy_path = os.path.join(dummy_package_path, 'dummy.py')
-    with open(dummy_path, 'w') as f:
+    with open(dummy_path, 'w', newline='') as f:
         f.write(SRC)
     import compileall
     compileall.compile_file(dummy_path)

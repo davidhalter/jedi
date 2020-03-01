@@ -33,7 +33,7 @@ def test_rename_mod(Script, dir_with_content):
     p2 = os.path.join(dir_with_content, 'modr.py')
     expected_code = 'import modr\nfoo\n'
     assert not os.path.exists(p1)
-    with open(p2) as f:
+    with open(p2, newline='') as f:
         assert f.read() == expected_code
 
     assert refactoring.get_renames() == [(p1, p2)]

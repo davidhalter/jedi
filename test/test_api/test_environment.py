@@ -118,9 +118,9 @@ def test_create_environment_executable():
     assert environment.executable == sys.executable
 
 
-def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch):
+def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch, skip_python2):
     fake_python = os.path.join(str(tmpdir), 'fake_python')
-    with open(fake_python, 'w') as f:
+    with open(fake_python, 'w', newline='') as f:
         f.write('')
 
     def _get_subprocess(self):
