@@ -48,11 +48,7 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cac
         string = name.string_name
         if settings.case_insensitive_completion:
             string = string.lower()
-        if fuzzy:
-            match = helpers.fuzzy_match(string, like_name)
-        else:
-            match = helpers.start_match(string, like_name)
-        if match:
+        if helpers.match(string, like_name, fuzzy=fuzzy):
             new = classes.Completion(
                 inference_state,
                 name,

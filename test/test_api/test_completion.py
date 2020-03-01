@@ -6,7 +6,7 @@ from textwrap import dedent
 import pytest
 
 from ..helpers import root_dir
-from jedi.api.helpers import start_match, fuzzy_match
+from jedi.api.helpers import _start_match, _fuzzy_match
 
 
 def test_in_whitespace(Script):
@@ -386,15 +386,15 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
 
 
 def test_start_match():
-    assert start_match('Condition', 'C')
+    assert _start_match('Condition', 'C')
 
 
 def test_fuzzy_match():
-    assert fuzzy_match('Condition', 'i')
-    assert not fuzzy_match('Condition', 'p')
-    assert fuzzy_match('Condition', 'ii')
-    assert not fuzzy_match('Condition', 'Ciito')
-    assert fuzzy_match('Condition', 'Cdiio')
+    assert _fuzzy_match('Condition', 'i')
+    assert not _fuzzy_match('Condition', 'p')
+    assert _fuzzy_match('Condition', 'ii')
+    assert not _fuzzy_match('Condition', 'Ciito')
+    assert _fuzzy_match('Condition', 'Cdiio')
 
 
 def test_ellipsis_completion(Script):
