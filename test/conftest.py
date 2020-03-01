@@ -8,7 +8,7 @@ import pytest
 from . import helpers
 from . import run
 from . import refactor
-from jedi.api.environment import InterpreterEnvironment, get_system_environment
+from jedi import InterpreterEnvironment, get_system_environment
 from jedi.inference.compiled.value import create_from_access_path
 from jedi.inference.imports import _load_python_module
 from jedi.file_io import KnownContentFileIO
