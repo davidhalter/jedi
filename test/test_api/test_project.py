@@ -61,6 +61,10 @@ def test_load_save_project(tmpdir):
         ('sample_int', ['helpers.sample_int'], {}),
         ('sample_int', ['helpers.sample_int'], dict(all_scopes=True)),
         ('sample_int.real', ['builtins.int.real'], {}),
+
+        ('class sample_int.real', [], {}),
+        ('function sample_int.real', ['builtins.int.real'], {}),
+        ('def sample_int.real', ['builtins.int.real'], {}),
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")

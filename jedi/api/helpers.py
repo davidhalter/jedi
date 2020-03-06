@@ -466,4 +466,6 @@ def validate_line_column(func):
 
 def split_search_string(name):
     type, _, dotted_names = name.rpartition(' ')
+    if type == 'def':
+        type = 'function'
     return type, dotted_names.split('.')
