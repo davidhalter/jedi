@@ -550,17 +550,18 @@ class Script(object):
         return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):
-        def def_ref_filter(name):
-            is_def = name.tree_name.is_definition()
-            return definitions and is_def or references and not is_def
-
         # Set line/column to a random position, because they don't matter.
         module_context = self._get_module_context()
         defs = [
             module_context.create_name(name)
-            for name in get_module_names(self._module_node, all_scopes)
+            for name in get_module_names(
+                self._module_node,
+                all_scopes=all_scopes,
+                definitions=definitions,
+                references=references,
+            )
         ]
-        return sorted(filter(def_ref_filter, defs), key=lambda x: x.start_pos)
+        return sorted(defs, key=lambda x: x.start_pos)
 
     @no_py2_support
     def rename(self, line=None, column=None, **kwargs):

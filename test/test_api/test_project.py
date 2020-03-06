@@ -51,10 +51,21 @@ def test_load_save_project(tmpdir):
          dict(complete=True)),
         ('test_load_save_p', ['test_api.test_project.test_load_save_project'],
          dict(complete=True, all_scopes=True)),
+
+        ('some_search_test_var', [], {}),
+        ('some_search_test_var', ['test_api.test_project.test_search.some_search_test_var'],
+         dict(all_scopes=True)),
+        ('some_search_test_var', ['test_api.test_project.test_search.some_search_test_var'],
+         dict(complete=True, all_scopes=True)),
+
+        ('sample_int', ['helpers.sample_int'], {}),
+        ('sample_int', ['helpers.sample_int'], dict(all_scopes=True)),
+        ('sample_int.real', ['builtins.int.real'], {}),
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
 def test_search(string, full_names, kwargs, skip_pre_python36):
+    some_search_test_var = 1.0
     project = Project(test_dir)
     defs = project.search(string, **kwargs)
     assert [d.full_name for d in defs] == full_names
