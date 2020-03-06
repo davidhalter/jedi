@@ -37,7 +37,7 @@ from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
 from jedi.inference.arguments import try_iter_content
-from jedi.inference.helpers import get_module_names, infer_call_of_leaf
+from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
 from jedi.inference.syntax_tree import tree_name_to_values
 from jedi.inference.value import ModuleValue
@@ -554,7 +554,7 @@ class Script(object):
         module_context = self._get_module_context()
         defs = [
             module_context.create_name(name)
-            for name in get_module_names(
+            for name in helpers.get_module_names(
                 self._module_node,
                 all_scopes=all_scopes,
                 definitions=definitions,

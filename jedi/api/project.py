@@ -8,12 +8,11 @@ from jedi._compatibility import scandir
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
-from jedi.api.helpers import split_search_string
+from jedi.api.helpers import split_search_string, get_module_names
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_files, search_in_file_ios
-from jedi.inference.helpers import get_module_names
 from jedi.inference import InferenceState
 from jedi.file_io import FolderIO
 from jedi.common.utils import traverse_parents

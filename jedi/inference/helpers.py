@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from parso.python import tree
 
 from jedi._compatibility import unicode
-from jedi.parser_utils import get_parent_scope
 
 
 def is_stdlib_path(path):
@@ -120,33 +119,6 @@ def get_names_of_node(node):
             return []
     else:
         return list(chain.from_iterable(get_names_of_node(c) for c in children))
-
-
-def get_module_names(module, all_scopes, definitions=True, references=False):
-    """
-    Returns a dictionary with name parts as keys and their call paths as
-    values.
-    """
-    def def_ref_filter(name):
-        is_def = name.is_definition()
-        return definitions and is_def or references and not is_def
-
-    names = list(chain.from_iterable(module.get_used_names().values()))
-    if not all_scopes:
-        # We have to filter all the names that don't have the module as a
-        # parent_scope. There's None as a parent, because nodes in the module
-        # node have the parent module and not suite as all the others.
-        # Therefore it's important to catch that case.
-
-        def is_module_scope_name(name):
-            parent_scope = get_parent_scope(name)
-            # async functions have an extra wrapper. Strip it.
-            if parent_scope and parent_scope.type == 'async_stmt':
-                parent_scope = parent_scope.parent
-            return parent_scope in (module, None)
-
-        names = [n for n in names if is_module_scope_name(n)]
-    return filter(def_ref_filter, names)
 
 
 def is_string(value):
