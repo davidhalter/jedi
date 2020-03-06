@@ -192,7 +192,7 @@ def gitignored_lines(folder_io, file_io):
     return ignored_paths, ignored_names
 
 
-def _recurse_find_python_files(folder_io, except_paths):
+def recurse_find_python_files(folder_io, except_paths=()):
     for root_folder_io, folder_ios, file_ios in folder_io.walk():
         # Delete folders that we don't want to iterate over.
         for file_io in file_ios:
@@ -228,7 +228,7 @@ def _find_python_files_in_sys_path(inference_state, module_contexts):
             path = folder_io.path
             if not any(path.startswith(p) for p in sys_path) or path in except_paths:
                 break
-            for file_io in _recurse_find_python_files(folder_io, except_paths):
+            for file_io in recurse_find_python_files(folder_io, except_paths):
                 if file_io.path not in yielded_paths:
                     yield file_io
             except_paths.add(path)

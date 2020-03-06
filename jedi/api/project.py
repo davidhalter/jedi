@@ -3,11 +3,14 @@ import errno
 import json
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
+from jedi._compatibility import scandir
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
+from jedi.inference.references import recurse_find_python_files
+from jedi.file_io import FolderIO
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
@@ -165,6 +168,14 @@ class Project(object):
                 self._environment = get_cached_default_environment()
         return self._environment
 
+    def search(self, string, complete=False, all_scopes=False):
+        """
+        Returns a generator of names
+        """
+        for file_io in recurse_find_python_files(FolderIO(self._path)):
+            for name in get_names(all_scopes=True):
+                yield name
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._path)
 
@@ -225,3 +236,13 @@ def get_default_project(path=None):
 
     curdir = path if os.path.isdir(path) else os.path.dirname(path)
     return Project(curdir)
+
+
+def _recursive_file_list(path):
+    listed = sorted(scandir(path), key=lambda e: e.name)
+    for entry in listed:
+        if entry.is_dir(follow_symlinks=True):
+            for x in _recursive_file_list(entry.path):  # Python 2...
+                yield x
+        else:
+            yield entry
