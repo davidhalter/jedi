@@ -26,7 +26,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.helpers import validate_line_column
-from jedi.api.completion import Completion, complete_trailer
+from jedi.api.completion import Completion, search_in_module
 from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
@@ -354,27 +354,17 @@ class Script(object):
     @to_list
     def _search(self, string, complete=False, all_scopes=False,
                 fuzzy=False):
-        wanted_type, wanted_names = helpers.split_search_string(string)
-
         names = self._names(all_scopes=all_scopes)
-        for s in wanted_names[:-1]:
-            new_names = []
-            for n in names:
-                if s == n.string_name:
-                    new_names += complete_trailer(
-                        self._get_module_context(),
-                        n.infer()
-                    )
-            names = new_names
-
-        last_name = wanted_names[-1].lower()
-        for n in names:
-            string = n.string_name.lower()
-            if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
-                    or not complete and string == last_name:
-                def_ = classes.Definition(self._inference_state, n)
-                if not wanted_type or wanted_type == def_.type:
-                    yield def_
+        wanted_type, wanted_names = helpers.split_search_string(string)
+        return search_in_module(
+            self._inference_state,
+            self._get_module_context(),
+            names=names,
+            wanted_type=wanted_type,
+            wanted_names=wanted_names,
+            complete=complete,
+            fuzzy=fuzzy,
+        )
 
     @validate_line_column
     def help(self, line=None, column=None):

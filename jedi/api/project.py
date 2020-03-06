@@ -1,12 +1,14 @@
 import os
 import errno
 import json
+import sys
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
 from jedi._compatibility import scandir
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
-from jedi.api.classes import Definition
+from jedi.api.completion import search_in_module
+from jedi.api.helpers import split_search_string
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
@@ -176,10 +178,25 @@ class Project(object):
         Returns a generator of names
         """
         inference_state = InferenceState(self)
+        if inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
+            raise NotImplementedError(
+                "No support for refactorings/search on Python 2/3.5"
+            )
+        wanted_type, wanted_names = split_search_string(string)
+        name = wanted_names[0]
+
         file_io_iterator = recurse_find_python_files(FolderIO(self._path))
-        for module_context in search_in_file_ios(inference_state, file_io_iterator, string):
-            for name in get_module_names(module_context.ree_node, all_scopes=all_scopes):
-                yield Definition(inference_state, module_context.create_name(name))
+        for module_context in search_in_file_ios(inference_state, file_io_iterator, name):
+            names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
+            for x in search_in_module(
+                inference_state,
+                module_context,
+                names=[module_context.create_name(n) for n in names],
+                wanted_type=wanted_type,
+                wanted_names=wanted_names,
+                complete=complete
+            ):
+                yield x  # Python 2...
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._path)

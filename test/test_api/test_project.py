@@ -1,6 +1,9 @@
 import os
+import sys
 
-from ..helpers import get_example_dir, set_cwd, root_dir
+import pytest
+
+from ..helpers import get_example_dir, set_cwd, root_dir, test_dir
 from jedi import Interpreter
 from jedi.api import Project, get_default_project
 
@@ -38,3 +41,20 @@ def test_load_save_project(tmpdir):
 
     loaded = Project.load(tmpdir.strpath)
     assert loaded.added_sys_path == ['/foo']
+
+
+@pytest.mark.parametrize(
+    'string, full_names, kwargs', [
+        ('test_load_save_project', ['test_api.test_project.test_load_save_project'], {}),
+        ('test_load_savep', [], {'complete': True}),
+        ('test_load_save_p', ['test_api.test_project.test_load_save_project'],
+         dict(complete=True)),
+        ('test_load_save_p', ['test_api.test_project.test_load_save_project'],
+         dict(complete=True, all_scopes=True)),
+    ]
+)
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
+def test_search(string, full_names, kwargs, skip_pre_python36):
+    project = Project(test_dir)
+    defs = project.search(string, **kwargs)
+    assert [d.full_name for d in defs] == full_names

@@ -573,3 +573,25 @@ def _complete_getattr(user_context, instance):
             objects = context.infer_node(object_node)
             return complete_trailer(user_context, objects)
     return []
+
+
+def search_in_module(inference_state, module_context, names, wanted_names,
+                     wanted_type, complete=False, fuzzy=False):
+    for s in wanted_names[:-1]:
+        new_names = []
+        for n in names:
+            if s == n.string_name:
+                new_names += complete_trailer(
+                    module_context,
+                    n.infer()
+                )
+        names = new_names
+
+    last_name = wanted_names[-1].lower()
+    for n in names:
+        string = n.string_name.lower()
+        if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
+                or not complete and string == last_name:
+            def_ = classes.Definition(inference_state, n)
+            if not wanted_type or wanted_type == def_.type:
+                yield def_
