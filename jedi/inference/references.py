@@ -3,6 +3,7 @@ import re
 
 from parso import python_bytes_to_unicode
 
+from jedi.debug import dbg
 from jedi.file_io import KnownContentFileIO
 from jedi.inference.imports import SubModuleName, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
@@ -254,19 +255,28 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
     if len(name) <= 2:
         return
 
+    file_io_iterator = _find_python_files_in_sys_path(inference_state, module_contexts)
+    for x in search_in_file_ios(inference_state, file_io_iterator, name,
+                                limit_reduction=limit_reduction):
+        yield x  # Python 2...
+
+
+def search_in_file_ios(inference_state, file_io_iterator, name, limit_reduction=1):
     parse_limit = _PARSED_FILE_LIMIT / limit_reduction
     open_limit = _OPENED_FILE_LIMIT / limit_reduction
     file_io_count = 0
     parsed_file_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
-    for file_io in _find_python_files_in_sys_path(inference_state, module_contexts):
+    for file_io in file_io_iterator:
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)
         if m is not None:
             parsed_file_count += 1
             yield m
             if parsed_file_count >= parse_limit:
+                dbg('Hit limit of parsed files: %s', parse_limit)
                 break
 
         if file_io_count >= open_limit:
+            dbg('Hit limit of opened files: %s', open_limit)
             break
