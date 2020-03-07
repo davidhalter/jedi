@@ -73,6 +73,26 @@ def test_load_save_project(tmpdir):
         ('test_api.test_project.test_search', ['test_api.test_project.test_search'], {}),
         ('test_api.test_project.test_sear', ['test_api.test_project.test_search'],
          dict(complete=True)),
+
+        # With namespace
+        ('implicit_namespace_package.ns1.pkg',
+         ['test_inference.implicit_namespace_package.ns1.pkg',
+          'examples.implicit_namespace_package.ns1.pkg'], {}),
+        ('implicit_namespace_package.ns1.pkg.ns1_file',
+         ['test_inference.implicit_namespace_package.ns1.pkg.ns1_file',
+          'examples.implicit_namespace_package.ns1.pkg.ns1_file'], {}),
+        ('examples.implicit_namespace_package.ns1.pkg.ns1_file',
+         ['examples.implicit_namespace_package.ns1.pkg.ns1_file'], {}),
+        ('implicit_namespace_package.ns1.pkg.',
+         ['test_inference.implicit_namespace_package.ns1.pkg.ns1_file',
+          'examples.implicit_namespace_package.ns1.pkg.ns1_file'],
+         dict(complete=True)),
+        ('implicit_namespace_package.',
+         ['test_inference.implicit_namespace_package.ns1',
+          'test_inference.implicit_namespace_package.ns2',
+          'examples.implicit_namespace_package.ns1',
+          'examples.implicit_namespace_package.ns2'],
+         dict(complete=True)),
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")

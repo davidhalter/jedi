@@ -10,7 +10,7 @@ from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
 from jedi.api.helpers import split_search_string, get_module_names
 from jedi._compatibility import force_unicode
-from jedi.inference.imports import load_module_from_path
+from jedi.inference.imports import load_module_from_path, load_namespace_from_path
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
@@ -196,11 +196,11 @@ class Project(object):
                     try:
                         m = load_module_from_path(inference_state, f).as_context()
                     except FileNotFoundError:
-                        f = folder_io.get_file_io('__init__.py')
+                        f = folder_io.get_file_io('__init__.pyi')
                         try:
                             m = load_module_from_path(inference_state, f).as_context()
                         except FileNotFoundError:
-                            m = namespace
+                            m = load_namespace_from_path(inference_state, folder_io).as_context()
                 else:
                     continue
             else:

@@ -353,6 +353,10 @@ class NamespaceContext(TreeContextMixin, ValueContext):
     def get_value(self):
         return self._value
 
+    @property
+    def string_names(self):
+        return self._value.string_names
+
     def py__file__(self):
         return self._value.py__file__()
 

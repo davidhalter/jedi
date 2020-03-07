@@ -500,6 +500,15 @@ def load_module_from_path(inference_state, file_io, base_names=None):
     return module
 
 
+def load_namespace_from_path(inference_state, folder_io):
+    import_names, is_package = sys_path.transform_path_to_dotted(
+        inference_state.get_sys_path(),
+        folder_io.path
+    )
+    from jedi.inference.value.namespace import ImplicitNamespaceValue
+    return ImplicitNamespaceValue(inference_state, import_names, [folder_io.path])
+
+
 def follow_error_node_imports_if_possible(context, name):
     error_node = tree.search_ancestor(name, 'error_node')
     if error_node is not None:
