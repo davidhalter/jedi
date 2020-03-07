@@ -445,37 +445,37 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         )
                     )
         elif annotation_name == 'Tuple':
-            # TODO: this logic is pretty similar to the general logic below, can
-            # we combine them?
+            annotation_generics = annotation_value.get_generics()
+            tuple_annotation, = annotation_value.execute_annotation()
+            # TODO: is can we avoid using this private method?
+            if tuple_annotation._is_homogenous():
+                # The parameter annotation is of the form `Tuple[T, ...]`,
+                # so we treat the incoming tuple like a iterable sequence
+                # rather than a positional container of elements.
+                for nested_annotation_value in annotation_generics[0]:
+                    _merge_type_var_dicts(
+                        type_var_dict,
+                        _infer_type_vars(
+                            nested_annotation_value,
+                            value_set.merge_types_of_iterate(),
+                        ),
+                    )
+            else:
+                # The parameter annotation has only explicit type parameters
+                # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+                # treat the incoming values as needing to match the annotation
+                # exactly, just as we would for non-tuple annotations.
 
-            for element in value_set:
-                py_class = element.get_annotated_class_object()
-                if not isinstance(py_class, GenericClass):
-                    py_class = element
+                # TODO: this logic is pretty similar to the general logic below, can
+                # we combine them?
 
-                if not isinstance(py_class, DefineGenericBase):
-                    continue
+                for element in value_set:
+                    py_class = element.get_annotated_class_object()
+                    if not isinstance(py_class, GenericClass):
+                        py_class = element
 
-                annotation_generics = annotation_value.get_generics()
-                tuple_annotation, = annotation_value.execute_annotation()
-                # TODO: is can we avoid using this private method?
-                if tuple_annotation._is_homogenous():
-                    # The parameter annotation is of the form `Tuple[T, ...]`,
-                    # so we treat the incoming tuple like a iterable sequence
-                    # rather than a positional container of elements.
-                    for nested_annotation_value in annotation_generics[0]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                value_set.merge_types_of_iterate(),
-                            ),
-                        )
-                else:
-                    # The parameter annotation has only explicit type parameters
-                    # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
-                    # treat the incoming values as needing to match the annotation
-                    # exactly, just as we would for non-tuple annotations.
+                    if not isinstance(py_class, DefineGenericBase):
+                        continue
 
                     actual_generics = py_class.get_generics()
                     merge_pairwise_generics(annotation_generics, actual_generics)
