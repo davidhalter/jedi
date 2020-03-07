@@ -356,6 +356,56 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
     type_var_dict = {}
     annotation_name = annotation_value.py__name__()
 
+    def merge_pairwise_generics(annotation_generics, actual_generics):
+        """
+        Given iterables of the generics immediately within an annotation and
+        within an argument's type, match up the generic parameters with the
+        corrsponding actual types.
+
+        For example, given the following code:
+
+            def values(mapping: Mapping[K, V]) -> List[V]: ...
+
+            for val in values({1: 'a'}):
+                val
+
+        Then in this function we are given `K` & `V` and `int` & `str` in order
+        to determine that `K` is `int and `V` is `str`.
+
+        Parameters
+        ----------
+
+        `annotation_generics`: an ordered collection of the immediately nested
+            generic parameters within the annotation being considered. In the
+            above example, the caller would be analysing `Mapping[K, V]` and
+            would give us an iterable yileding representations of the parameters
+            `K` and then `V`.
+
+        `actual_generics`: an ordered collection of the immediately nested
+            generic parameters within the type of the argument being considered.
+            These need to be the parameters at the level of the type for which
+            the annotation generics are given, rather than of the actual type of
+            the parameter.
+            In the above example, the caller would be analysing `{1: 'a'}`. The
+            caller must have already determined that this is an instance of a
+            type which implements `Mapping` and should pass us an iterable over
+            representations of the type parameters to that `Mapping`
+            implementation (here, `int` and `str` in that order).
+        """
+
+        for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+            for nested_annotation_value in annotation_generics_set:
+                _merge_type_var_dicts(
+                    type_var_dict,
+                    _infer_type_vars(
+                        nested_annotation_value,
+                        actual_generic_set,
+                        # This is a note to ourselves that we have already
+                        # converted the instance representation to its class.
+                        is_class_value=True,
+                    ),
+                )
+
     if isinstance(annotation_value, TypeVar):
         if not is_class_value:
             return {annotation_name: value_set.py__class__()}
@@ -371,19 +421,8 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             annotation_generics = annotation_value.get_generics()
                             actual_generics = element.get_generics()
 
-                            for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
-                                for nested_annotation_value in annotation_generics_set:
-                                    _merge_type_var_dicts(
-                                        type_var_dict,
-                                        _infer_type_vars(
-                                            nested_annotation_value,
-                                            actual_generic_set,
-                                            # This is a note to ourselves that we
-                                            # have already converted the instance
-                                            # representation to its class.
-                                            is_class_value=True,
-                                        ),
-                                    )
+                            merge_pairwise_generics(annotation_generics, actual_generics)
+
                 else:
                     for nested_annotation_value in given[0]:
                         _merge_type_var_dicts(
@@ -431,19 +470,8 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         )
                 else:
                     actual_generics = py_class.get_generics()
-                    for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
-                        for nested_annotation_value in annotation_generics_set:
-                            _merge_type_var_dicts(
-                                type_var_dict,
-                                _infer_type_vars(
-                                    nested_annotation_value,
-                                    actual_generic_set,
-                                    # This is a note to ourselves that we
-                                    # have already converted the instance
-                                    # representation to its class.
-                                    is_class_value=True,
-                                ),
-                            )
+                    merge_pairwise_generics(annotation_generics, actual_generics)
+
     elif isinstance(annotation_value, GenericClass):
         if annotation_name == 'Iterable' and not is_class_value:
             given = annotation_value.get_generics()
@@ -478,19 +506,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         annotation_generics = annotation_value.get_generics()
                         actual_generics = parent_class.get_generics()
 
-                        for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
-                            for nested_annotation_value in annotation_generics_set:
-                                _merge_type_var_dicts(
-                                    type_var_dict,
-                                    _infer_type_vars(
-                                        nested_annotation_value,
-                                        actual_generic_set,
-                                        # This is a note to ourselves that we
-                                        # have already converted the instance
-                                        # representation to its class.
-                                        is_class_value=True,
-                                    ),
-                                )
+                        merge_pairwise_generics(annotation_generics, actual_generics)
 
                         break
 
