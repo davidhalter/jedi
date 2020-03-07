@@ -469,14 +469,14 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 else:
                     py_class = element
 
-                for klass in py_class.py__mro__():
-                    class_name = klass.py__name__()
+                for parent_class in py_class.py__mro__():
+                    class_name = parent_class.py__name__()
                     if annotation_name == class_name:
-                        if not isinstance(klass, DefineGenericBase):
+                        if not isinstance(parent_class, DefineGenericBase):
                             continue
 
                         annotation_generics = annotation_value.get_generics()
-                        actual_generics = klass.get_generics()
+                        actual_generics = parent_class.get_generics()
 
                         for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
                             for nested_annotation_value in annotation_generics_set:
