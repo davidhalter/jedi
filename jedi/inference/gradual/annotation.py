@@ -460,6 +460,9 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 tuple_annotation, = annotation_value.execute_annotation()
                 # TODO: is can we avoid using this private method?
                 if tuple_annotation._is_homogenous():
+                    # The parameter annotation is of the form `Tuple[T, ...]`,
+                    # so we treat the incoming tuple like a iterable sequence
+                    # rather than a positional container of elements.
                     for nested_annotation_value in annotation_generics[0]:
                         _merge_type_var_dicts(
                             type_var_dict,
@@ -469,6 +472,11 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             ),
                         )
                 else:
+                    # The parameter annotation has only explicit type parameters
+                    # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+                    # treat the incoming values as needing to match the annotation
+                    # exactly, just as we would for non-tuple annotations.
+
                     actual_generics = py_class.get_generics()
                     merge_pairwise_generics(annotation_generics, actual_generics)
 
