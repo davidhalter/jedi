@@ -7,6 +7,9 @@ class AbstractFolderIO(object):
     def __init__(self, path):
         self.path = path
 
+    def get_base_name(self):
+        raise NotImplementedError
+
     def list(self):
         raise NotImplementedError
 

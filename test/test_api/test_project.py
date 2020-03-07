@@ -46,7 +46,7 @@ def test_load_save_project(tmpdir):
 @pytest.mark.parametrize(
     'string, full_names, kwargs', [
         ('test_load_save_project', ['test_api.test_project.test_load_save_project'], {}),
-        ('test_load_savep', [], {'complete': True}),
+        ('test_load_savep', [], dict(complete=True)),
         ('test_load_save_p', ['test_api.test_project.test_load_save_project'],
          dict(complete=True)),
         ('test_load_save_p', ['test_api.test_project.test_load_save_project'],
@@ -66,6 +66,13 @@ def test_load_save_project(tmpdir):
         ('foo sample_int.real', [], {}),
         ('def sample_int.real', ['builtins.int.real'], {}),
         ('function sample_int.real', ['builtins.int.real'], {}),
+
+        # With modules
+        ('test_project.test_search', ['test_api.test_project.test_search'], {}),
+        ('test_project.test_searc', ['test_api.test_project.test_search'], dict(complete=True)),
+        ('test_api.test_project.test_search', ['test_api.test_project.test_search'], {}),
+        ('test_api.test_project.test_sear', ['test_api.test_project.test_search'],
+         dict(complete=True)),
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")

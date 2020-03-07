@@ -10,9 +10,10 @@ from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
 from jedi.api.helpers import split_search_string, get_module_names
 from jedi._compatibility import force_unicode
+from jedi.inference.imports import load_module_from_path
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
-from jedi.inference.references import recurse_find_python_files, search_in_file_ios
+from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
 from jedi.inference import InferenceState
 from jedi.file_io import FolderIO
 from jedi.common.utils import traverse_parents
@@ -184,8 +185,43 @@ class Project(object):
         wanted_type, wanted_names = split_search_string(string)
         name = wanted_names[0]
 
-        file_io_iterator = recurse_find_python_files(FolderIO(self._path))
-        for module_context in search_in_file_ios(inference_state, file_io_iterator, name):
+        ios = recurse_find_python_folders_and_files(FolderIO(self._path))
+        file_ios = []
+
+        for folder_io, file_io in ios:
+            if file_io is None:
+                file_name = folder_io.get_base_name()
+                if file_name == name:
+                    f = folder_io.get_file_io('__init__.py')
+                    try:
+                        m = load_module_from_path(inference_state, f).as_context()
+                    except FileNotFoundError:
+                        f = folder_io.get_file_io('__init__.py')
+                        try:
+                            m = load_module_from_path(inference_state, f).as_context()
+                        except FileNotFoundError:
+                            m = namespace
+                else:
+                    continue
+            else:
+                file_ios.append(file_io)
+                file_name = os.path.basename(file_io.path)
+                if file_name in (name + '.py', name + 'pyi'):
+                    m = load_module_from_path(inference_state, file_io).as_context()
+                else:
+                    continue
+
+            for x in search_in_module(
+                inference_state,
+                m,
+                names=[m.name],
+                wanted_type=wanted_type,
+                wanted_names=wanted_names,
+                complete=complete
+            ):
+                yield x  # Python 2...
+
+        for module_context in search_in_file_ios(inference_state, file_ios, name):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
             for x in search_in_module(
                 inference_state,
