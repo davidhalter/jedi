@@ -1,6 +1,7 @@
 import re
 import os
 
+from jedi._compatibility import scandir
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
@@ -39,28 +40,30 @@ class _ModuleAttributeName(AbstractNameDefinition):
 
 def iter_module_names(inference_state, paths):
     # Python modules/packages
-    for n in inference_state.compiled_subprocess.list_module_names(paths):
-        yield n
-
     for path in paths:
         try:
-            dirs = os.listdir(path)
+            dirs = scandir(path)
         except OSError:
             # The file might not exist or reading it might lead to an error.
             debug.warning("Not possible to list directory: %s", path)
             continue
-        for name in dirs:
-            # Namespaces
-            if os.path.isdir(os.path.join(path, name)):
+        for dir_entry in dirs:
+            name = dir_entry.name
+            # First Namespaces then modules/stubs
+            if dir_entry.is_dir():
                 # pycache is obviously not an interestin namespace. Also the
                 # name must be a valid identifier.
                 # TODO use str.isidentifier, once Python 2 is removed
                 if name != '__pycache__' and not re.search(r'\W|^\d', name):
                     yield name
-            # Stub files
-            if name.endswith('.pyi'):
-                if name != '__init__.pyi':
-                    yield name[:-4]
+            else:
+                if name.endswith('.py'):
+                    if name != '__init__.py':
+                        yield name[:-3]
+                # Stub files
+                elif name.endswith('.pyi'):
+                    if name != '__init__.pyi':
+                        yield name[:-4]
 
 
 class SubModuleDictMixin(object):

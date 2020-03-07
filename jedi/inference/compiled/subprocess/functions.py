@@ -3,7 +3,7 @@ import sys
 import os
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    iter_modules, all_suffixes
+    all_suffixes
 from jedi.inference.compiled import access
 from jedi import parser_utils
 
@@ -38,13 +38,6 @@ def get_module_info(inference_state, sys_path=None, full_name=None, **kwargs):
     finally:
         if sys_path is not None:
             sys.path = temp
-
-
-def list_module_names(inference_state, search_path):
-    return [
-        force_unicode(name)
-        for module_loader, name, is_pkg in iter_modules(search_path)
-    ]
 
 
 def get_builtin_module_names(inference_state):
