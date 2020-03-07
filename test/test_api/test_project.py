@@ -60,12 +60,12 @@ def test_load_save_project(tmpdir):
 
         ('sample_int', ['helpers.sample_int'], {}),
         ('sample_int', ['helpers.sample_int'], dict(all_scopes=True)),
-        ('sample_int.real', ['builtins.int.real'], {}),
+        ('sample_int.real', ['stub:builtins.int.real'], {}),
 
         ('class sample_int.real', [], {}),
         ('foo sample_int.real', [], {}),
-        ('def sample_int.real', ['builtins.int.real'], {}),
-        ('function sample_int.real', ['builtins.int.real'], {}),
+        ('def sample_int.real', ['stub:builtins.int.real'], {}),
+        ('function sample_int.real', ['stub:builtins.int.real'], {}),
 
         # With modules
         ('test_project.test_search', ['test_api.test_project.test_search'], {}),
@@ -90,8 +90,9 @@ def test_load_save_project(tmpdir):
          dict(complete=True)),
 
         # On sys path
-        ('sys.path', ['sys.path'], {}),
-        ('json.dumps', ['json.dumps', 'json.dumps'], {}),  # stdlib + stub
+        ('sys.path', ['stub:sys.path'], {}),
+        ('json.dumps', ['stub:json.dumps', 'json.dumps'], {}),  # stdlib + stub
+        ('multiprocessing', ['stub:multiprocessing'], {})
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
@@ -99,4 +100,4 @@ def test_search(string, full_names, kwargs, skip_pre_python36):
     some_search_test_var = 1.0
     project = Project(test_dir)
     defs = project.search(string, **kwargs)
-    assert [d.full_name for d in defs] == full_names
+    assert [('stub:' if d.is_stub() else '') + d.full_name for d in defs] == full_names

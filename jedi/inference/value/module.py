@@ -38,6 +38,10 @@ class _ModuleAttributeName(AbstractNameDefinition):
         return compiled.get_string_value_set(self.parent_context.inference_state)
 
 
+def iter_module_names(*args, **kwargs):
+    return sorted(set(iter_module_names(*args, **kwargs)))
+
+
 def iter_module_names(inference_state, paths):
     # Python modules/packages
     for path in paths:
