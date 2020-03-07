@@ -464,9 +464,6 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 # treat the incoming values as needing to match the annotation
                 # exactly, just as we would for non-tuple annotations.
 
-                # TODO: this logic is pretty similar to the general logic below, can
-                # we combine them?
-
                 for element in value_set:
                     py_class = element.get_annotated_class_object()
                     if not isinstance(py_class, GenericClass):
