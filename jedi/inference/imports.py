@@ -29,7 +29,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typeshed import import_module_decorator
-from jedi.inference.value.module import iter_module_names
+from jedi.inference.value.module import iter_module_names as module_iter_module_names
 from jedi.plugins import plugin_manager
 
 
@@ -265,24 +265,15 @@ class Importer(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-        names = []
-        # add builtin module names
-        if search_path is None and in_module is None:
-            names += [
-                ImportName(self._module_context, name)
-                for name in self._inference_state.compiled_subprocess.get_builtin_module_names()
-            ]
-
         if search_path is None:
-            search_path = self._sys_path_with_modifications(is_completion=True)
-
-        for name in iter_module_names(self._inference_state, search_path):
-            if in_module is None:
-                n = ImportName(self._module_context, name)
-            else:
-                n = SubModuleName(in_module.as_context(), name)
-            names.append(n)
-        return names
+            sys_path = self._sys_path_with_modifications(is_completion=True)
+        else:
+            sys_path = search_path
+        return list(iter_module_names(
+            self._inference_state, self._module_context, sys_path,
+            module_cls=ImportName if in_module is None else SubModuleName,
+            add_builtin_modules=search_path is None and in_module is None,
+        ))
 
     def completion_names(self, inference_state, only_modules=False):
         """
@@ -536,3 +527,18 @@ def follow_error_node_imports_if_possible(context, name):
             return Importer(
                 context.inference_state, names, context.get_root_context(), level).follow()
     return None
+
+
+def iter_module_names(inference_state, module_context, search_path,
+                      module_cls=ImportName, add_builtin_modules=True):
+    """
+    Get the names of all modules in the search_path. This means file names
+    and not names defined in the files.
+    """
+    # add builtin module names
+    if add_builtin_modules:
+        for name in inference_state.compiled_subprocess.get_builtin_module_names():
+            yield module_cls(module_context, name)
+
+    for name in module_iter_module_names(inference_state, search_path):
+        yield module_cls(module_context, name)

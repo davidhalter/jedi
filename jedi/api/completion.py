@@ -576,11 +576,15 @@ def _complete_getattr(user_context, instance):
 
 
 def search_in_module(inference_state, module_context, names, wanted_names,
-                     wanted_type, complete=False, fuzzy=False):
+                     wanted_type, complete=False, fuzzy=False,
+                     ignore_imports=False):
     for s in wanted_names[:-1]:
         new_names = []
         for n in names:
             if s == n.string_name:
+                if n.tree_name is not None and n.api_type == 'module' \
+                        and ignore_imports:
+                    continue
                 new_names += complete_trailer(
                     module_context,
                     n.infer()

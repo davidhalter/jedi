@@ -93,6 +93,10 @@ def test_load_save_project(tmpdir):
           'examples.implicit_namespace_package.ns1',
           'examples.implicit_namespace_package.ns2'],
          dict(complete=True)),
+
+        # On sys path
+        ('sys.path', ['sys.path'], {}),
+        ('json.dumps', ['json.dumps', 'json.dumps'], {}),  # stdlib + stub
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")

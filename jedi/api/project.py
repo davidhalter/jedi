@@ -3,19 +3,21 @@ import errno
 import json
 import sys
 
-from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
-from jedi._compatibility import scandir
+from jedi._compatibility import FileNotFoundError, PermissionError, \
+    IsADirectoryError, scandir
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
 from jedi.api.helpers import split_search_string, get_module_names
 from jedi._compatibility import force_unicode
-from jedi.inference.imports import load_module_from_path, load_namespace_from_path
+from jedi.inference.imports import load_module_from_path, \
+    load_namespace_from_path, iter_module_names
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
+from jedi.inference.value.module import ModuleValue
 from jedi.inference import InferenceState
-from jedi.file_io import FolderIO
+from jedi.file_io import FolderIO, FileIO
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
@@ -177,7 +179,12 @@ class Project(object):
         """
         Returns a generator of names
         """
-        inference_state = InferenceState(self)
+        # Using a Script is they easiest way to get an empty module context.
+        from jedi import Script
+        s = Script('', project=self)
+        inference_state = s._inference_state
+        empty_module_context = s._get_module_context()
+
         if inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
             raise NotImplementedError(
                 "No support for refactorings/search on Python 2/3.5"
@@ -188,6 +195,7 @@ class Project(object):
         ios = recurse_find_python_folders_and_files(FolderIO(self._path))
         file_ios = []
 
+        # 1. Search for modules in the current project
         for folder_io, file_io in ios:
             if file_io is None:
                 file_name = folder_io.get_base_name()
@@ -221,6 +229,7 @@ class Project(object):
             ):
                 yield x  # Python 2...
 
+        # 2. Search for identifiers in the project.
         for module_context in search_in_file_ios(inference_state, file_ios, name):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
             for x in search_in_module(
@@ -229,9 +238,29 @@ class Project(object):
                 names=[module_context.create_name(n) for n in names],
                 wanted_type=wanted_type,
                 wanted_names=wanted_names,
-                complete=complete
+                complete=complete,
+                ignore_imports=True,
             ):
                 yield x  # Python 2...
+
+        # 3. Search for modules on sys.path
+        sys_path = [
+            p for p in self._get_sys_path(inference_state)
+            # Exclude folders that are handled by recursing of the Python
+            # folders.
+            if not p.startswith(self._path)
+        ]
+
+        names = list(iter_module_names(inference_state, empty_module_context, sys_path))
+        for x in search_in_module(
+            inference_state,
+            empty_module_context,
+            names=names,
+            wanted_type=wanted_type,
+            wanted_names=wanted_names,
+            complete=complete
+        ):
+            yield x  # Python 2...
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._path)
@@ -295,11 +324,10 @@ def get_default_project(path=None):
     return Project(curdir)
 
 
-def _recursive_file_list(path):
-    listed = sorted(scandir(path), key=lambda e: e.name)
-    for entry in listed:
-        if entry.is_dir(follow_symlinks=True):
-            for x in _recursive_file_list(entry.path):  # Python 2...
-                yield x
-        else:
-            yield entry
+def _get_sys_path_folder_and_file_ios(sys_path):
+    for p in sys_path:
+        for dir_entry in scandir(p):
+            if dir_entry.is_dir():
+                yield FolderIO(p), None
+            else:
+                yield None, FileIO(p)
