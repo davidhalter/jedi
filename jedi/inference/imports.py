@@ -428,13 +428,19 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
 
 def _load_python_module(inference_state, file_io,
                         import_names=None, is_package=False):
+    is_stub = file_io.path.endswith('.pyi')
     module_node = inference_state.parse(
         file_io=file_io,
         cache=True,
         diff_cache=settings.fast_parser,
-        cache_path=settings.cache_directory
+        cache_path=settings.cache_directory,
+        use_latest_grammar=is_stub,
     )
 
+    from jedi.inference.gradual.typeshed import create_stub_module
+    if is_stub:
+        return create_stub_module(
+            inference_state, NO_VALUES, module_node, file_io, import_names)
     from jedi.inference.value import ModuleValue
     return ModuleValue(
         inference_state, module_node,

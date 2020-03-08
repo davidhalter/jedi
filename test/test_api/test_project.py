@@ -89,10 +89,21 @@ def test_load_save_project(tmpdir):
           'examples.implicit_namespace_package.ns2'],
          dict(complete=True)),
 
+        # With namespace & stub
+        ('with_python.module', ['examples.stub_packages.with_python.module'], {}),
+        ('with_python.modul', ['examples.stub_packages.with_python.module'],
+         dict(complete=True)),
+        ('no_python.module', ['stub:examples.stub_packages.no_python.module'], {}),
+        ('no_python.modul', ['stub:examples.stub_packages.no_python.module'],
+         dict(complete=True)),
+        ('with_python-stubs.module', ['stub:examples.stub_packages.with_python-stubs.module'], {}),
+        ('no_python-stubs.module', ['stub:examples.stub_packages.no_python-stubs.module'], {}),
+
         # On sys path
         ('sys.path', ['stub:sys.path'], {}),
         ('json.dumps', ['stub:json.dumps', 'json.dumps'], {}),  # stdlib + stub
-        ('multiprocessing', ['stub:multiprocessing'], {})
+        ('multiprocessing', ['stub:multiprocessing'], {}),
+        ('multiprocessin', ['stub:multiprocessing'], dict(complete=True)),
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")

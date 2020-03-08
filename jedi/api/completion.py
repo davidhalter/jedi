@@ -589,6 +589,7 @@ def search_in_module(inference_state, module_context, names, wanted_names,
                     module_context,
                     n.infer()
                 )
+        debug.dbg('dot lookup on search %s from %s', new_names, names[:10])
         names = new_names
 
     last_name = wanted_names[-1].lower()

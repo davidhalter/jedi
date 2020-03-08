@@ -5,6 +5,7 @@ import sys
 
 from jedi._compatibility import FileNotFoundError, PermissionError, \
     IsADirectoryError, scandir
+from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
@@ -15,8 +16,6 @@ from jedi.inference.imports import load_module_from_path, \
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
-from jedi.inference.value.module import ModuleValue
-from jedi.inference import InferenceState
 from jedi.file_io import FolderIO, FileIO
 from jedi.common.utils import traverse_parents
 
@@ -189,6 +188,7 @@ class Project(object):
             raise NotImplementedError(
                 "No support for refactorings/search on Python 2/3.5"
             )
+        debug.dbg('Search for string %s', string)
         wanted_type, wanted_names = split_search_string(string)
         name = wanted_names[0]
 
@@ -219,6 +219,7 @@ class Project(object):
                 else:
                     continue
 
+            debug.dbg('Search of a specific module %s', m)
             for x in search_in_module(
                 inference_state,
                 m,
@@ -250,7 +251,6 @@ class Project(object):
             # folders.
             if not p.startswith(self._path)
         ]
-
         names = list(iter_module_names(inference_state, empty_module_context, sys_path))
         for x in search_in_module(
             inference_state,
@@ -258,7 +258,7 @@ class Project(object):
             names=names,
             wanted_type=wanted_type,
             wanted_names=wanted_names,
-            complete=complete
+            complete=complete,
         ):
             yield x  # Python 2...
 

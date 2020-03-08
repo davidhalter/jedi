@@ -207,7 +207,7 @@ def _get_buildout_script_paths(search_path):
 
 
 def remove_python_path_suffix(path):
-    for suffix in all_suffixes():
+    for suffix in all_suffixes() + ['.pyi']:
         if path.endswith(suffix):
             path = path[:-len(suffix)]
             break
