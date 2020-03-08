@@ -188,9 +188,10 @@ class Project(object):
             raise NotImplementedError(
                 "No support for refactorings/search on Python 2/3.5"
             )
-        debug.dbg('Search for string %s', string)
+        debug.dbg('Search for string %s, complete=%s', string, complete)
         wanted_type, wanted_names = split_search_string(string)
         name = wanted_names[0]
+        stub_folder_name = name + '-stubs'
 
         ios = recurse_find_python_folders_and_files(FolderIO(self._path))
         file_ios = []
@@ -199,7 +200,7 @@ class Project(object):
         for folder_io, file_io in ios:
             if file_io is None:
                 file_name = folder_io.get_base_name()
-                if file_name == name:
+                if file_name == name or file_name == stub_folder_name:
                     f = folder_io.get_file_io('__init__.py')
                     try:
                         m = load_module_from_path(inference_state, f).as_context()
@@ -226,7 +227,8 @@ class Project(object):
                 names=[m.name],
                 wanted_type=wanted_type,
                 wanted_names=wanted_names,
-                complete=complete
+                complete=complete,
+                convert=True,
             ):
                 yield x  # Python 2...
 
@@ -259,6 +261,7 @@ class Project(object):
             wanted_type=wanted_type,
             wanted_names=wanted_names,
             complete=complete,
+            convert=True,
         ):
             yield x  # Python 2...
 
