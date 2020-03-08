@@ -278,7 +278,7 @@ def test_parent_on_function(Script):
     code = 'def spam():\n pass'
     def_, = Script(code).goto(line=1, column=len('def spam'))
     parent = def_.parent()
-    assert parent.name == ''
+    assert parent.name == '__main__'
     assert parent.type == 'module'
 
 
@@ -328,7 +328,7 @@ def test_parent_on_closure(Script):
     assert foo.parent().name == 'inner'
     assert foo.parent().parent().name == 'bar'
     assert foo.parent().parent().parent().name == 'Foo'
-    assert foo.parent().parent().parent().parent().name == ''
+    assert foo.parent().parent().parent().parent().name == '__main__'
 
     assert inner_func.parent().name == 'bar'
     assert inner_func.parent().parent().name == 'Foo'
@@ -344,7 +344,7 @@ def test_parent_on_comprehension(Script):
 
     assert [name.name for name in ns] == ['spam', 'i']
 
-    assert ns[0].parent().name == ''
+    assert ns[0].parent().name == '__main__'
     assert ns[0].parent().type == 'module'
     assert ns[1].parent().name == 'spam'
     assert ns[1].parent().type == 'function'
