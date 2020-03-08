@@ -16,7 +16,7 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 
-from jedi._compatibility import ImplicitNSInfo, force_unicode
+from jedi._compatibility import ImplicitNSInfo, force_unicode, FileNotFoundError
 from jedi import debug
 from jedi import settings
 from jedi.parser_utils import get_cached_code_lines
@@ -28,7 +28,7 @@ from jedi.inference.utils import unite
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.inference.gradual.typeshed import import_module_decorator
+from jedi.inference.gradual.typeshed import import_module_decorator, create_stub_module
 from jedi.inference.value.module import iter_module_names as module_iter_module_names
 from jedi.plugins import plugin_manager
 
@@ -437,10 +437,18 @@ def _load_python_module(inference_state, file_io,
         use_latest_grammar=is_stub,
     )
 
-    from jedi.inference.gradual.typeshed import create_stub_module
     if is_stub:
+        folder_io = file_io.get_parent_folder()
+        python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
+        try:
+            v = load_module_from_path(inference_state, python_file_io, import_names[:-1])
+            values = ValueSet([v])
+        except FileNotFoundError:
+            values = NO_VALUES
+
         return create_stub_module(
-            inference_state, NO_VALUES, module_node, file_io, import_names)
+            inference_state, values, module_node, file_io, import_names)
+
     from jedi.inference.value import ModuleValue
     return ModuleValue(
         inference_state, module_node,

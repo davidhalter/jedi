@@ -19,7 +19,7 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance, ModuleValue
-from jedi.inference.names import ParamNameWrapper
+from jedi.inference.names import ParamNameWrapper, SubModuleName
 from jedi.inference.gradual.conversion import convert_values, convert_names
 from jedi.parser_utils import cut_value_at_position
 from jedi.plugins import plugin_manager
@@ -597,7 +597,10 @@ def search_in_module(inference_state, module_context, names, wanted_names,
         string = n.string_name.lower()
         if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
                 or not complete and string == last_name:
-            names = [n]
+            if isinstance(n, SubModuleName):
+                names = [v.name for v in n.infer()]
+            else:
+                names = [n]
             if convert:
                 names = convert_names(names)
             for n2 in names:

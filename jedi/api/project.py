@@ -16,13 +16,30 @@ from jedi.inference.imports import load_module_from_path, \
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
-from jedi.file_io import FolderIO, FileIO
+from jedi.file_io import FolderIO
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'requirements.txt', 'MANIFEST.in'
 
 _SERIALIZER_VERSION = 1
+
+
+def _try_to_skip_duplicates(func):
+    def wrapper(*args, **kwargs):
+        found_tree_nodes = []
+        found_modules = []
+        for definition in func(*args, **kwargs):
+            tree_node = definition._name.tree_name
+            if tree_node is not None and tree_node in found_tree_nodes:
+                continue
+            if definition.type == 'module' and definition.module_path is not None:
+                if definition.module_path in found_modules:
+                    continue
+                found_modules.append(definition.module_path)
+            yield definition
+            found_tree_nodes.append(tree_node)
+    return wrapper
 
 
 def _remove_duplicates_from_path(path):
@@ -174,6 +191,7 @@ class Project(object):
                 self._environment = get_cached_default_environment()
         return self._environment
 
+    @_try_to_skip_duplicates
     def search(self, string, complete=False, all_scopes=False):
         """
         Returns a generator of names
@@ -215,7 +233,7 @@ class Project(object):
             else:
                 file_ios.append(file_io)
                 file_name = os.path.basename(file_io.path)
-                if file_name in (name + '.py', name + 'pyi'):
+                if file_name in (name + '.py', name + '.pyi'):
                     m = load_module_from_path(inference_state, file_io).as_context()
                 else:
                     continue
@@ -229,16 +247,19 @@ class Project(object):
                 wanted_names=wanted_names,
                 complete=complete,
                 convert=True,
+                ignore_imports=True,
             ):
                 yield x  # Python 2...
 
         # 2. Search for identifiers in the project.
         for module_context in search_in_file_ios(inference_state, file_ios, name):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
+            names = [module_context.create_name(n) for n in names]
+            names = _remove_imports(names)
             for x in search_in_module(
                 inference_state,
                 module_context,
-                names=[module_context.create_name(n) for n in names],
+                names=names,
                 wanted_type=wanted_type,
                 wanted_names=wanted_names,
                 complete=complete,
@@ -327,10 +348,8 @@ def get_default_project(path=None):
     return Project(curdir)
 
 
-def _get_sys_path_folder_and_file_ios(sys_path):
-    for p in sys_path:
-        for dir_entry in scandir(p):
-            if dir_entry.is_dir():
-                yield FolderIO(p), None
-            else:
-                yield None, FileIO(p)
+def _remove_imports(names):
+    return [
+        n for n in names
+        if n.tree_name is None or n.api_type != 'module'
+    ]

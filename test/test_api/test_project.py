@@ -90,16 +90,26 @@ def test_load_save_project(tmpdir):
          dict(complete=True)),
 
         # With namespace & stub
-        ('with_python.module', ['examples.stub_packages.with_python.module'], {}),
-        ('with_python.modul', ['examples.stub_packages.with_python.module'],
+        ('with_python.module', ['stub:examples.stub_packages.with_python.module',
+                                'examples.stub_packages.with_python.module'], {}),
+        ('with_python.modul', ['stub:examples.stub_packages.with_python.module',
+                               'examples.stub_packages.with_python.module'],
          dict(complete=True)),
         ('no_python.foo', ['stub:examples.stub_packages.no_python.foo'], {}),
         ('no_python.fo', ['stub:examples.stub_packages.no_python.foo'],
          dict(complete=True)),
         ('with_python-stubs.module', [], {}),
         ('no_python-stubs.foo', [], {}),
-        ('with_python', ['stub:examples.stub_packages.with_python', 'examples.stub_packages.with_python'], {}),
+        # Both locations are given, because they live in separate folders (one
+        # suffixed with -stubs.
+        ('with_python', ['stub:examples.stub_packages.with_python',
+                         'examples.stub_packages.with_python'], {}),
         ('no_python', ['stub:examples.stub_packages.no_python'], {}),
+
+        ('stub_only', ['stub:completion.stub_folder.stub_only',
+                       'stub:examples.stub_packages.with_python.stub_only'], {}),
+        ('with_stub', ['completion.stub_folder.with_stub'], {}),
+
 
         # On sys path
         ('sys.path', ['stub:sys.path'], {}),
