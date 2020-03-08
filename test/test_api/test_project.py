@@ -105,11 +105,23 @@ def test_load_save_project(tmpdir):
         ('with_python', ['stub:examples.stub_packages.with_python',
                          'examples.stub_packages.with_python'], {}),
         ('no_python', ['stub:examples.stub_packages.no_python'], {}),
-
+        # Completion stubs
         ('stub_only', ['stub:completion.stub_folder.stub_only',
                        'stub:examples.stub_packages.with_python.stub_only'], {}),
         ('with_stub', ['completion.stub_folder.with_stub'], {}),
-
+        ('with_stub.in_with_stub_both',
+         ['completion.stub_folder.with_stub.in_with_stub_both'], {}),
+        ('with_stub.in_with_stub_python',
+         ['completion.stub_folder.with_stub.in_with_stub_python'], {}),
+        ('with_stub.in_with_stub_stub',
+         ['stub:completion.stub_folder.with_stub.in_with_stub_stub'], {}),
+        # Completion stubs: Folder
+        ('with_stub_folder', ['completion.stub_folder.with_stub_folder'], {}),
+        ('with_stub_folder.nested_with_stub',
+         ['completion.stub_folder.with_stub_folder.nested_with_stub'], {}),
+        ('nested_with_stub',
+         ['completion.stub_folder.stub_only_folder.nested_with_stub',
+          'completion.stub_folder.with_stub_folder.nested_with_stub'], {}),
 
         # On sys path
         ('sys.path', ['stub:sys.path'], {}),
