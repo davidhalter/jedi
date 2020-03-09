@@ -2,6 +2,7 @@ import os
 import re
 from functools import wraps
 
+from jedi import settings
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
@@ -255,11 +256,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
 
 def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, import_names):
     try:
-        stub_module_node = inference_state.parse(
-            file_io=file_io,
-            cache=True,
-            use_latest_grammar=True
-        )
+        stub_module_node = parse_stub_module(inference_state, file_io)
     except (OSError, IOError):  # IOError is Python 2 only
         # The file that you're looking for doesn't exist (anymore).
         return None
@@ -268,6 +265,16 @@ def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, impo
             inference_state, python_value_set, stub_module_node, file_io,
             import_names
         )
+
+
+def parse_stub_module(inference_state, file_io):
+    return inference_state.parse(
+        file_io=file_io,
+        cache=True,
+        diff_cache=settings.fast_parser,
+        cache_path=settings.cache_directory,
+        use_latest_grammar=True
+    )
 
 
 def create_stub_module(inference_state, python_value_set, stub_module_node, file_io, import_names):

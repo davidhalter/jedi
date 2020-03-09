@@ -29,7 +29,8 @@ from jedi.inference.utils import unite
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.inference.gradual.typeshed import import_module_decorator, create_stub_module
+from jedi.inference.gradual.typeshed import import_module_decorator, \
+    create_stub_module, parse_stub_module
 from jedi.inference.value.module import iter_module_names as module_iter_module_names
 from jedi.plugins import plugin_manager
 
@@ -429,35 +430,12 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
 
 def _load_python_module(inference_state, file_io,
                         import_names=None, is_package=False):
-    is_stub = file_io.path.endswith('.pyi')
     module_node = inference_state.parse(
         file_io=file_io,
         cache=True,
         diff_cache=settings.fast_parser,
         cache_path=settings.cache_directory,
-        use_latest_grammar=is_stub,
     )
-
-    if is_stub:
-        folder_io = file_io.get_parent_folder()
-        if folder_io.path.endswith('-stubs'):
-            folder_io = FolderIO(folder_io.path[:-6])
-        if file_io.path.endswith('__init__.pyi'):
-            python_file_io = folder_io.get_file_io('__init__.py')
-        else:
-            python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
-
-        try:
-            v = load_module_from_path(
-                inference_state, python_file_io,
-                import_names, is_package=is_package
-            )
-            values = ValueSet([v])
-        except FileNotFoundError:
-            values = NO_VALUES
-
-        return create_stub_module(
-            inference_state, values, module_node, file_io, import_names)
 
     from jedi.inference.value import ModuleValue
     return ModuleValue(
@@ -500,13 +478,37 @@ def load_module_from_path(inference_state, file_io, import_names=None, is_packag
     else:
         assert isinstance(is_package, bool)
 
-    module = _load_python_module(
-        inference_state, file_io,
-        import_names=import_names,
-        is_package=is_package,
-    )
-    inference_state.module_cache.add(import_names, ValueSet([module]))
-    return module
+    is_stub = file_io.path.endswith('.pyi')
+    if is_stub:
+        folder_io = file_io.get_parent_folder()
+        if folder_io.path.endswith('-stubs'):
+            folder_io = FolderIO(folder_io.path[:-6])
+        if file_io.path.endswith('__init__.pyi'):
+            python_file_io = folder_io.get_file_io('__init__.py')
+        else:
+            python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
+
+        try:
+            v = load_module_from_path(
+                inference_state, python_file_io,
+                import_names, is_package=is_package
+            )
+            values = ValueSet([v])
+        except FileNotFoundError:
+            values = NO_VALUES
+
+        return create_stub_module(
+            inference_state, values, parse_stub_module(inference_state, file_io),
+            file_io, import_names
+        )
+    else:
+        module = _load_python_module(
+            inference_state, file_io,
+            import_names=import_names,
+            is_package=is_package,
+        )
+        inference_state.module_cache.add(import_names, ValueSet([module]))
+        return module
 
 
 def load_namespace_from_path(inference_state, folder_io):
