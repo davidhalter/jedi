@@ -19,6 +19,7 @@ from parso.tree import search_ancestor
 from jedi._compatibility import ImplicitNSInfo, force_unicode, FileNotFoundError
 from jedi import debug
 from jedi import settings
+from jedi.file_io import FolderIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference import sys_path
 from jedi.inference import helpers
@@ -439,9 +440,17 @@ def _load_python_module(inference_state, file_io,
 
     if is_stub:
         folder_io = file_io.get_parent_folder()
-        python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
+        if folder_io.path.endswith('-stubs'):
+            folder_io = FolderIO(folder_io.path[:-6])
+        if file_io.path.endswith('__init__.pyi'):
+            python_file_io = folder_io.get_file_io('__init__.py')
+            stub_import_names = import_names
+        else:
+            python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
+            stub_import_names = import_names[:-1]
+
         try:
-            v = load_module_from_path(inference_state, python_file_io, import_names[:-1])
+            v = load_module_from_path(inference_state, python_file_io, stub_import_names)
             values = ValueSet([v])
         except FileNotFoundError:
             values = NO_VALUES

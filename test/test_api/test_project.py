@@ -89,11 +89,9 @@ def test_load_save_project(tmpdir):
           'examples.implicit_namespace_package.ns2'],
          dict(complete=True)),
 
-        # With namespace & stub
-        ('with_python.module', ['stub:examples.stub_packages.with_python.module',
-                                'examples.stub_packages.with_python.module'], {}),
-        ('with_python.modul', ['stub:examples.stub_packages.with_python.module',
-                               'examples.stub_packages.with_python.module'],
+        # With stubs
+        ('with_python.module', ['examples.stub_packages.with_python.module'], {}),
+        ('with_python.modul', ['examples.stub_packages.with_python.module'],
          dict(complete=True)),
         ('no_python.foo', ['stub:examples.stub_packages.no_python.foo'], {}),
         ('no_python.fo', ['stub:examples.stub_packages.no_python.foo'],
@@ -102,8 +100,7 @@ def test_load_save_project(tmpdir):
         ('no_python-stubs.foo', [], {}),
         # Both locations are given, because they live in separate folders (one
         # suffixed with -stubs.
-        ('with_python', ['stub:examples.stub_packages.with_python',
-                         'examples.stub_packages.with_python'], {}),
+        ('with_python', ['examples.stub_packages.with_python'], {}),
         ('no_python', ['stub:examples.stub_packages.no_python'], {}),
         # Completion stubs
         ('stub_only', ['stub:completion.stub_folder.stub_only',
