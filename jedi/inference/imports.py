@@ -444,13 +444,14 @@ def _load_python_module(inference_state, file_io,
             folder_io = FolderIO(folder_io.path[:-6])
         if file_io.path.endswith('__init__.pyi'):
             python_file_io = folder_io.get_file_io('__init__.py')
-            stub_import_names = import_names
         else:
             python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
-            stub_import_names = import_names[:-1]
 
         try:
-            v = load_module_from_path(inference_state, python_file_io, stub_import_names)
+            v = load_module_from_path(
+                inference_state, python_file_io,
+                import_names, is_package=is_package
+            )
             values = ValueSet([v])
         except FileNotFoundError:
             values = NO_VALUES
@@ -486,24 +487,18 @@ def _load_builtin_module(inference_state, import_names=None, sys_path=None):
     return module
 
 
-def load_module_from_path(inference_state, file_io, base_names=None):
+def load_module_from_path(inference_state, file_io, import_names=None, is_package=None):
     """
     This should pretty much only be used for get_modules_containing_name. It's
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
     path = file_io.path
-    if base_names:
-        module_name = os.path.basename(path)
-        module_name = sys_path.remove_python_path_suffix(module_name)
-        is_package = module_name == '__init__'
-        if is_package:
-            import_names = base_names
-        else:
-            import_names = base_names + (module_name,)
-    else:
+    if import_names is None:
         e_sys_path = inference_state.get_sys_path()
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
+    else:
+        assert isinstance(is_package, bool)
 
     module = _load_python_module(
         inference_state, file_io,
