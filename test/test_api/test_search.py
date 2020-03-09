@@ -69,6 +69,24 @@ def test_simple_search(Script, string, descriptions, kwargs, skip_pre_python36):
     if sys.version_info < (3, 6):
         pytest.skip()
 
-    defs = Script(path=__file__).search(string, **kwargs)
+    if kwargs.pop('complete', False) is True:
+        defs = Script(path=__file__).complete_search(string, **kwargs)
+    else:
+        defs = Script(path=__file__).search(string, **kwargs)
     this_mod = 'test.test_api.test_search.'
     assert [d.type + ' ' + d.full_name.replace(this_mod, '') for d in defs] == descriptions
+
+
+@pytest.mark.parametrize(
+    'string, completions, fuzzy, all_scopes', [
+        ('SomeCl', ['ass'], False, False),
+        ('SomeCl', [None], True, False),
+        ('twic', [], False, False),
+        ('some_f', [], False, False),
+        ('twic', ['e', 'e'], False, True),
+        ('some_f', ['unction'], False, True),
+    ]
+)
+def test_complete_search(Script, string, completions, fuzzy, all_scopes):
+    defs = Script(path=__file__).complete_search(string, fuzzy=fuzzy, all_scopes=all_scopes)
+    assert [d.complete for d in defs] == completions

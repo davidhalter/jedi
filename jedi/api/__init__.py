@@ -344,16 +344,14 @@ class Script(object):
 
         :param all_scopes: If True lists the symbols of all scopes instead of
             only the module.
-        :param definitions: If True lists the names that have been defined by a
-            class, function or a statement (``a = b`` returns ``a``).
-        :param references: If True lists all the names that are not listed by
-            ``definitions=True``. E.g. ``a = b`` returns ``b``.
         """
         return self._search(string, **kwargs)  # Python 2 ...
 
+    def _search(self, string, all_scopes=False):
+        return self._search_func(string, all_scopes=all_scopes)
+
     @to_list
-    def _search(self, string, complete=False, all_scopes=False,
-                fuzzy=False):
+    def _search_func(self, string, all_scopes=False, complete=False, fuzzy=False):
         names = self._names(all_scopes=all_scopes)
         wanted_type, wanted_names = helpers.split_search_string(string)
         return search_in_module(
@@ -365,6 +363,9 @@ class Script(object):
             complete=complete,
             fuzzy=fuzzy,
         )
+
+    def complete_search(self, string, **kwargs):
+        return self._search_func(string, complete=True, **kwargs)
 
     @validate_line_column
     def help(self, line=None, column=None):

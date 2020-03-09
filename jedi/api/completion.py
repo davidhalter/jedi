@@ -604,6 +604,14 @@ def search_in_module(inference_state, module_context, names, wanted_names,
             if convert:
                 names = convert_names(names)
             for n2 in names:
-                def_ = classes.Definition(inference_state, n2)
+                if complete:
+                    def_ = classes.Completion(
+                        inference_state, n2,
+                        stack=None,
+                        like_name_length=len(last_name),
+                        is_fuzzy=fuzzy,
+                    )
+                else:
+                    def_ = classes.Definition(inference_state, n2)
                 if not wanted_type or wanted_type == def_.type:
                     yield def_
