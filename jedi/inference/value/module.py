@@ -1,8 +1,5 @@
-import re
 import os
 
-from jedi._compatibility import scandir
-from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
@@ -38,38 +35,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
         return compiled.get_string_value_set(self.parent_context.inference_state)
 
 
-def iter_module_names(*args, **kwargs):
-    return sorted(set(iter_module_names(*args, **kwargs)))
-
-
-def iter_module_names(inference_state, paths):
-    # Python modules/packages
-    for path in paths:
-        try:
-            dirs = scandir(path)
-        except OSError:
-            # The file might not exist or reading it might lead to an error.
-            debug.warning("Not possible to list directory: %s", path)
-            continue
-        for dir_entry in dirs:
-            name = dir_entry.name
-            # First Namespaces then modules/stubs
-            if dir_entry.is_dir():
-                # pycache is obviously not an interestin namespace. Also the
-                # name must be a valid identifier.
-                # TODO use str.isidentifier, once Python 2 is removed
-                if name != '__pycache__' and not re.search(r'\W|^\d', name):
-                    yield name
-            else:
-                if name.endswith('.py'):
-                    if name != '__init__.py':
-                        yield name[:-3]
-                # Stub files
-                elif name.endswith('.pyi'):
-                    if name != '__init__.pyi':
-                        yield name[:-4]
-
-
 class SubModuleDictMixin(object):
     @inference_state_method_cache()
     def sub_modules_dict(self):
@@ -79,7 +44,9 @@ class SubModuleDictMixin(object):
         """
         names = {}
         if self.is_package():
-            mods = iter_module_names(self.inference_state, self.py__path__())
+            mods = self.inference_state.compiled_subprocess.iter_module_names(
+                self.py__path__()
+            )
             for name in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self.as_context(), name)

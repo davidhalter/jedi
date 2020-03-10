@@ -31,7 +31,6 @@ from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typeshed import import_module_decorator, \
     create_stub_module, parse_stub_module
-from jedi.inference.value.module import iter_module_names as module_iter_module_names
 from jedi.plugins import plugin_manager
 
 
@@ -560,5 +559,5 @@ def iter_module_names(inference_state, module_context, search_path,
         for name in inference_state.compiled_subprocess.get_builtin_module_names():
             yield module_cls(module_context, name)
 
-    for name in module_iter_module_names(inference_state, search_path):
+    for name in inference_state.compiled_subprocess.iter_module_names(search_path):
         yield module_cls(module_context, name)
