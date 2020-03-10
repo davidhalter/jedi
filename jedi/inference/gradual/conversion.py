@@ -3,6 +3,7 @@ from jedi.inference.base_value import ValueSet, \
     NO_VALUES
 from jedi.inference.utils import to_list
 from jedi.inference.gradual.stub_value import StubModuleValue
+from jedi.inference.gradual.typeshed import try_to_load_stub_cached
 
 
 def _stub_to_python_value_set(stub_value, ignore_compiled=False):
@@ -87,7 +88,6 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
 def _load_stub_module(module):
     if module.is_stub():
         return module
-    from jedi.inference.gradual.typeshed import try_to_load_stub_cached
     return try_to_load_stub_cached(
         module.inference_state,
         import_names=module.string_names,
