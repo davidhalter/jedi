@@ -120,8 +120,8 @@ def import_module_decorator(func):
         if not prefer_stubs:
             return python_value_set
 
-        stub = _try_to_load_stub_cached(inference_state, import_names, python_value_set,
-                                        parent_module_value, sys_path)
+        stub = try_to_load_stub_cached(inference_state, import_names, python_value_set,
+                                       parent_module_value, sys_path)
         if stub is not None:
             return ValueSet([stub])
         return python_value_set
@@ -129,7 +129,7 @@ def import_module_decorator(func):
     return wrapper
 
 
-def _try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
+def try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
     try:
         return inference_state.stub_module_cache[import_names]
     except KeyError:
@@ -153,7 +153,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     """
     if parent_module_value is None and len(import_names) > 1:
         try:
-            parent_module_value = _try_to_load_stub_cached(
+            parent_module_value = try_to_load_stub_cached(
                 inference_state, import_names[:-1], NO_VALUES,
                 parent_module_value=None, sys_path=sys_path)
         except KeyError:

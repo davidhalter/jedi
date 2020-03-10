@@ -87,8 +87,8 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
 def _load_stub_module(module):
     if module.is_stub():
         return module
-    from jedi.inference.gradual.typeshed import _try_to_load_stub_cached
-    return _try_to_load_stub_cached(
+    from jedi.inference.gradual.typeshed import try_to_load_stub_cached
+    return try_to_load_stub_cached(
         module.inference_state,
         import_names=module.string_names,
         python_value_set=ValueSet([module]),
