@@ -129,6 +129,9 @@ def import_module_decorator(func):
 
 
 def _try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
+    if import_names is None:
+        return None
+
     try:
         return inference_state.stub_module_cache[import_names]
     except KeyError:
