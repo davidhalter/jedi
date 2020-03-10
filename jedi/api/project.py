@@ -4,7 +4,7 @@ import json
 import sys
 
 from jedi._compatibility import FileNotFoundError, PermissionError, \
-    IsADirectoryError, scandir
+    IsADirectoryError
 from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
@@ -191,11 +191,23 @@ class Project(object):
                 self._environment = get_cached_default_environment()
         return self._environment
 
-    @_try_to_skip_duplicates
-    def search(self, string, complete=False, all_scopes=False):
+    def search(self, string, **kwargs):
         """
         Returns a generator of names
         """
+        return self._search(string, **kwargs)
+
+    def complete_search(self, string, **kwargs):
+        """
+        
+        """
+        return self._search_func(string, complete=True, **kwargs)
+
+    def _search(self, string, all_scopes=False):  # Python 2..
+        return self._search_func(string, all_scopes=all_scopes)
+
+    @_try_to_skip_duplicates
+    def _search_func(self, string, complete=False, all_scopes=False):
         # Using a Script is they easiest way to get an empty module context.
         from jedi import Script
         s = Script('', project=self)

@@ -131,5 +131,22 @@ def test_load_save_project(tmpdir):
 def test_search(string, full_names, kwargs, skip_pre_python36):
     some_search_test_var = 1.0
     project = Project(test_dir)
-    defs = project.search(string, **kwargs)
+    if kwargs.pop('complete', False) is True:
+        defs = project.complete_search(string, **kwargs)
+    else:
+        defs = project.search(string, **kwargs)
     assert [('stub:' if d.is_stub() else '') + d.full_name for d in defs] == full_names
+
+
+@pytest.mark.parametrize(
+    'string, completions, all_scopes', [
+        ('SomeCl', ['ass'], False),
+        ('twic', [], False),
+        ('twic', ['e', 'e'], True),
+        ('test_load_save_p', ['roject'], False),
+    ]
+)
+def test_complete_search(Script, string, completions, all_scopes):
+    project = Project(test_dir)
+    defs = project.complete_search(string, all_scopes=all_scopes)
+    assert [d.complete for d in defs] == completions
