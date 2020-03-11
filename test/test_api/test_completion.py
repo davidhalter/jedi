@@ -299,6 +299,10 @@ def test_file_path_completions(Script, file, code, column, expected):
         assert [c.complete for c in comps] == expected
 
 
+def test_file_path_should_have_completions(Script):
+    assert Script('r"').complete()  # See GH #1503
+
+
 _dict_keys_completion_tests = [
         ('ints[', 5, ['1', '50', Ellipsis]),
         ('ints[]', 5, ['1', '50', Ellipsis]),

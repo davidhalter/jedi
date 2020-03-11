@@ -11,7 +11,7 @@ class PathName(StringName):
     api_type = u'path'
 
 
-def complete_file_name(inference_state, module_context, start_leaf, string,
+def complete_file_name(inference_state, module_context, start_leaf, quote, string,
                        like_name, signatures_callback, code_lines, position, fuzzy):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string))
@@ -40,11 +40,12 @@ def complete_file_name(inference_state, module_context, start_leaf, string,
         # OSError: [Errno 36] File name too long: '...'
     except (FileNotFoundError, OSError):
         return
+    quote_ending = get_quote_ending(quote, code_lines, position)
     for entry in listed:
         name = entry.name
         if match(name, must_start_with, fuzzy=fuzzy):
             if is_in_os_path_join or not entry.is_dir():
-                name += get_quote_ending(start_leaf.value, code_lines, position)
+                name += quote_ending
             else:
                 name += os.path.sep
 

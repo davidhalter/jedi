@@ -131,7 +131,7 @@ class Completion:
 
         if string is not None and not prefixed_completions:
             prefixed_completions = list(complete_file_name(
-                self._inference_state, self._module_context, start_leaf, string,
+                self._inference_state, self._module_context, start_leaf, quote, string,
                 self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
                 self._fuzzy
