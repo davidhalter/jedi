@@ -513,6 +513,49 @@ class PartialObject(object):
         )
 
 
+class PartialMethodObject(object):
+    def __init__(self, actual_value, arguments):
+        self._actual_value = actual_value
+        self._arguments = arguments
+
+    def __getattr__(self, name):
+        return getattr(self._actual_value, name)
+
+    def _get_function(self, unpacked_arguments):
+        key, lazy_value = next(unpacked_arguments, (None, None))
+        if key is not None or lazy_value is None:
+            debug.warning("Partial should have a proper function %s", self._arguments)
+            return None
+        return lazy_value.infer()
+
+    def get_signatures(self):
+        unpacked_arguments = self._arguments.unpack()
+        func = self._get_function(unpacked_arguments)
+        if func is None:
+            return []
+
+        arg_count = 1
+        keys = set()
+        for key, _ in unpacked_arguments:
+            if key is None:
+                arg_count += 1
+            else:
+                keys.add(key)
+        return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
+
+    def py__get__(self, instance, class_value):
+        return ValueSet([self])
+
+    def py__call__(self, arguments):
+        func = self._get_function(self._arguments.unpack())
+        if func is None:
+            return NO_VALUES
+
+        return func.execute(
+            MergedPartialArguments(self._arguments, arguments)
+        )
+
+
 class PartialSignature(SignatureWrapper):
     def __init__(self, wrapped_signature, skipped_arg_count, skipped_arg_set):
         super(PartialSignature, self).__init__(wrapped_signature)
@@ -543,6 +586,13 @@ class MergedPartialArguments(AbstractArguments):
 def functools_partial(value, arguments, callback):
     return ValueSet(
         PartialObject(instance, arguments)
+        for instance in value.py__call__(arguments)
+    )
+
+
+def functools_partialmethod(value, arguments, callback):
+    return ValueSet(
+        PartialMethodObject(instance, arguments)
         for instance in value.py__call__(arguments)
     )
 
@@ -744,6 +794,7 @@ _implemented = {
     },
     'functools': {
         'partial': functools_partial,
+        'partialmethod': functools_partialmethod,
         'wraps': _functools_wraps,
     },
     '_weakref': {
