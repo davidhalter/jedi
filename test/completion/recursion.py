@@ -91,3 +91,15 @@ class B:
             for i in self.a(i):
                 #?
                 yield i
+
+
+foo = int
+foo = foo  # type: foo
+#? int
+foo
+
+while True:
+    bar = int
+    bar = bar  # type: bar
+    #? int()
+    bar
