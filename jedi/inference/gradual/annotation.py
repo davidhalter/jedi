@@ -491,9 +491,6 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
             # the elements from the set first, then handle them, even if we put
             # them back in a set afterwards.
             for element in value_set:
-                if not hasattr(element, 'is_instance'):
-                    continue
-
                 if element.is_instance():
                     py_class = element.get_annotated_class_object()
                 else:
