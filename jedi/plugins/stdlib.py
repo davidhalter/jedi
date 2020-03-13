@@ -473,49 +473,9 @@ def collections_namedtuple(value, arguments, callback):
     return ValueSet([ClassValue(inference_state, parent_context, generated_class)])
 
 
-class PartialObject(object):
-    def __init__(self, actual_value, arguments):
-        self._actual_value = actual_value
-        self._arguments = arguments
-
-    def __getattr__(self, name):
-        return getattr(self._actual_value, name)
-
-    def _get_function(self, unpacked_arguments):
-        key, lazy_value = next(unpacked_arguments, (None, None))
-        if key is not None or lazy_value is None:
-            debug.warning("Partial should have a proper function %s", self._arguments)
-            return None
-        return lazy_value.infer()
-
-    def get_signatures(self):
-        unpacked_arguments = self._arguments.unpack()
-        func = self._get_function(unpacked_arguments)
-        if func is None:
-            return []
-
-        arg_count = 0
-        keys = set()
-        for key, _ in unpacked_arguments:
-            if key is None:
-                arg_count += 1
-            else:
-                keys.add(key)
-        return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
-
-    def py__call__(self, arguments):
-        func = self._get_function(self._arguments.unpack())
-        if func is None:
-            return NO_VALUES
-
-        return func.execute(
-            MergedPartialArguments(self._arguments, arguments)
-        )
-
-
-class PartialMethodObject(ValueWrapper):
+class PartialObject(ValueWrapper):
     def __init__(self, actual_value, arguments, instance=None):
-        super(PartialMethodObject, self).__init__(actual_value)
+        super(PartialObject, self).__init__(actual_value)
         self._actual_value = actual_value
         self._arguments = arguments
         self._instance = instance
@@ -545,7 +505,7 @@ class PartialMethodObject(ValueWrapper):
         return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
 
     def py__get__(self, instance, class_value):
-        return ValueSet([PartialMethodObject(self._actual_value, self._arguments, self._instance)])
+        return ValueSet([PartialObject(self._actual_value, self._arguments, self._instance)])
 
     def py__call__(self, arguments):
         func = self._get_function(self._arguments.unpack())
@@ -596,7 +556,9 @@ def functools_partial(value, arguments, callback):
 
 def functools_partialmethod(value, arguments, callback):
     return ValueSet(
-        PartialMethodObject(instance, arguments, instance) # FIXME pass correct instance as last arg
+        # XXX last argument is a placeholder. See:
+        # https://github.com/davidhalter/jedi/pull/1522#discussion_r392474671
+        PartialObject(instance, arguments, True)
         for instance in value.py__call__(arguments)
     )
 
