@@ -158,6 +158,46 @@ tup[0]
 #? float()
 tup[1]
 
+class X:
+    def function(self, a, b):
+        return a, b
+    a = functools.partialmethod(function, 0)
+    kw = functools.partialmethod(function, b=1.0)
+
+#? int()
+X().a('')[0]
+#? str()
+X().a('')[1]
+
+#? int()
+X.a('')[0]
+#? str()
+X.a('')[1]
+
+#? int()
+X.a(X(), '')[0]
+#? str()
+X.a(X(), '')[1]
+
+tup = X().kw(1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+tup = X.kw(1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+tup = X.kw(X(), 1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+
 def my_decorator(f):
     @functools.wraps(f)
     def wrapper(*args, **kwds):
