@@ -115,7 +115,11 @@ class ClassFilter(ParserTreeFilter):
                 annassign = expr_stmt.children[1]
                 if annassign.type == 'annassign':
                     # TODO this is not proper matching
-                    if 'ClassVar' not in annassign.children[1].get_code():
+
+                    # If there is an =, the variable is obviously also
+                    # defined on the class.
+                    if 'ClassVar' not in annassign.children[1].get_code() \
+                            and '=' not in annassign.children:
                         return False
 
         # Filter for name mangling of private variables like __foo
