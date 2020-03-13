@@ -169,11 +169,23 @@ X().a('')[0]
 #? str()
 X().a('')[1]
 
+#? int()
+X.a(X(), '')[0]
+#? str()
+X.a(X(), '')[1]
+
 tup = X().kw(1)
 #? int()
 tup[0]
 #? float()
 tup[1]
+
+tup = X.kw(X(), 1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
 
 def my_decorator(f):
     @functools.wraps(f)

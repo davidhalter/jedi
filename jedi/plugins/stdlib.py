@@ -513,13 +513,12 @@ class PartialObject(object):
         )
 
 
-class PartialMethodObject(object):
-    def __init__(self, actual_value, arguments):
+class PartialMethodObject(ValueWrapper):
+    def __init__(self, actual_value, arguments, instance=None):
+        super(PartialMethodObject, self).__init__(actual_value)
         self._actual_value = actual_value
         self._arguments = arguments
-
-    def __getattr__(self, name):
-        return getattr(self._actual_value, name)
+        self._instance = instance
 
     def _get_function(self, unpacked_arguments):
         key, lazy_value = next(unpacked_arguments, (None, None))
@@ -534,7 +533,9 @@ class PartialMethodObject(object):
         if func is None:
             return []
 
-        arg_count = 1
+        arg_count = 0
+        if self._instance is not None:
+            arg_count = 1
         keys = set()
         for key, _ in unpacked_arguments:
             if key is None:
@@ -544,7 +545,7 @@ class PartialMethodObject(object):
         return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
 
     def py__get__(self, instance, class_value):
-        return ValueSet([self])
+        return ValueSet([PartialMethodObject(self._actual_value, self._arguments, self._instance)])
 
     def py__call__(self, arguments):
         func = self._get_function(self._arguments.unpack())
@@ -552,7 +553,7 @@ class PartialMethodObject(object):
             return NO_VALUES
 
         return func.execute(
-            MergedPartialArguments(self._arguments, arguments)
+            MergedPartialArguments(self._arguments, arguments, self._instance)
         )
 
 
@@ -568,15 +569,18 @@ class PartialSignature(SignatureWrapper):
 
 
 class MergedPartialArguments(AbstractArguments):
-    def __init__(self, partial_arguments, call_arguments):
+    def __init__(self, partial_arguments, call_arguments, instance=None):
         self._partial_arguments = partial_arguments
         self._call_arguments = call_arguments
+        self._instance = instance
 
     def unpack(self, funcdef=None):
         unpacked = self._partial_arguments.unpack(funcdef)
         # Ignore this one, it's the function. It was checked before that it's
         # there.
         next(unpacked)
+        if self._instance is not None:
+            yield None, LazyKnownValue(self._instance)
         for key_lazy_value in unpacked:
             yield key_lazy_value
         for key_lazy_value in self._call_arguments.unpack(funcdef):
@@ -592,7 +596,7 @@ def functools_partial(value, arguments, callback):
 
 def functools_partialmethod(value, arguments, callback):
     return ValueSet(
-        PartialMethodObject(instance, arguments)
+        PartialMethodObject(instance, arguments, instance) # FIXME pass correct instance as last arg
         for instance in value.py__call__(arguments)
     )
 

@@ -100,6 +100,8 @@ class X:
         (partialmethod_code + 'X().b(', 'func(b, c)'),
         (partialmethod_code + 'X().c(', 'func(b)'),
         (partialmethod_code + 'X().d(', None),
+        (partialmethod_code + 'X.c(', 'func(b)'),
+        (partialmethod_code + 'X.d(', None),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
