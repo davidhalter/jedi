@@ -1,4 +1,4 @@
-from os.path import join, sep as s, dirname
+from os.path import join, sep as s, dirname, expanduser
 import os
 import sys
 from textwrap import dedent
@@ -7,6 +7,7 @@ import pytest
 
 from ..helpers import root_dir
 from jedi.api.helpers import _start_match, _fuzzy_match
+from jedi._compatibility import scandir
 
 
 def test_in_whitespace(Script):
@@ -84,6 +85,18 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
         f.write(data)
     s = Script("from test1 import foo\nfoo.", path=filename2)
     s.complete(line=2, column=4)
+
+
+def test_complete_expanduser(Script):
+    possibilities = scandir(expanduser('~'))
+    non_dots = [p for p in possibilities if not p.name.startswith('.') and len(p.name) > 1]
+    item = non_dots[0]
+    line = "'~%s%s'" % (os.sep, item.name)
+    s = Script(line, line=1, column=len(line)-1)
+    expected_name = item.name
+    if item.is_dir():
+        expected_name += os.path.sep
+    assert expected_name in [c.name for c in s.completions()]
 
 
 def test_fake_subnodes(Script):

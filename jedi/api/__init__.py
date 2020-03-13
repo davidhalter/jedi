@@ -335,7 +335,8 @@ class Script(object):
         )
 
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
-        return helpers.sorted_definitions(defs)
+        # Avoid duplicates
+        return list(set(helpers.sorted_definitions(defs)))
 
     @no_py2_support
     def search(self, string, **kwargs):

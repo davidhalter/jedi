@@ -499,3 +499,89 @@ def dynamic_annotation(x: int):
 
 #? int()
 dynamic_annotation('')
+
+# -------------------------
+# TypeDict
+# -------------------------
+
+# python >= 3.8
+
+class Foo(typing.TypedDict):
+    foo: str
+    bar: typing.List[float]
+    an_int: int
+    #! ['foo: str']
+    foo
+    #? str()
+    foo
+    #? int()
+    an_int
+
+def typed_dict_test_foo(arg: Foo):
+    a_string = arg['foo']
+    a_list_of_floats = arg['bar']
+    an_int = arg['an_int']
+
+    #? str()
+    a_string
+    #? list()
+    a_list_of_floats
+    #? float()
+    a_list_of_floats[0]
+    #? int()
+    an_int
+
+    #? ['isupper']
+    a_string.isuppe
+    #? ['pop']
+    a_list_of_floats.po
+    #? ['as_integer_ratio']
+    an_int.as_integer_rati
+
+#! ['class Foo']
+d: Foo
+#? str()
+d['foo']
+#? float()
+d['bar'][0]
+#?
+d['baz']
+
+#?
+d.foo
+#?
+d.bar
+#! []
+d.foo
+
+#? []
+Foo.set
+#? ['setdefault']
+d.setdefaul
+#? []
+Foo.setdefaul
+
+#? 5 ["'foo"]
+d['fo']
+#? 5 ['"bar"']
+d["bar"]
+
+class Bar(Foo):
+    another_variable: int
+
+    #? int()
+    another_variable
+    #?
+    an_int
+
+def typed_dict_test_foo(arg: Bar):
+    #? str()
+    arg['foo']
+    #? list()
+    arg['bar']
+    #? float()
+    arg['bar'][0]
+    #? int()
+    arg['an_int']
+    #? int()
+    arg['another_variable']

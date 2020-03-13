@@ -13,3 +13,4 @@ jedi.egg-info/
 record.json
 /.cache/
 /.pytest_cache
+/venv/

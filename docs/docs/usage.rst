@@ -23,6 +23,10 @@ Vim:
 - YouCompleteMe_
 - deoplete-jedi_
 
+Visual Studio Code:
+
+- `Python Extension`_
+
 Emacs:
 
 - Jedi.el_
@@ -47,10 +51,6 @@ Kate:
 - Kate_ version 4.13+ `supports it natively
   <https://projects.kde.org/projects/kde/applications/kate/repository/entry/addons/kate/pate/src/plugins/python_autocomplete_jedi.py?rev=KDE%2F4.13>`__,
   you have to enable it, though.
-
-Visual Studio Code:
-
-- `Python Extension`_
 
 Atom:
 
@@ -114,4 +114,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
 .. _Eric IDE: https://eric-ide.python-projects.org
-.. _Python Extension: https://marketplace.visualstudio.com/items?itemName=donjayamanne.python
+.. _Python Extension: https://marketplace.visualstudio.com/items?itemName=ms-python.python

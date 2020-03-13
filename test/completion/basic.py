@@ -422,3 +422,11 @@ with Foo() as f3:
 #? 6 Foo
 with Foo() as f3:
     f3
+
+# -----------------
+# Avoiding multiple definitions
+# -----------------
+
+some_array = ['', '']
+#! ['def upper']
+some_array[some_not_defined_index].upper

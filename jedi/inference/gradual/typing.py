@@ -5,8 +5,11 @@ values.
 
 This file deals with all the typing.py cases.
 """
+import itertools
+
+from jedi._compatibility import unicode
 from jedi import debug
-from jedi.inference.compiled import builtin_from_name
+from jedi.inference.compiled import builtin_from_name, create_simple_object
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     LazyValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues
@@ -81,7 +84,8 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
-            pass
+            yield TypedDictBase.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -339,3 +343,47 @@ class CastFunction(BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()
+
+
+class TypedDictBase(BaseTypingValue):
+    """
+    This class has no responsibilities and is just here to make sure that typed
+    dicts can be identified.
+    """
+
+
+class TypedDict(LazyValueWrapper):
+    """Represents the instance version of ``TypedDictClass``."""
+    def __init__(self, definition_class):
+        self.inference_state = definition_class.inference_state
+        self.parent_context = definition_class.parent_context
+        self.tree_node = definition_class.tree_node
+        self._definition_class = definition_class
+
+    @property
+    def name(self):
+        return ValueName(self, self.tree_node.name)
+
+    def py__simple_getitem__(self, index):
+        if isinstance(index, unicode):
+            return ValueSet.from_sets(
+                name.infer()
+                for filter in self._definition_class.get_filters(is_instance=True)
+                for name in filter.get(index)
+            )
+        return NO_VALUES
+
+    def get_key_values(self):
+        filtered_values = itertools.chain.from_iterable((
+            f.values()
+            for f in self._definition_class.get_filters(is_instance=True)
+        ))
+        return ValueSet({
+            create_simple_object(self.inference_state, v.string_name)
+            for v in filtered_values
+        })
+
+    def _get_wrapped_value(self):
+        d, = self.inference_state.builtins_module.py__getattribute__('dict')
+        result, = d.execute_with_values()
+        return result

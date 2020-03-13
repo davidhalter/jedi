@@ -44,8 +44,6 @@ from operator import itemgetter as _itemgetter
 from collections import OrderedDict
 
 class {typename}(tuple):
-    '{typename}({arg_list})'
-
     __slots__ = ()
 
     _fields = {field_names!r}

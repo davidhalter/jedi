@@ -57,7 +57,7 @@ Foo.baz
 Foo().baz
 
 class VarClass:
-    var_instance1: int = 1
+    var_instance1: int = ''
     var_instance2: float
     var_class1: typing.ClassVar[str] = 1
     var_class2: typing.ClassVar[bytes]
@@ -77,9 +77,9 @@ class VarClass:
         self.var_
 
 
-#? ['var_class1', 'var_class2']
+#? ['var_class1', 'var_class2', 'var_instance1']
 VarClass.var_
-#?
+#? int()
 VarClass.var_instance1
 #?
 VarClass.var_instance2

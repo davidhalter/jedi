@@ -297,7 +297,7 @@ class Listener(object):
         try:
             inference_state = self._inference_states[inference_state_id]
         except KeyError:
-            from jedi.api.environment import InterpreterEnvironment
+            from jedi import InterpreterEnvironment
             inference_state = InferenceState(
                 # The project is not actually needed. Nothing should need to
                 # access it.

@@ -356,6 +356,12 @@ def infer_atom(context, atom):
 def infer_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.inference_state, stmt) as allowed:
         if allowed:
+            if seek_name is not None:
+                pep0484_values = \
+                    annotation.find_type_from_comment_hint_assign(context, stmt, seek_name)
+                if pep0484_values:
+                    return pep0484_values
+
             return _infer_expr_stmt(context, stmt, seek_name)
     return NO_VALUES
 
@@ -632,23 +638,6 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     return result
 
 
-def _remove_statements(context, stmt, name):
-    """
-    This is the part where statements are being stripped.
-
-    Due to lazy type inference, statements like a = func; b = a; b() have to be
-    inferred.
-
-    TODO merge with infer_expr_stmt?
-    """
-    pep0484_values = \
-        annotation.find_type_from_comment_hint_assign(context, stmt, name)
-    if pep0484_values:
-        return pep0484_values
-
-    return infer_expr_stmt(context, stmt, seek_name=name)
-
-
 @plugin_manager.decorate()
 def tree_name_to_values(inference_state, context, tree_name):
     value_set = NO_VALUES
@@ -713,7 +702,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             n = TreeNameDefinition(context, tree_name)
             types = check_tuple_assignments(n, for_types)
     elif typ == 'expr_stmt':
-        types = _remove_statements(context, node, tree_name)
+        types = infer_expr_stmt(context, node, tree_name)
     elif typ == 'with_stmt':
         value_managers = context.infer_node(node.get_test_node_from_name(tree_name))
         enter_methods = value_managers.py__getattribute__(u'__enter__')

@@ -55,5 +55,6 @@ Max Woerner Chase (@mwchase) <max.chase@gmail.com>
 Johannes Maria Frank (@jmfrank63) <jmfrank63@gmail.com>
 Shane Steinert-Threlkeld (@shanest) <ssshanest@gmail.com>
 Tim Gates (@timgates42) <tim.gates@iress.com>
+Lior Goldberg (@goldberglior)
 
 Note: (@user) means a github user name.

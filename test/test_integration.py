@@ -41,6 +41,9 @@ def test_completion(case, monkeypatch, environment, has_typing):
     if skip_reason is not None:
         pytest.skip(skip_reason)
 
+    if 'pep0484_typing' in case.path and sys.version_info[0] == 2:
+        pytest.skip('ditch python 2 finally')
+
     _CONTAINS_TYPING = ('pep0484_typing', 'pep0484_comments', 'pep0526_variables')
     if not has_typing and any(x in case.path for x in _CONTAINS_TYPING):
         pytest.skip('Needs the typing module installed to run this test.')

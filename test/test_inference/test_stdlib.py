@@ -77,6 +77,7 @@ def test_namedtuple_infer(Script):
 
     assert d1.get_line_code() == "class Foo(tuple):\n"
     assert d1.module_path is None
+    assert d1.docstring() == 'Foo(id, timestamp, gps_timestamp, attributes)'
 
 
 def test_re_sub(Script, environment):

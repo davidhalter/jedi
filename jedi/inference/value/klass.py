@@ -38,11 +38,11 @@ py__doc__()                            Returns the docstring for a value.
 """
 from jedi import debug
 from jedi._compatibility import use_metaclass
-from jedi.parser_utils import get_cached_parent_scope
+from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
     inference_state_method_generator_cache
 from jedi.inference import compiled
-from jedi.inference.lazy_value import LazyKnownValues
+from jedi.inference.lazy_value import LazyKnownValues, LazyTreeValue
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ValueName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
@@ -104,27 +104,31 @@ class ClassFilter(ParserTreeFilter):
             node = get_cached_parent_scope(self._used_names, node)
         return False
 
-    def _access_possible(self, name, from_instance=False):
+    def _access_possible(self, name):
         # Filter for ClassVar variables
         # TODO this is not properly done, yet. It just checks for the string
         # ClassVar in the annotation, which can be quite imprecise. If we
         # wanted to do this correct, we would have to infer the ClassVar.
-        if not from_instance:
+        if not self._is_instance:
             expr_stmt = name.get_definition()
             if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
                 annassign = expr_stmt.children[1]
                 if annassign.type == 'annassign':
                     # TODO this is not proper matching
-                    if 'ClassVar' not in annassign.children[1].get_code():
+
+                    # If there is an =, the variable is obviously also
+                    # defined on the class.
+                    if 'ClassVar' not in annassign.children[1].get_code() \
+                            and '=' not in annassign.children:
                         return False
 
         # Filter for name mangling of private variables like __foo
         return not name.value.startswith('__') or name.value.endswith('__') \
             or self._equals_origin_scope()
 
-    def _filter(self, names, from_instance=False):
+    def _filter(self, names):
         names = super(ClassFilter, self)._filter(names)
-        return [name for name in names if self._access_possible(name, from_instance)]
+        return [name for name in names if self._access_possible(name)]
 
 
 class ClassMixin(object):
@@ -133,6 +137,10 @@ class ClassMixin(object):
 
     def py__call__(self, arguments=None):
         from jedi.inference.value import TreeInstance
+
+        from jedi.inference.gradual.typing import TypedDict
+        if self.is_typeddict():
+            return ValueSet([TypedDict(self)])
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
@@ -225,6 +233,36 @@ class ClassMixin(object):
         if add_class_info:
             return 'Type[%s]' % self.py__name__()
         return self.py__name__()
+
+    @inference_state_method_cache(default=False)
+    def is_typeddict(self):
+        # TODO Do a proper mro resolution. Currently we are just listing
+        # classes. However, it's a complicated algorithm.
+        from jedi.inference.gradual.typing import TypedDictBase
+        for lazy_cls in self.py__bases__():
+            if not isinstance(lazy_cls, LazyTreeValue):
+                return False
+            tree_node = lazy_cls.data
+            # Only resolve simple classes, stuff like Iterable[str] are more
+            # intensive to resolve and if generics are involved, we know it's
+            # not a TypedDict.
+            if not expr_is_dotted(tree_node):
+                return False
+
+            for cls in lazy_cls.infer():
+                if isinstance(cls, TypedDictBase):
+                    return True
+                try:
+                    method = cls.is_typeddict
+                except AttributeError:
+                    # We're only dealing with simple classes, so just returning
+                    # here should be fine. This only happens with e.g. compiled
+                    # classes.
+                    return False
+                else:
+                    if method():
+                        return True
+        return False
 
 
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
