@@ -75,12 +75,8 @@ class Script(object):
 
     - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
       for the script;
-
-    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
-      variable is defined, ``sys.path`` for the specified environment will be
-      guessed (see :func:`jedi.inference.sys_path.get_venv_path`) and used for
-      the script;
-
+    - if `environment` is provided, its ``sys.path`` will be used
+      (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
     - otherwise ``sys.path`` will match that of |jedi|.
 
     :param source: The source code of the current file, separated by newlines.
@@ -208,13 +204,15 @@ class Script(object):
     @validate_line_column
     def complete(self, line=None, column=None, **kwargs):
         """
-        Return :class:`classes.Completion` objects. Those objects contain
-        information about the completions, more than just names.
+        Return :class:`.Completion` objects.
+
+        Those objects contain information about the completions, more than just
+        names.
 
         :param fuzzy: Default False. Will return fuzzy completions, which means
             that e.g. ``ooa`` will match ``foobar``.
-        :return: Completion objects, sorted by name and ``__`` comes last.
-        :rtype: list of :class:`classes.Completion`
+        :return: Completion objects, sorted by name and __ comes last.
+        :rtype: list of :class:`.Completion`
         """
         return self._complete(line, column, **kwargs)
 
@@ -244,7 +242,7 @@ class Script(object):
         :param only_stubs: Only return stubs for this goto call.
         :param prefer_stubs: Prefer stubs to Python objects for this type
             inference call.
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         with debug.increase_indent_cm('infer'):
             return self._infer(line, column, **kwargs)
@@ -288,15 +286,15 @@ class Script(object):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
-        dynamic language, which means you can have two different versions of a
-        function.
+        dynamic language, which means depending on an option you can have two
+        different versions of a function.
 
         :param follow_imports: The goto call will follow imports.
         :param follow_builtin_imports: If follow_imports is True will try to
             look up names in builtins (i.e. compiled or extension modules).
         :param only_stubs: Only return stubs for this goto call.
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         with debug.increase_indent_cm('goto'):
             return self._goto(line, column, **kwargs)
@@ -398,14 +396,14 @@ class Script(object):
     @validate_line_column
     def get_references(self, line=None, column=None, **kwargs):
         """
-        Return :class:`classes.Definition` objects, which contain all
+        Return :class:`.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all references of
         a variable.
 
         :param include_builtins: Default True, checks if a reference is a
             builtin (e.g. ``sys``) and in that case does not return it.
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
 
         def _references(include_builtins=True):
@@ -441,7 +439,7 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`classes.Signature`
+        :rtype: list of :class:`.CallSignature`
         """
         pos = line, column
         call_details = helpers.get_signature_details(self._module_node, pos)

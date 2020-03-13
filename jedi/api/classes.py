@@ -415,8 +415,9 @@ class BaseDefinition(object):
         """
         Deprecated! Will raise a warning soon. Use get_signatures()[...].params.
 
-        Raises an ``AttributeError`` if the definition is not callable.
-        Otherwise returns a list of `Definition` that represents the params.
+        Raises :exc:`AttributeError` if the definition is not callable.
+        Otherwise returns a list of :class:`.Definition` that represents the
+        params.
         """
         warnings.warn(
             "Deprecated since version 0.16.0. Use get_signatures()[...].params",
