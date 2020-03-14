@@ -580,6 +580,9 @@ class Script(object):
         return [classes.Definition(self._inference_state, n) for n in names]
 
     def get_syntax_errors(self):
+        """
+        XXX
+        """
         return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):

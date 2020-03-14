@@ -3,10 +3,27 @@
 Changelog
 ---------
 
-0.17.0 (2020--)
+0.17.0 (2020-03-)
 +++++++++++++++++++
 
+- Added the following refactorings: ``Script.rename``, ``Script.inline``,
+  ``Script.extract_variable`` and ``Script.extract_function``.
+- Added ``Script.get_syntax_errors`` to display syntax errors in the current
+  script.
+- Added code search capabilities both for individual files and projects. The
+  new functions are ``Project.search``, ``Project.complete_search``,
+  ``Script.search`` and ``Script.complete_search``.
+- Added ``Script.help`` to make it easier to display a help window to people.
+  Now returns pydoc information as well for Python keywords/operators.  This
+  means that on the class keyword it will now return the docstring of Python's
+  builtin function ``help('class')``.
+- The API documentation is now way more readable and complete.
 - Removed Python 3.4 support
+- Many bugfixes
+
+This is likely going to be the last minor version that supports Python 2 and
+Python3.5. Bugfixes will be provided in 0.17.1+. The next minor/major version
+will probably be Jedi 1.0.0.
 
 0.16.0 (2020-01-26)
 +++++++++++++++++++
