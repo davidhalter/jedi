@@ -6,8 +6,6 @@ Additionally you can add a debug function with :func:`set_debug_function`.
 Alternatively, if you don't need a custom function and are happy with printing
 debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
-
-.. warning:: Please, note that Jedi is **not thread safe**.
 """
 import os
 import sys
@@ -83,9 +81,9 @@ class Script(object):
 
     :param source: The source code of the current file, separated by newlines.
     :type source: str
-    :param line: Deprecated, please use it directly on e.g. `.complete`
+    :param line: Deprecated, please use it directly on e.g. ``.complete``
     :type line: int
-    :param column: Deprecated, please use it directly on e.g. `.complete`
+    :param column: Deprecated, please use it directly on e.g. ``.complete``
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
@@ -93,10 +91,10 @@ class Script(object):
     :param encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
-    :param sys_path: ``sys.path`` to use during analysis of the script
-    :type sys_path: list
-    :param environment: TODO
-    :type environment: Environment
+    :param sys_path: Deprecated, use the project parameter.
+    :type sys_path: list of str
+    :param Environment environment: Provide a predefined environment to work
+        with a specific Python version or virtualenv.
     """
     def __init__(self, source=None, line=None, column=None, path=None,
                  encoding='utf-8', sys_path=None, environment=None,
@@ -389,14 +387,17 @@ class Script(object):
     @validate_line_column
     def help(self, line=None, column=None):
         """
-        Works like goto and returns a list of Definition objects. Returns
-        additional definitions for keywords and operators.
+        Used to display a help window to users.  Uses :meth:`.Script.goto` and
+        returns additional definitions for keywords and operators.
 
-        The additional definitions are of ``Definition(...).type == 'keyword'``.
+        Typically you will want to display :meth:`.BaseDefinition.docstring` to the
+        user for all the returned definitions.
+
+        The additional definitions are ``Definition(...).type == 'keyword'``.
         These definitions do not have a lot of value apart from their docstring
-        attribute, which contains the output of Python's ``help()`` function.
+        attribute, which contains the output of Python's :func:`help` function.
 
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         definitions = self.goto(line, column, follow_imports=True)
         if definitions:
@@ -416,10 +417,9 @@ class Script(object):
     @validate_line_column
     def get_references(self, line=None, column=None, **kwargs):
         """
-        Return :class:`.Definition` objects, which contain all
-        names that point to the definition of the name under the cursor. This
-        is very useful for refactoring (renaming), or to show all references of
-        a variable.
+        Lists all references of a variable in a project. Since this can be
+        quite hard to do for Jedi, if it is too complicated, Jedi will stop
+        searching.
 
         :param include_builtins: Default True, checks if a reference is a
             builtin (e.g. ``sys``) and in that case does not return it.
