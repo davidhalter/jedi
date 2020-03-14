@@ -650,6 +650,8 @@ class Script(object):
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor.
+
+        :rtype: :class:`refactoring.Refactoring`
         """
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
         return refactoring.inline(self._inference_state, names)
