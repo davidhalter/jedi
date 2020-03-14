@@ -79,6 +79,19 @@ class Script(object):
       (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
     - otherwise ``sys.path`` will match that of |jedi|.
 
+    .. warning:: By default :attr:`jedi.settings.fast_parser` is enabled, which means
+        that parso reuses modules (i.e. they are not immutable). With this setting
+        Jedi is **not thread safe** and it is also not safe to use multiple
+        :class:`.Script` instances and its definitions at the same time.
+
+        If you are a normal plugin developer this should not be an issue. It is
+        an issue for people that do more complex stuff with Jedi.
+
+        This is purely a performance optimization and works pretty well for all
+        typical usages, however consider to turn the setting of if it causes
+        you problems. See also
+        `this discussion <https://github.com/davidhalter/jedi/issues/1240>`_.
+
     :param source: The source code of the current file, separated by newlines.
     :type source: str
     :param line: Deprecated, please use it directly on e.g. ``.complete``
