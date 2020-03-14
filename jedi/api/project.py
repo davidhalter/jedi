@@ -1,3 +1,6 @@
+"""
+Projects
+"""
 import os
 import errno
 import json
@@ -56,6 +59,9 @@ def _force_unicode_list(lst):
 
 
 class Project(object):
+    """
+    XXX
+    """
     _environment = None
 
     @staticmethod
@@ -199,7 +205,9 @@ class Project(object):
 
     def complete_search(self, string, **kwargs):
         """
-        
+        XXX
+
+        :yields: :class:`.Completion`
         """
         return self._search_func(string, complete=True, **kwargs)
 

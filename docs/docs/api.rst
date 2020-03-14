@@ -3,26 +3,10 @@
 API Overview
 ============
 
-.. currentmodule:: jedi
+.. note:: This documentation is mostly for Plugin developers, who want to
+   improve their editors/IDE with Jedi.
 
-Note: This documentation is for Plugin developers, who want to improve their
-editors/IDE autocompletion 
-
-If you want to use |jedi|, you first need to ``import jedi``.  You then have
-direct access to the :class:`.Script`. You can then call the functions
-documented here. These functions return :ref:`API classes
-<api-classes>`.
-
-
-Deprecations
-------------
-
-The deprecation process is as follows:
-
-1. A deprecation is announced in the next major/minor release.
-2. We wait either at least a year & at least two minor releases until we remove
-   the deprecated functionality.
-
+.. _api:
 
 API Documentation
 -----------------
@@ -35,19 +19,33 @@ The API consists of a few different parts:
 - :ref:`Python Versions/Virtualenv Support <environments>` with functions like
   :func:`.find_system_environments` and :func:`.find_virtualenvs`
 
-.. _api:
-
-Static Analysis Interface
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: jedi
+Script
+~~~~~~
 
 .. autoclass:: jedi.Script
     :members:
+
+Interpreter
+~~~~~~~~~~~
 .. autoclass:: jedi.Interpreter
     :members:
+
+Helper Functions
+~~~~~~~~~~~~~~~~
+
 .. autofunction:: jedi.preload_module
 .. autofunction:: jedi.set_debug_function
+
+.. _projects:
+
+Projects
+~~~~~~~~
+
+.. automodule:: jedi.api.project
+
+.. autofunction:: jedi.get_default_project
+.. autoclass:: jedi.Project
+    :members:
 
 .. _environments:
 
@@ -64,6 +62,12 @@ Environments
 .. autoexception:: jedi.InvalidPythonEnvironment
 .. autoclass:: jedi.api.environment.Environment
     :members:
+
+Errors
+~~~~~~
+
+.. autoexception:: jedi.InternalError
+.. autoexception:: jedi.RefactoringError
 
 Examples
 --------
@@ -127,3 +131,12 @@ References:
     5
     >>> rns[0].column
     8
+
+Deprecations
+------------
+
+The deprecation process is as follows:
+
+1. A deprecation is announced in the next major/minor release.
+2. We wait either at least a year & at least two minor releases until we remove
+   the deprecated functionality.
