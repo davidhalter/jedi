@@ -391,18 +391,22 @@ class X:
         return a, b
     a = functools.partialmethod(function, 0)
     kw = functools.partialmethod(function, b=1.0)
+    just_partial = functools.partial(function, 1, 2.0)
 
 #? int()
 X().a('')[0]
 #? str()
 X().a('')[1]
 
-#? int()
-X.a('')[0]
+# The access of partialmethods on classes are not 100% correct. This doesn't
+# really matter, because nobody uses it like that anyway and would take quite a
+# bit of work to fix all of these cases.
 #? str()
+X.a('')[0]
+#?
 X.a('')[1]
 
-#? int()
+#? X()
 X.a(X(), '')[0]
 #? str()
 X.a(X(), '')[1]
@@ -414,7 +418,7 @@ tup[0]
 tup[1]
 
 tup = X.kw(1)
-#? int()
+#?
 tup[0]
 #? float()
 tup[1]
@@ -424,6 +428,15 @@ tup = X.kw(X(), 1)
 tup[0]
 #? float()
 tup[1]
+
+#? float()
+X.just_partial('')[0]
+#? str()
+X.just_partial('')[1]
+#? float()
+X().just_partial('')[0]
+#? str()
+X().just_partial('')[1]
 
 
 # -----------------

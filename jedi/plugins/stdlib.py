@@ -502,9 +502,6 @@ class PartialObject(ValueWrapper):
                 keys.add(key)
         return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
 
-    def py__get__(self, instance, class_value):
-        return ValueSet([PartialObject(self._actual_value, self._arguments, self._instance)])
-
     def py__call__(self, arguments):
         func = self._get_function(self._arguments.unpack())
         if func is None:
@@ -513,6 +510,14 @@ class PartialObject(ValueWrapper):
         return func.execute(
             MergedPartialArguments(self._arguments, arguments, self._instance)
         )
+
+    def py__get__(self, instance, class_value):
+        return ValueSet([self])
+
+
+class PartialMethodObject(PartialObject):
+    def py__get__(self, instance, class_value):
+        return ValueSet([PartialObject(self._actual_value, self._arguments, instance)])
 
 
 class PartialSignature(SignatureWrapper):
@@ -554,9 +559,7 @@ def functools_partial(value, arguments, callback):
 
 def functools_partialmethod(value, arguments, callback):
     return ValueSet(
-        # XXX last argument is a placeholder. See:
-        # https://github.com/davidhalter/jedi/pull/1522#discussion_r392474671
-        PartialObject(instance, arguments, True)
+        PartialMethodObject(instance, arguments)
         for instance in value.py__call__(arguments)
     )
 
