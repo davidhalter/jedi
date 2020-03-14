@@ -1,5 +1,11 @@
 """
-Projects
+Projects are a way to handle Python projects within Jedi. For simpler plugins
+you might not want to deal with projects, but if you want to give the user more
+flexibility to define sys paths and Python interpreters for a project,
+:class:`Project` is the perfect way to allow for that.
+
+Projects can be saved to disk and loaded again, to allow project definitions to
+be used across repositories.
 """
 import os
 import errno
@@ -359,6 +365,15 @@ def _is_django_path(directory):
 
 
 def get_default_project(path=None):
+    """
+    If a project is not defined by the user, Jedi tries to define a project by
+    itself as well as possible. Jedi traverses folders until it finds one of
+    the following:
+
+    1. A ``.jedi/config.json``
+    2. One of the following files: ``setup.py``, ``.git``, ``.hg``,
+       ``requirements.txt`` and ``MANIFEST.in``.
+    """
     if path is None:
         path = os.getcwd()
 
