@@ -3,27 +3,26 @@
 Features and Caveats
 ====================
 
-Jedi obviously supports autocompletion. It's also possible to get it working in
-(:ref:`your REPL (IPython, etc.) <repl-completion>`).
+Jedi's main API calls are:
 
-Static analysis is also possible by using ``jedi.Script(...).get_names``.
+- Autocompletion: :meth:`.Script.complete`; It's also possible to get it
+  working in (:ref:`your REPL (IPython, etc.) <repl-completion>`)
+- Goto/Type Inference: :meth:`.Script.goto` and :meth:`.Script.infer`
+- Static Analysis: :meth:`.Script.get_names` and :meth:`.Script.get_syntax_errors`
+- Refactorings: :meth:`.Script.rename`, :meth:`.Script.inline_variable`,
+  :meth:`.Script.extract_variable` and :meth:`.Script.extract_function`
+- Code Search: :meth:`.Script.search` and :meth:`.Project.search`
 
-Jedi would in theory support refactoring, but we have never publicized it,
-because it's not production ready. If you're interested in helping out here,
-let me know. With the latest parser changes, it should be very easy to actually
-make it work.
-
-
-General Features
-----------------
+Basic Features
+--------------
 
 - Python 2.7 and 3.5+ support
 - Ignores syntax errors and wrong indentation
 - Can deal with complex module / function / class structures
-- Great Virtualenv support
-- Can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
-  and PEP0484-style type hints (:ref:`type hinting <type-hinting>`)
-- Stub files
+- Great ``virtualenv``/``venv`` support
+- Can infer function arguments from PEP0484-style :ref:`type hints <type-hinting>`,
+  sphinx, epydoc and basic numpydoc docstrings
+- Understands stub files
 
 
 Supported Python Features
