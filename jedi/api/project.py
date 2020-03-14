@@ -92,6 +92,24 @@ class Project(object):
                 "The Jedi version of this project seems newer than what we can handle."
             )
 
+    def save(self):
+        """
+        Saves the project configuration in the project in ``.jedi/project.json``.
+        """
+        data = dict(self.__dict__)
+        data.pop('_environment', None)
+        data.pop('_django', None)  # TODO make django setting public?
+        data = {k.lstrip('_'): v for k, v in data.items()}
+
+        # TODO when dropping Python 2 use pathlib.Path.mkdir(parents=True, exist_ok=True)
+        try:
+            os.makedirs(self._get_config_folder_path(self._path))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        with open(self._get_json_path(self._path), 'w') as f:
+            return json.dump((_SERIALIZER_VERSION, data), f)
+
     def __init__(self, path, **kwargs):
         """
         :param path: The base path for this project.
@@ -178,24 +196,6 @@ class Project(object):
 
         path = prefixed + sys_path + suffixed
         return list(_force_unicode_list(_remove_duplicates_from_path(path)))
-
-    def save(self):
-        """
-        Saves the project configuration in the project in ``.jedi/project.json``.
-        """
-        data = dict(self.__dict__)
-        data.pop('_environment', None)
-        data.pop('_django', None)  # TODO make django setting public?
-        data = {k.lstrip('_'): v for k, v in data.items()}
-
-        # TODO when dropping Python 2 use pathlib.Path.mkdir(parents=True, exist_ok=True)
-        try:
-            os.makedirs(self._get_config_folder_path(self._path))
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        with open(self._get_json_path(self._path), 'w') as f:
-            return json.dump((_SERIALIZER_VERSION, data), f)
 
     def get_environment(self):
         if self._environment is None:
