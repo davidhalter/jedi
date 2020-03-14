@@ -147,20 +147,31 @@ This means that in Python you can enable tab completion in a `REPL
 
 
 Static Analysis
-------------------------
+---------------
 
 To do all forms of static analysis, please try to use
 ``jedi.Script(...).get_names``. It will return a list of names that you can use
-to infer types and so on.
+to infer types and so on. There is also a way to list the syntax errors in a
+file: ``jedi.Script.get_syntax_errors``.
 
 
 Refactoring
 -----------
 
-Jedi's parser would support refactoring, but there's no API to use it right
-now.  If you're interested in helping out here, let me know. With the latest
-parser changes, it should be very easy to actually make it work.
+Jedi supports the following refactorings:
 
+- ``jedi.Script.inline_variable``
+- ``jedi.Script.rename``
+- ``jedi.Script.extract_function``
+- ``jedi.Script.extract_variable``
+
+Code Search
+-----------
+
+There is support for module search with ``jedi.Script.search``, and project
+search for ``jedi.Project.search``. The way to search is either by providing a
+name like ``foo`` or by using dotted syntax like ``foo.bar``. Additionally you
+can provide the API type like ``class foo.bar.Bar``.
 
 Development
 ===========
@@ -195,6 +206,7 @@ For more detailed information visit the `testing documentation
 Acknowledgements
 ================
 
+- Thanks to all the contributors, see also the ``AUTHORS.txt``.
 - Takafumi Arakaki (@tkf) for creating a solid test environment and a lot of
   other things.
 - Danilo Bargen (@dbrgn) for general housekeeping and being a good friend :).
