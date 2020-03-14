@@ -12,6 +12,7 @@ arguments.
 import os
 import sys
 import warnings
+from functools import wraps
 
 import parso
 from parso.python import tree
@@ -54,6 +55,7 @@ sys.setrecursionlimit(3000)
 
 def no_py2_support(func):
     # TODO remove when removing Python 2/3.5
+    @wraps(func)
     def wrapper(self, *args, **kwargs):
         if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
             raise NotImplementedError(
@@ -339,10 +341,16 @@ class Script(object):
     @no_py2_support
     def search(self, string, **kwargs):
         """
-        Searches a symbol in the current file.
+        Searches a name in the current file. For a description of how the
+        string should look like, please have a look at :meth:`.Project.search`.
 
-        :param all_scopes: If True lists the symbols of all scopes instead of
-            only the module.
+        :param bool fuzzy: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :yields: :class:`.Definition`
         """
         return self._search(string, **kwargs)  # Python 2 ...
 
@@ -364,6 +372,18 @@ class Script(object):
         )
 
     def complete_search(self, string, **kwargs):
+        """
+        Like :meth:`.Script.search`, but returns completions for the current
+        string. If you want to have all possible definitions in a file you can
+        also provide an empty string.
+
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :param fuzzy: Default False. Will return fuzzy completions, which means
+            that e.g. ``ooa`` will match ``foobar``.
+        :yields: :class:`.Completion`
+        """
         return self._search_func(string, complete=True, **kwargs)
 
     @validate_line_column

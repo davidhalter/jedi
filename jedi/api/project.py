@@ -199,14 +199,36 @@ class Project(object):
 
     def search(self, string, **kwargs):
         """
-        Returns a generator of names
+        Tries to look in a whole project for names. If the project is very big,
+        at some point Jedi will stop searching. However it's also very much
+        recommended to not exhaust the generator. Just display the first ten
+        results to the user.
+
+        There are currently three different search patterns:
+
+        - ``foo`` to search for a definition foo in any file or a file called
+          ``foo.py`` or ``foo.pyi``.
+        - ``foo.bar`` to search for the ``foo`` and then an attribute ``bar``
+          in it.
+        - ``class foo.bar.Bar`` or ``def foo.bar.baz`` to search for a specific
+          API type.
+
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :yields: :class:`.Definition`
         """
         return self._search(string, **kwargs)
 
     def complete_search(self, string, **kwargs):
         """
-        XXX
+        Like :meth:`.Project.search`, but returns completions for the current
+        string. An empty string lists all definitions in a project, so be
+        careful with that.
 
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
         :yields: :class:`.Completion`
         """
         return self._search_func(string, complete=True, **kwargs)
