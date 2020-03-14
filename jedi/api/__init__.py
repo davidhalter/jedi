@@ -581,7 +581,9 @@ class Script(object):
 
     def get_syntax_errors(self):
         """
-        XXX
+        Lists all syntax errors in the current file.
+
+        :rtype: list of :class:`.SyntaxError`
         """
         return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
