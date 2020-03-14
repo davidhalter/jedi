@@ -126,11 +126,12 @@ References:
     >>> rns = script.get_references(5, 8)
     >>> rns
     [<Definition full_name='__main__.x', description='x = 3'>,
-     <Definition full_name='__main__.x', description='x'>]
+     <Definition full_name='__main__.x', description='x = 4'>,
+     <Definition full_name='__main__.x', description='del x'>]
     >>> rns[1].line
-    5
-    >>> rns[0].column
-    8
+    3
+    >>> rns[1].column
+    4
 
 Deprecations
 ------------
@@ -138,5 +139,5 @@ Deprecations
 The deprecation process is as follows:
 
 1. A deprecation is announced in the next major/minor release.
-2. We wait either at least a year & at least two minor releases until we remove
-   the deprecated functionality.
+2. We wait either at least a year and at least two minor releases until we
+   remove the deprecated functionality.

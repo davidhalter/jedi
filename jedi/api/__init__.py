@@ -661,6 +661,8 @@ class Interpreter(Script):
     """
     Jedi API for Python REPLs.
 
+    Implements all of the methods that are present in :class:`.Script` as well.
+
     In addition to completion of simple attribute access, Jedi
     supports code completion based on static code analysis.
     Jedi can complete attributes of object which is not initialized
@@ -676,17 +678,15 @@ class Interpreter(Script):
 
     def __init__(self, source, namespaces, **kwds):
         """
-        Parse `source` and mixin interpreted Python objects from `namespaces`.
+        Parse ``source`` and mixin interpreted Python objects from ``namespaces``.
 
         :type source: str
         :arg  source: Code to parse.
         :type namespaces: list of dict
         :arg  namespaces: a list of namespace dictionaries such as the one
-                          returned by :func:`locals`.
+                          returned by :func:`globals`.
 
-        Other optional arguments are same as the ones for :class:`Script`.
-        If `line` and `column` are None, they are assumed be at the end of
-        `source`.
+        Other optional arguments are same as the ones for :class:`.Script`.
         """
         try:
             namespaces = [dict(n) for n in namespaces]
