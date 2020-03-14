@@ -72,15 +72,16 @@ Errors
 Examples
 --------
 
-Completions:
+Completions
+~~~~~~~~~~~
 
 .. sourcecode:: python
 
    >>> import jedi
-   >>> source = '''import json; json.l'''
-   >>> script = jedi.Script(source, path='')
+   >>> code = '''import json; json.l'''
+   >>> script = jedi.Script(code, path='example.py')
    >>> script
-   <jedi.api.Script object at 0x2121b10>
+   <Script: 'example.py' <SameEnvironment: 3.5.2 in /usr>>
    >>> completions = script.complete(1, 19)
    >>> completions
    [<Completion: load>, <Completion: loads>]
@@ -91,12 +92,13 @@ Completions:
    >>> completions[1].name
    'loads'
 
-Definitions / Goto:
+Type Inference / Goto
+~~~~~~~~~~~~~~~~~~~~~
 
 .. sourcecode:: python
 
     >>> import jedi
-    >>> source = '''def my_func():
+    >>> code = '''def my_func():
     ...     print 'called'
     ... 
     ... alias = my_func
@@ -104,25 +106,26 @@ Definitions / Goto:
     ... inception = my_list[2]
     ... 
     ... inception()'''
-    >>> script = jedi.Script(source, path='')
+    >>> script = jedi.Script(code)
     >>>
     >>> script.goto(8, 1)
-    [<Definition inception=my_list[2]>]
+    [<Definition full_name='__main__.inception', description='inception = my_list[2]'>]
     >>>
     >>> script.infer(8, 1)
-    [<Definition def my_func>]
+    [<Definition full_name='__main__.my_func', description='def my_func'>]
 
-References:
+References
+~~~~~~~~~~
 
 .. sourcecode:: python
 
     >>> import jedi
-    >>> source = '''x = 3
+    >>> code = '''x = 3
     ... if 1 == 2:
     ...     x = 4
     ... else:
     ...     del x'''
-    >>> script = jedi.Script(source, '')
+    >>> script = jedi.Script(code)
     >>> rns = script.get_references(5, 8)
     >>> rns
     [<Definition full_name='__main__.x', description='x = 3'>,
