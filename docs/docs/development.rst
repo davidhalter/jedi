@@ -22,11 +22,6 @@ couldn't get rid of complexity. I know that **simple is better than complex**,
 but unfortunately it sometimes requires complex solutions to understand complex
 systems.
 
-Since most of the Jedi internals have been written by me (David Halter), this
-introduction will be written mostly by me, because no one else understands to
-the same level how Jedi works. Actually this is also the reason for exactly this
-part of the documentation. To make multiple people able to edit the Jedi core.
-
 In five chapters I'm trying to describe the internals of |jedi|:
 
 - :ref:`The Jedi Core <core>`
@@ -215,8 +210,3 @@ Helper Modules
 Most other modules are not really central to how Jedi works. They all contain
 relevant code, but you if you understand the modules above, you pretty much
 understand Jedi.
-
-Python 2/3 compatibility (_compatibility.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: jedi._compatibility
