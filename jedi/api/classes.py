@@ -1,7 +1,15 @@
 """
-The :mod:`jedi.api.classes` module contains the return classes of the API.
-These classes are the much bigger part of the whole API, because they contain
-the interesting information about completion and goto operations.
+There are a couple of classes documented in here:
+
+- :class:`.BaseDefinition` as an abstact base class for almost everything.
+- :class:`.Definition` used in a lot of places
+- :class:`.Completion` for completions
+- :class:`.BaseSignature` as a base class for signatures
+- :class:`.Signature` for :meth:`.Script.get_signatures` only
+- :class:`.SyntaxError` for :meth:`.Script.get_syntax_errors` only
+
+These classes are the much biggest part of the API, because they contain
+the interesting information about all operations.
 """
 import re
 import sys
@@ -44,6 +52,9 @@ def _values_to_definitions(values):
 
 
 class BaseDefinition(object):
+    """
+    The base class for all definitions, completions and signatures.
+    """
     _mapping = {
         'posixpath': 'os.path',
         'riscospath': 'os.path',
@@ -176,7 +187,8 @@ class BaseDefinition(object):
     @property
     def module_name(self):
         """
-        The module name.
+        The module name, a bit similar to what ``__name__`` is in a random
+        Python module.
 
         >>> from jedi import Script
         >>> source = 'import json'
@@ -188,7 +200,9 @@ class BaseDefinition(object):
         return self._get_module_context().py__name__()
 
     def in_builtin_module(self):
-        """Whether this is a builtin module."""
+        """
+        Returns True, if this is a builtin module.
+        """
         value = self._get_module_context().get_value()
         if isinstance(value, StubModuleValue):
             return any(v.is_compiled() for v in value.non_stub_value_set)
@@ -352,6 +366,9 @@ class BaseDefinition(object):
         return '.'.join(names)
 
     def is_stub(self):
+        """
+        Returns True if the current name is defined in a stub file.
+        """
         if not self._name.is_value_name:
             return False
 
@@ -368,6 +385,18 @@ class BaseDefinition(object):
         return tree_name.is_definition() and tree_name.parent.type == 'trailer'
 
     def goto(self, **kwargs):
+        """
+        Like :meth:`.Script.goto` (also supports the same params), but does it
+        for the current name. This is typically useful if you are using
+        something like :meth:`Script.get_names()`.
+
+        :param follow_imports: The goto call will follow imports.
+        :param follow_builtin_imports: If follow_imports is True will try to
+            look up names in builtins (i.e. compiled or extension modules).
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python objects for this goto call.
+        :rtype: list of :class:`Definition`
+        """
         with debug.increase_indent_cm('goto for %s' % self._name):
             return self._goto(**kwargs)
 
@@ -398,12 +427,20 @@ class BaseDefinition(object):
 
     def infer(self, **kwargs):  # Python 2...
         """
-        Return the original definitions. I strongly recommend not using it for
+        Like :meth:`.Script.infer`, it can be useful to understand which type
+        the current name has.
+
+        Return the actual definitions. I strongly recommend not using it for
         your completions, because it might slow down |jedi|. If you want to
         read only a few objects (<=20), it might be useful, especially to get
         the original docstrings. The basic problem of this function is that it
         follows all results. This means with 1000 completions (e.g.  numpy),
-        it's just PITA-slow.
+        it's just very, very slow.
+
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python objects for this type
+            inference call.
+        :rtype: list of :class:`Definition`
         """
         with debug.increase_indent_cm('infer for %s' % self._name):
             return self._infer(**kwargs)
@@ -430,13 +467,6 @@ class BaseDefinition(object):
     @property
     @memoize_method
     def params(self):
-        """
-        .. deprecated:: Use get_signatures()[...].params.
-
-        Raises :exc:`AttributeError` if the definition is not callable.
-        Otherwise returns a list of :class:`.Definition` that represents the
-        params.
-        """
         warnings.warn(
             "Deprecated since version 0.16.0. Use get_signatures()[...].params",
             DeprecationWarning,
@@ -457,6 +487,11 @@ class BaseDefinition(object):
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
+        """
+        Returns the parent scope of this identifier.
+
+        :rtype: Definition
+        """
         if not self._name.is_value_name:
             return None
 
@@ -524,12 +559,24 @@ class BaseDefinition(object):
         return [sig for name in names for sig in name.infer().get_signatures()]
 
     def get_signatures(self):
+        """
+        Returns all potential signatures for a function or a class. Multiple
+        signatures are typical if you use Python stubs with ``@overload``.
+
+        :rtype: list of :class:`BaseSignature`
+        """
         return [
             BaseSignature(self._inference_state, s)
             for s in self._get_signatures()
         ]
 
     def execute(self):
+        """
+        Uses type inference to "execute" this identifier and returns the
+        executed objects.
+
+        :rtype: list of :class:`Definition`
+        """
         return _values_to_definitions(self._name.infer().execute_with_values())
 
     def get_type_hint(self):
@@ -539,6 +586,8 @@ class BaseDefinition(object):
         This method might be quite slow, especially for functions. The problem
         is finding executions for those functions to return something like
         ``Callable[[int, str], str]``.
+
+        :rtype: str
         """
         return self._name.infer().get_type_hint()
 
@@ -591,7 +640,7 @@ class Completion(BaseDefinition):
                 pass
 
         completing ``foo(par`` would give a ``Completion`` which ``complete``
-        would be ``am=``
+        would be ``am=``.
         """
         if self._is_fuzzy:
             return None
@@ -670,23 +719,19 @@ class Completion(BaseDefinition):
 
 class Definition(BaseDefinition):
     """
-    *Definition* objects are returned from :meth:`api.Script.goto`
-    or :meth:`api.Script.infer`.
+    *Definition* objects are returned from many different APIs including
+    :meth:`.Script.goto` or :meth:`.Script.infer`.
     """
     def __init__(self, inference_state, definition):
         super(Definition, self).__init__(inference_state, definition)
 
     @property
     def desc_with_module(self):
-        """
-        In addition to the definition, also return the module.
-
-        .. warning:: Don't use this function yet, its behaviour may change. If
-            you really need it, talk to me.
-
-        .. todo:: Add full path. This function is should return a
-            `module.class.function` path.
-        """
+        warnings.warn(
+            "Deprecated since version 0.17.0. There's no replacement for now.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         position = '' if self.in_builtin_module else '@%s' % self.line
         return "%s:%s%s" % (self.module_name, self.description, position)
 
@@ -695,7 +740,7 @@ class Definition(BaseDefinition):
         """
         List sub-definitions (e.g., methods in class).
 
-        :rtype: list of Definition
+        :rtype: list of :class:`Definition`
         """
         defs = self._name.infer()
         return sorted(

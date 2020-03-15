@@ -8,9 +8,8 @@ API Return Classes
 .. automodule:: jedi.api.classes
     :members:
     :show-inheritance:
-    :undoc-members:
+    :exclude-members: defined_names
 
 .. autoclass:: jedi.api.errors.SyntaxError
     :members:
-    :undoc-members:
     :show-inheritance:
