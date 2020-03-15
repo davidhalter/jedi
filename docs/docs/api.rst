@@ -98,7 +98,8 @@ Type Inference / Goto
 .. sourcecode:: python
 
     >>> import jedi
-    >>> code = '''def my_func():
+    >>> code = '''\
+    ... def my_func():
     ...     print 'called'
     ... 
     ... alias = my_func
@@ -120,7 +121,8 @@ References
 .. sourcecode:: python
 
     >>> import jedi
-    >>> code = '''x = 3
+    >>> code = '''\
+    ... x = 3
     ... if 1 == 2:
     ...     x = 4
     ... else:
