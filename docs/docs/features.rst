@@ -3,7 +3,7 @@
 Features and Caveats
 ====================
 
-Jedi's main API calls are:
+Jedi's main API calls and featuresare:
 
 - Autocompletion: :meth:`.Script.complete`; It's also possible to get it
   working in (:ref:`your REPL (IPython, etc.) <repl-completion>`)
@@ -83,14 +83,11 @@ should not be a problem anymore.  The same is true for huge modules like
 
 Security is an important issue for |jedi|. Therefore no Python code is
 executed.  As long as you write pure Python, everything is inferred
-statically. But: If you use builtin modules (``c_builtin``) there is no other
-option than to execute those modules. However: Execute isn't that critical (as
-e.g. in pythoncomplete, which used to execute *every* import!), because it
-means one import and no more.  So basically the only dangerous thing is using
-the import itself. If your ``c_builtin`` uses some strange initializations, it
-might be dangerous. But if it does you're screwed anyways, because eventually
-you're going to execute your code, which executes the import.
-
+statically. Only if you enable ``load_unsafe_extensions=True`` for your
+:class:`.Project` and you use builtin modules (``c_builtin``) Jedi will execute
+those modules.
+If you don't trust a code base, please do not enable that option. It might lead
+to arbitrary code execution.
 
 Recipes
 -------
