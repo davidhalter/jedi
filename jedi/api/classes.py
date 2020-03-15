@@ -728,9 +728,8 @@ class Definition(BaseDefinition):
 
 class BaseSignature(Definition):
     """
-    `BaseSignature` objects is the return value of `Script.function_definition`.
-    It knows what functions you are currently in. e.g. `isinstance(` would
-    return the `isinstance` function. without `(` it would return nothing.
+    These signatures are returned by :meth:`BaseDefinition.get_signatures`
+    calls.
     """
     def __init__(self, inference_state, signature):
         super(BaseSignature, self).__init__(inference_state, signature.name)
@@ -739,21 +738,28 @@ class BaseSignature(Definition):
     @property
     def params(self):
         """
-        :return list of ParamDefinition:
+        Returns definitions for all parameters that a signature defines.
+        This includes stuff like ``*args`` and ``**kwargs``.
+
+        :rtype: list of :class:`ParamDefinition`
         """
         return [ParamDefinition(self._inference_state, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
     def to_string(self):
+        """
+        Returns a text representation of the signature. This could for example
+        look like ``foo(bar, baz: int, **kwargs)``.
+
+        :return str
+        """
         return self._signature.to_string()
 
 
 class Signature(BaseSignature):
     """
-    ``Signature`` objects is the return value of :meth:`.Script.get_signatures`.
-    It knows what functions you are currently in. e.g. `isinstance(` would
-    return the `isinstance` function with its params. Without `(` it would
-    return nothing.
+    A full signature object is the return value of
+    :meth:`.Script.get_signatures`.
     """
     def __init__(self, inference_state, signature, call_details):
         super(Signature, self).__init__(inference_state, signature)
@@ -765,6 +771,8 @@ class Signature(BaseSignature):
         """
         Returns the param index of the current cursor position.
         Returns None if the index cannot be found in the curent call.
+
+        :rtype: int
         """
         return self._call_details.calculate_index(
             self._signature.get_param_names(resolve_stars=True)
