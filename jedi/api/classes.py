@@ -535,7 +535,7 @@ class BaseDefinition(object):
 
 class Completion(BaseDefinition):
     """
-    `Completion` objects are returned from :meth:`api.Script.complete`. They
+    ``Completion`` objects are returned from :meth:`.Script.complete`. They
     provide additional information about a completion.
     """
     def __init__(self, inference_state, name, stack, like_name_length,
@@ -573,15 +573,15 @@ class Completion(BaseDefinition):
             isinstan# <-- Cursor is here
 
         would return the string 'ce'. It also adds additional stuff, depending
-        on your `settings.py`.
+        on your ``settings.py``.
 
         Assuming the following function definition::
 
             def foo(param=0):
                 pass
 
-        completing ``foo(par`` would give a ``Completion`` which `complete`
-        would be `am=`
+        completing ``foo(par`` would give a ``Completion`` which ``complete``
+        would be ``am=``
         """
         if self._is_fuzzy:
             return None
@@ -603,6 +603,9 @@ class Completion(BaseDefinition):
         return self._complete(False)
 
     def docstring(self, raw=False, fast=True):
+        """
+        Documentated under :meth:`BaseDefinition.docstring`.
+        """
         if self._like_name_length >= 3:
             # In this case we can just resolve the like name, because we
             # wouldn't load like > 100 Python modules anymore.
@@ -638,6 +641,9 @@ class Completion(BaseDefinition):
 
     @property
     def type(self):
+        """
+        Documentated under :meth:`BaseDefinition.type`.
+        """
         # Purely a speed optimization.
         if self._cached_name is not None:
             return completion_cache.get_type(
@@ -744,7 +750,7 @@ class BaseSignature(Definition):
 
 class Signature(BaseSignature):
     """
-    `Signature` objects is the return value of `Script.get_signatures`.
+    ``Signature`` objects is the return value of :meth:`.Script.get_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
@@ -757,7 +763,7 @@ class Signature(BaseSignature):
     @property
     def index(self):
         """
-        The Param index of the current call.
+        Returns the param index of the current cursor position.
         Returns None if the index cannot be found in the curent call.
         """
         return self._call_details.calculate_index(
@@ -767,8 +773,10 @@ class Signature(BaseSignature):
     @property
     def bracket_start(self):
         """
-        The line/column of the bracket that is responsible for the last
-        function call.
+        Returns a line/column tuple of the bracket that is responsible for the
+        last function call. The first line is 1 and the first column 0.
+
+        :rtype: int, int
         """
         return self._call_details.bracket_leaf.start_pos
 
@@ -783,29 +791,35 @@ class Signature(BaseSignature):
 class ParamDefinition(Definition):
     def infer_default(self):
         """
-        :return list of Definition:
+        Returns default values like the ``1`` of ``def foo(x=1):``.
+
+        :rtype: list of :class:`.Definition`
         """
         return _values_to_definitions(self._name.infer_default())
 
     def infer_annotation(self, **kwargs):
         """
-        :return list of Definition:
-
-        :param execute_annotation: If False, the values are not executed and
-            you get classes instead of instances.
+        :param execute_annotation: Default True; If False, values are not
+            executed and classes are returned instead of instances.
+        :rtype: list of :class:`.Definition`
         """
         return _values_to_definitions(self._name.infer_annotation(ignore_stars=True, **kwargs))
 
     def to_string(self):
+        """
+        Returns a simple representation of a param, like
+        ``f: Callable[..., Any]``.
+
+        :rtype: :class:`str`
+        """
         return self._name.to_string()
 
     @property
     def kind(self):
         """
-        Returns an enum instance. Returns the same values as the builtin
-        :py:attr:`inspect.Parameter.kind`.
+        Returns an enum instance of :mod:`inspect`'s ``Parameter`` enum.
 
-        No support for Python < 3.5 anymore.
+        :rtype: :py:attr:`inspect.Parameter.kind`
         """
         if sys.version_info < (3, 5):
             raise NotImplementedError(
