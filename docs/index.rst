@@ -21,10 +21,10 @@ Docs
    :maxdepth: 2
 
    docs/usage
-   docs/installation
    docs/features
    docs/api
    docs/api-classes
+   docs/installation
    docs/settings
    docs/development
    docs/testing

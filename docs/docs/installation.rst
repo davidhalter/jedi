@@ -3,6 +3,15 @@
 Installation and Configuration
 ==============================
 
+.. warning:: Most people will want to install Jedi as a submodule/vendored and
+   not through pip/system wide. The reason for this is that it makes sense that
+   the plugin that uses Jedi has always access to it. Otherwise Jedi will not
+   work properly when virtualenvs are activated. So please read the
+   documentation of your editor/IDE plugin to install Jedi.
+
+   For plugin developers, Jedi works best if it is always available. Vendoring
+   is a pretty good option for that.
+
 You can either include |jedi| as a submodule in your text editor plugin (like
 jedi-vim_ does by default), or you can install it systemwide.
 
