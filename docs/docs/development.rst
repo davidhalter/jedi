@@ -22,11 +22,12 @@ couldn't get rid of complexity. I know that **simple is better than complex**,
 but unfortunately it sometimes requires complex solutions to understand complex
 systems.
 
-In five chapters I'm trying to describe the internals of |jedi|:
+In six chapters I'm trying to describe the internals of |jedi|:
 
 - :ref:`The Jedi Core <core>`
 - :ref:`Core Extensions <core-extensions>`
 - :ref:`Imports & Modules <imports-modules>`
+- :ref:`Stubs & Annotations <stubs>`
 - :ref:`Caching & Recursions <caching-recursions>`
 - :ref:`Helper modules <dev-helpers>`
 
@@ -177,6 +178,12 @@ Imports (inference/imports.py)
 
 .. automodule:: jedi.inference.imports
 
+.. _stubs:
+
+Stubs & Annotations (inference/gradual)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: jedi.inference.gradual
 
 .. _caching-recursions:
 
