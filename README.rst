@@ -160,7 +160,7 @@ Refactoring
 
 Jedi supports the following refactorings:
 
-- ``jedi.Script.inline_variable``
+- ``jedi.Script.inline``
 - ``jedi.Script.rename``
 - ``jedi.Script.extract_function``
 - ``jedi.Script.extract_variable``

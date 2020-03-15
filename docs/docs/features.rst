@@ -9,7 +9,7 @@ Jedi's main API calls are:
   working in (:ref:`your REPL (IPython, etc.) <repl-completion>`)
 - Goto/Type Inference: :meth:`.Script.goto` and :meth:`.Script.infer`
 - Static Analysis: :meth:`.Script.get_names` and :meth:`.Script.get_syntax_errors`
-- Refactorings: :meth:`.Script.rename`, :meth:`.Script.inline_variable`,
+- Refactorings: :meth:`.Script.rename`, :meth:`.Script.inline`,
   :meth:`.Script.extract_variable` and :meth:`.Script.extract_function`
 - Code Search: :meth:`.Script.search` and :meth:`.Project.search`
 
@@ -57,17 +57,16 @@ Supported Python Features
 Not Supported
 -------------
 
-Not yet implemented:
+Things that will probably never be implemented:
 
-- manipulations of instances outside the instance variables without using
-  methods
-
-Will probably never be implemented:
-
-- metaclasses (how could an auto-completion ever support this)
+- Arbitrary metaclasses (how could an auto-completion ever support this), some
+  of them like enums and dataclasses are reimplemented in Jedi to make them
+  work. Most of the time stubs are good enough to get type inference working,
+  even when metaclasses are involved.
 - ``setattr()``, ``__import__()``
-- writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
-
+- Writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
+- Manipulations of instances outside the instance variables without using
+  methods
 
 Caveats
 -------
@@ -75,10 +74,10 @@ Caveats
 **Slow Performance**
 
 Importing ``numpy`` can be quite slow sometimes, as well as loading the
-builtins the first time. If you want to speed things up, you could write import
-hooks in |jedi|, which preload stuff. However, once loaded, this is not a
-problem anymore.  The same is true for huge modules like ``PySide``, ``wx``,
-etc.
+builtins the first time. If you want to speed things up, you could preload
+libriaries in |jedi|, with :func:`preload_module`. However, once loaded, this
+should not be a problem anymore.  The same is true for huge modules like
+``PySide``, ``wx``, ``tensorflow``, ``pandas``, etc.
 
 **Security**
 
