@@ -387,6 +387,14 @@ class BaseDefinition(object):
                 for n in names]
 
     def infer(self, **kwargs):  # Python 2...
+        """
+        Return the original definitions. I strongly recommend not using it for
+        your completions, because it might slow down |jedi|. If you want to
+        read only a few objects (<=20), it might be useful, especially to get
+        the original docstrings. The basic problem of this function is that it
+        follows all results. This means with 1000 completions (e.g.  numpy),
+        it's just PITA-slow.
+        """
         with debug.increase_indent_cm('infer for %s' % self._name):
             return self._infer(**kwargs)
 
@@ -413,7 +421,7 @@ class BaseDefinition(object):
     @memoize_method
     def params(self):
         """
-        Deprecated! Will raise a warning soon. Use get_signatures()[...].params.
+        .. deprecated:: Use get_signatures()[...].params.
 
         Raises :exc:`AttributeError` if the definition is not callable.
         Otherwise returns a list of :class:`.Definition` that represents the
@@ -642,25 +650,6 @@ class Completion(BaseDefinition):
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
-
-    @memoize_method
-    def follow_definition(self):
-        """
-        Deprecated!
-
-        Return the original definitions. I strongly recommend not using it for
-        your completions, because it might slow down |jedi|. If you want to
-        read only a few objects (<=20), it might be useful, especially to get
-        the original docstrings. The basic problem of this function is that it
-        follows all results. This means with 1000 completions (e.g.  numpy),
-        it's just PITA-slow.
-        """
-        warnings.warn(
-            "Deprecated since version 0.14.0. Use .infer.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.infer()
 
 
 class Definition(BaseDefinition):
