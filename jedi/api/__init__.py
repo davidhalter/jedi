@@ -68,7 +68,7 @@ class Script(object):
     A Script is the base for completions, goto or whatever you want to do with
     |jedi|.
 
-    You can either use the ``source`` parameter or ``path`` to read a file.
+    You can either use the ``code`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
     The script might be analyzed in a different ``sys.path`` than |jedi|:
@@ -92,8 +92,8 @@ class Script(object):
         you problems. See also
         `this discussion <https://github.com/davidhalter/jedi/issues/1240>`_.
 
-    :param source: The source code of the current file, separated by newlines.
-    :type source: str
+    :param code: The source code of the current file, separated by newlines.
+    :type code: str
     :param line: Deprecated, please use it directly on e.g. ``.complete``
     :type line: int
     :param column: Deprecated, please use it directly on e.g. ``.complete``
@@ -102,7 +102,7 @@ class Script(object):
         it hasn't been saved yet.
     :type path: str or None
     :param encoding: Deprecated, cast to unicode yourself. The encoding of
-        ``source``, if it is not a ``unicode`` object (default ``'utf-8'``).
+        ``code``, if it is not a ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: list of str
@@ -111,26 +111,13 @@ class Script(object):
     :param Project project: Provide a predefined environment to work
         with a specific Python version or virtualenv.
     """
-    def __init__(self, source=None, line=None, column=None, path=None,
+    def __init__(self, code=None, line=None, column=None, path=None,
                  encoding='utf-8', sys_path=None, environment=None,
-                 project=None):
+                 project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
 
-        if source is None:
-            # TODO add a better warning than the traceback!
-            with open(path, 'rb') as f:
-                source = f.read()
-
-        if sys_path is not None and not is_py3:
-            sys_path = list(map(force_unicode, sys_path))
-
-        if project is None:
-            # Load the Python grammar of the current interpreter.
-            project = get_default_project(
-                os.path.dirname(self.path) if path else None
-            )
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
@@ -161,13 +148,33 @@ class Script(object):
                 DeprecationWarning,
                 stacklevel=2
             )
+        if source is not None:
+            code = source
+            warnings.warn(
+                "Use the code keyword argument instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if code is None:
+            # TODO add a better warning than the traceback!
+            with open(path, 'rb') as f:
+                code = f.read()
+
+        if sys_path is not None and not is_py3:
+            sys_path = list(map(force_unicode, sys_path))
+
+        if project is None:
+            # Load the Python grammar of the current interpreter.
+            project = get_default_project(
+                os.path.dirname(self.path) if path else None
+            )
 
         self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
         debug.speed('init')
-        self._module_node, source = self._inference_state.parse_and_get_code(
-            code=source,
+        self._module_node, code = self._inference_state.parse_and_get_code(
+            code=code,
             path=self.path,
             encoding=encoding,
             use_latest_grammar=path and path.endswith('.pyi'),
@@ -176,8 +183,8 @@ class Script(object):
             cache_path=settings.cache_directory,
         )
         debug.speed('parsed')
-        self._code_lines = parso.split_lines(source, keepends=True)
-        self._code = source
+        self._code_lines = parso.split_lines(code, keepends=True)
+        self._code = code
         self._pos = line, column
 
         cache.clear_time_caches()
@@ -718,12 +725,12 @@ class Interpreter(Script):
     """
     _allow_descriptor_getattr_default = True
 
-    def __init__(self, source, namespaces, **kwds):
+    def __init__(self, code, namespaces, **kwds):
         """
-        Parse ``source`` and mixin interpreted Python objects from ``namespaces``.
+        Parse ``code`` and mixin interpreted Python objects from ``namespaces``.
 
-        :type source: str
-        :arg  source: Code to parse.
+        :type code: str
+        :arg  code: Code to parse.
         :type namespaces: list of dict
         :arg  namespaces: a list of namespace dictionaries such as the one
                           returned by :func:`globals`.
@@ -742,7 +749,7 @@ class Interpreter(Script):
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
-        super(Interpreter, self).__init__(source, environment=environment,
+        super(Interpreter, self).__init__(code, environment=environment,
                                           project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
