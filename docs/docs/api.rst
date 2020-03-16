@@ -10,10 +10,13 @@ API Overview
 
 The API consists of a few different parts:
 
-- The main starting points for complete/goto: :class:`.Script` and :class:`.Interpreter`
+- The main starting points for complete/goto: :class:`.Script` and
+  :class:`.Interpreter`. If you work with Jedi you want to understand these
+  classes first.
 - :ref:`API Result Classes <api-classes>`
 - :ref:`Python Versions/Virtualenv Support <environments>` with functions like
   :func:`.find_system_environments` and :func:`.find_virtualenvs`
+- A way to work with different :ref:`Folders / Projects <projects>`
 - Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 
 Script
