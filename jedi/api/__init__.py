@@ -101,12 +101,14 @@ class Script(object):
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or None
-    :param encoding: The encoding of ``source``, if it is not a
-        ``unicode`` object (default ``'utf-8'``).
+    :param encoding: Deprecated, cast to unicode yourself. The encoding of
+        ``source``, if it is not a ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: list of str
     :param Environment environment: Provide a predefined environment to work
+        with a specific Python version or virtualenv.
+    :param Project project: Provide a predefined environment to work
         with a specific Python version or virtualenv.
     """
     def __init__(self, source=None, line=None, column=None, path=None,
@@ -138,6 +140,28 @@ class Script(object):
                 DeprecationWarning,
                 stacklevel=2
             )
+        if encoding is not None:
+            warnings.warn(
+                "Deprecated since version 0.17.0. You should cast to valid "
+                "unicode yourself, especially if you are not using utf-8.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if line is not None:
+            warnings.warn(
+                "Providing the line is now done in the functions themselves "
+                "like `Script(...).complete(line, column)`",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if column is not None:
+            warnings.warn(
+                "Providing the column is now done in the functions themselves "
+                "like `Script(...).complete(line, column)`",
+                DeprecationWarning,
+                stacklevel=2
+            )
+
         self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
