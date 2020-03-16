@@ -8,38 +8,29 @@ API Overview
 
 .. _api:
 
-API Documentation
------------------
-
 The API consists of a few different parts:
 
 - The main starting points for complete/goto: :class:`.Script` and :class:`.Interpreter`
-- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 - :ref:`API Result Classes <api-classes>`
 - :ref:`Python Versions/Virtualenv Support <environments>` with functions like
   :func:`.find_system_environments` and :func:`.find_virtualenvs`
+- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 
 Script
-~~~~~~
+------
 
 .. autoclass:: jedi.Script
     :members:
 
 Interpreter
-~~~~~~~~~~~
+-----------
 .. autoclass:: jedi.Interpreter
     :members:
-
-Helper Functions
-~~~~~~~~~~~~~~~~
-
-.. autofunction:: jedi.preload_module
-.. autofunction:: jedi.set_debug_function
 
 .. _projects:
 
 Projects
-~~~~~~~~
+--------
 
 .. automodule:: jedi.api.project
 
@@ -50,7 +41,7 @@ Projects
 .. _environments:
 
 Environments
-~~~~~~~~~~~~
+------------
 
 .. automodule:: jedi.api.environment
 
@@ -63,8 +54,14 @@ Environments
 .. autoclass:: jedi.api.environment.Environment
     :members:
 
+Helper Functions
+----------------
+
+.. autofunction:: jedi.preload_module
+.. autofunction:: jedi.set_debug_function
+
 Errors
-~~~~~~
+------
 
 .. autoexception:: jedi.InternalError
 .. autoexception:: jedi.RefactoringError
