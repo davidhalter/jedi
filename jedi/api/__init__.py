@@ -51,7 +51,7 @@ from jedi.inference.utils import to_list
 sys.setrecursionlimit(3000)
 
 
-def no_py2_support(func):
+def _no_python2_support(func):
     # TODO remove when removing Python 2/3.5
     @wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -66,18 +66,25 @@ def no_py2_support(func):
 class Script(object):
     """
     A Script is the base for completions, goto or whatever you want to do with
-    |jedi|.
+    |jedi|. The counter part of this class is :class:`Interpreter`, which works
+    with actual namespaces and can complete in a shell as well. This class
+    should be used when a user edits code in an editor.
 
     You can either use the ``code`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
     The script might be analyzed in a different ``sys.path`` than |jedi|:
 
-    - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
-      for the script;
-    - if `environment` is provided, its ``sys.path`` will be used
+    - If `project` is provided with a ``sys_path``, that is going to be used.
+    - If `environment` is provided, its ``sys.path`` will be used
       (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
-    - otherwise ``sys.path`` will match that of |jedi|.
+    - Otherwise ``sys.path`` will match that of the default environment of
+      |jedi|, which typically matches the sys path that was used at the time
+      when Jedi was imported.
+
+    Most methods have a ``line`` and a ``column`` parameter. Lines in Jedi are
+    always 1-based and columns are always zero based. To avoid repetition they
+    are not always documented.
 
     .. warning:: By default :attr:`jedi.settings.fast_parser` is enabled, which means
         that parso reuses modules (i.e. they are not immutable). With this setting
@@ -106,10 +113,11 @@ class Script(object):
     :type encoding: str
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: list of str
-    :param Environment environment: Provide a predefined environment to work
-        with a specific Python version or virtualenv.
-    :param Project project: Provide a predefined environment to work
-        with a specific Python version or virtualenv.
+    :param Environment environment: Provide a predefined :ref:`Environment <environments>`
+        to work with a specific Python version or virtualenv.
+    :param Project project: Provide a :class:`.Project` to make sure finding
+        references works well, because the right folder is searched. There are
+        also ways to modify the sys path and other things.
     """
     def __init__(self, code=None, line=None, column=None, path=None,
                  encoding='utf-8', sys_path=None, environment=None,
@@ -255,7 +263,9 @@ class Script(object):
 
         :param fuzzy: Default False. Will return fuzzy completions, which means
             that e.g. ``ooa`` will match ``foobar``.
-        :return: Completion objects, sorted by name and __ comes last.
+        :return: Completion objects, sorted by name. Normal names appear
+            before "private" names that start with ``_`` and those appear
+            before magic methods and name mangled names that start with ``__``.
         :rtype: list of :class:`.Completion`
         """
         return self._complete(line, column, **kwargs)
@@ -275,17 +285,18 @@ class Script(object):
     @validate_line_column
     def infer(self, line=None, column=None, **kwargs):
         """
-        Return the definitions of a the path under the cursor.  goto function!
-        This follows complicated paths and returns the end, not the first
-        definition. The big difference between :meth:`goto` and
+        Return the definitions of under the cursor. It is basically a wrapper
+        around Jedi's type inference.
+
+        This method follows complicated paths and returns the end, not the
+        first definition. The big difference between :meth:`goto` and
         :meth:`infer` is that :meth:`goto` doesn't
         follow imports and statements. Multiple objects may be returned,
-        because Python itself is a dynamic language, which means depending on
-        an option you can have two different versions of a function.
+        because depending on an option you can have two different versions of a
+        function.
 
-        :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python objects for this type
-            inference call.
+        :param only_stubs: Only return stubs for this method.
+        :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Definition`
         """
         with debug.increase_indent_cm('infer'):
@@ -328,16 +339,16 @@ class Script(object):
     @validate_line_column
     def goto(self, line=None, column=None, **kwargs):
         """
-        Return the first definition found, while optionally following imports.
-        Multiple objects may be returned, because Python itself is a
-        dynamic language, which means depending on an option you can have two
+        Goes to the name that defined the object under the cursor. Optionally
+        you can follow imports.
+        Multiple objects may be returned, depending on an if you can have two
         different versions of a function.
 
-        :param follow_imports: The goto call will follow imports.
-        :param follow_builtin_imports: If follow_imports is True will try to
-            look up names in builtins (i.e. compiled or extension modules).
-        :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python objects for this goto call.
+        :param follow_imports: The method will follow imports.
+        :param follow_builtin_imports: If ``follow_imports`` is True will try
+            to look up names in builtins (i.e. compiled or extension modules).
+        :param only_stubs: Only return stubs for this method.
+        :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Definition`
         """
         with debug.increase_indent_cm('goto'):
@@ -380,15 +391,13 @@ class Script(object):
         # Avoid duplicates
         return list(set(helpers.sorted_definitions(defs)))
 
-    @no_py2_support
+    @_no_python2_support
     def search(self, string, **kwargs):
         """
         Searches a name in the current file. For a description of how the
-        string should look like, please have a look at :meth:`.Project.search`.
+        search string should look like, please have a look at
+        :meth:`.Project.search`.
 
-        :param bool fuzzy: Default False; searches not only for
-            definitions on the top level of a module level, but also in
-            functions and classes.
         :param bool all_scopes: Default False; searches not only for
             definitions on the top level of a module level, but also in
             functions and classes.
@@ -491,7 +500,7 @@ class Script(object):
     @validate_line_column
     def get_signatures(self, line=None, column=None):
         """
-        Return the function object of the call you're currently in.
+        Return the function object of the call the cursor is on.
 
         E.g. if the cursor is here::
 
@@ -503,7 +512,7 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`.CallSignature`
+        :rtype: list of :class:`.Signature`
         """
         pos = line, column
         call_details = helpers.get_signature_details(self._module_node, pos)
@@ -527,6 +536,12 @@ class Script(object):
 
     @validate_line_column
     def get_context(self, line=None, column=None):
+        """
+        Returns the context of cursor. This basically means the function, class
+        or module where the cursor is at.
+
+        :rtype: :class:`.Definition`
+        """
         pos = (line, column)
         leaf = self._module_node.get_leaf_for_position(pos, include_prefixes=True)
         if leaf.start_pos > pos or leaf.type == 'endmarker':
@@ -632,7 +647,7 @@ class Script(object):
         ]
         return sorted(defs, key=lambda x: x.start_pos)
 
-    @no_py2_support
+    @_no_python2_support
     def rename(self, line=None, column=None, **kwargs):
         """
         Returns an object that you can use to rename the variable under the
@@ -648,7 +663,7 @@ class Script(object):
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._inference_state, definitions, new_name)
 
-    @no_py2_support
+    @_no_python2_support
     @validate_line_column
     def extract_variable(self, line=None, column=None, **kwargs):
         """
@@ -672,7 +687,7 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @no_py2_support
+    @_no_python2_support
     def extract_function(self, line, column, **kwargs):
         """
         :param new_name: The statements under the cursor will be renamed to
@@ -695,7 +710,7 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @no_py2_support
+    @_no_python2_support
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor.
