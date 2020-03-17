@@ -84,7 +84,9 @@ class Script(object):
 
     Most methods have a ``line`` and a ``column`` parameter. Lines in Jedi are
     always 1-based and columns are always zero based. To avoid repetition they
-    are not always documented.
+    are not always documented. You can omit both line and column. Jedi will
+    then just do whatever action you are calling at the end of the file. If you
+    provide only the line, just will complete at the end of that line.
 
     .. warning:: By default :attr:`jedi.settings.fast_parser` is enabled, which means
         that parso reuses modules (i.e. they are not immutable). With this setting
@@ -611,16 +613,15 @@ class Script(object):
 
     def get_names(self, **kwargs):
         """
-        Returns a list of `Definition` objects, containing name parts.
-        This means you can call ``Definition.goto()`` and get the
-        reference of a name.
+        Returns names defined in the current module.
 
-        :param all_scopes: If True lists the names of all scopes instead of only
-            the module namespace.
+        :param all_scopes: If True lists the names of all scopes instead of
+            only the module namespace.
         :param definitions: If True lists the names that have been defined by a
             class, function or a statement (``a = b`` returns ``a``).
         :param references: If True lists all the names that are not listed by
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
+        :rtype: list of :class:`.Definition`
         """
         names = self._names(**kwargs)
         return [classes.Definition(self._inference_state, n) for n in names]
@@ -655,7 +656,8 @@ class Script(object):
 
         :param new_name: The variable under the cursor will be renamed to this
             string.
-        :rtype: :class:`refactoring.Refactoring`
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
         """
         return self._rename(line, column, **kwargs)
 
@@ -667,9 +669,27 @@ class Script(object):
     @validate_line_column
     def extract_variable(self, line=None, column=None, **kwargs):
         """
+        Moves an expression of a selected range to a new statemenet.
+        For example if you have the cursor on ``foo`` and provide a
+        ``new_name`` called ``bar``::
+
+            foo = 3.1
+            x = int(foo + 1)
+
+        the code above will become::
+
+            foo = 3.1
+            bar = foo + 1
+            x = int(bar)
+
         :param new_name: The expression under the cursor will be renamed to
             this string.
-        :rtype: :class:`refactoring.Refactoring`
+        :param int until_line: The the selection range ends at this line, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :param int until_column: The the selection range ends at this column, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
         """
         return self._extract_variable(line, column, **kwargs)  # Python 2...
 
@@ -690,9 +710,34 @@ class Script(object):
     @_no_python2_support
     def extract_function(self, line, column, **kwargs):
         """
-        :param new_name: The statements under the cursor will be renamed to
-            this string.
-        :rtype: :class:`refactoring.Refactoring`
+        Moves an expression of a selected range to a new function.
+        For example if you have the cursor on ``foo`` and provide a
+        ``new_name`` called ``bar``::
+
+            global_var = 3
+
+            def x():
+                foo = 3.1
+                x = int(foo + 1 + global_var)
+
+        the code above will become::
+
+            global_var = 3
+
+            def bar(foo):
+                return foo + 1 + global_var
+
+            def x(foo):
+                x = int(bar(foo))
+
+        :param new_name: The expression under the cursor will be replaced with
+            a function with this name.
+        :param int until_line: The the selection range ends at this line, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :param int until_column: The the selection range ends at this column, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
         """
         return self._extract_function(line, column, **kwargs)  # Python 2...
 
@@ -713,9 +758,20 @@ class Script(object):
     @_no_python2_support
     def inline(self, line=None, column=None):
         """
-        Inlines a variable under the cursor.
+        Inlines a variable under the cursor. This is basically the opposite of
+        extracting a variable. For example with the cursor on bar::
 
-        :rtype: :class:`refactoring.Refactoring`
+            foo = 3.1
+            bar = foo + 1
+            x = int(bar)
+
+        the code above will become::
+
+            foo = 3.1
+            x = int(foo + 1)
+
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
         """
         names = [d._name for d in self.get_references(line, column, include_builtins=True)]
         return refactoring.inline(self._inference_state, names)
