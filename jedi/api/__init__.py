@@ -122,7 +122,7 @@ class Script(object):
         also ways to modify the sys path and other things.
     """
     def __init__(self, code=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None, environment=None,
+                 encoding=None, sys_path=None, environment=None,
                  project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
@@ -137,7 +137,9 @@ class Script(object):
                 DeprecationWarning,
                 stacklevel=2
             )
-        if encoding is not None:
+        if encoding is None:
+            encoding = 'utf-8'
+        else:
             warnings.warn(
                 "Deprecated since version 0.17.0. You should cast to valid "
                 "unicode yourself, especially if you are not using utf-8.",
