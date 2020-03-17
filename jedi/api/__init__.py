@@ -299,7 +299,7 @@ class Script(object):
 
         :param only_stubs: Only return stubs for this method.
         :param prefer_stubs: Prefer stubs to Python objects for this method.
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         with debug.increase_indent_cm('infer'):
             return self._infer(line, column, **kwargs)
@@ -325,7 +325,7 @@ class Script(object):
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._inference_state, c.name) for c in values]
+        defs = [classes.Name(self._inference_state, c.name) for c in values]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
@@ -351,7 +351,7 @@ class Script(object):
             to look up names in builtins (i.e. compiled or extension modules).
         :param only_stubs: Only return stubs for this method.
         :param prefer_stubs: Prefer stubs to Python objects for this method.
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         with debug.increase_indent_cm('goto'):
             return self._goto(line, column, **kwargs)
@@ -389,7 +389,7 @@ class Script(object):
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._inference_state, d) for d in set(names)]
+        defs = [classes.Name(self._inference_state, d) for d in set(names)]
         # Avoid duplicates
         return list(set(helpers.sorted_definitions(defs)))
 
@@ -403,7 +403,7 @@ class Script(object):
         :param bool all_scopes: Default False; searches not only for
             definitions on the top level of a module level, but also in
             functions and classes.
-        :yields: :class:`.Definition`
+        :yields: :class:`.Name`
         """
         return self._search(string, **kwargs)  # Python 2 ...
 
@@ -448,11 +448,11 @@ class Script(object):
         Typically you will want to display :meth:`.BaseName.docstring` to the
         user for all the returned definitions.
 
-        The additional definitions are ``Definition(...).type == 'keyword'``.
+        The additional definitions are ``Name(...).type == 'keyword'``.
         These definitions do not have a lot of value apart from their docstring
         attribute, which contains the output of Python's :func:`help` function.
 
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         definitions = self.goto(line, column, follow_imports=True)
         if definitions:
@@ -462,7 +462,7 @@ class Script(object):
             reserved = self._inference_state.grammar._pgen_grammar.reserved_syntax_strings.keys()
             if leaf.value in reserved:
                 name = KeywordName(self._inference_state, leaf.value)
-                return [classes.Definition(self._inference_state, name)]
+                return [classes.Name(self._inference_state, name)]
         return []
 
     def usages(self, **kwargs):
@@ -478,7 +478,7 @@ class Script(object):
 
         :param include_builtins: Default True, checks if a reference is a
             builtin (e.g. ``sys``) and in that case does not return it.
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
 
         def _references(include_builtins=True):
@@ -489,7 +489,7 @@ class Script(object):
 
             names = find_references(self._get_module_context(), tree_name)
 
-            definitions = [classes.Definition(self._inference_state, n) for n in names]
+            definitions = [classes.Name(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
@@ -542,7 +542,7 @@ class Script(object):
         Returns the context of cursor. This basically means the function, class
         or module where the cursor is at.
 
-        :rtype: :class:`.Definition`
+        :rtype: :class:`.Name`
         """
         pos = (line, column)
         leaf = self._module_node.get_leaf_for_position(pos, include_prefixes=True)
@@ -566,7 +566,7 @@ class Script(object):
         while context.name is None:
             context = context.parent_context  # comprehensions
 
-        definition = classes.Definition(self._inference_state, context.name)
+        definition = classes.Name(self._inference_state, context.name)
         while definition.type != 'module':
             name = definition._name  # TODO private access
             tree_name = name.tree_name
@@ -621,10 +621,10 @@ class Script(object):
             class, function or a statement (``a = b`` returns ``a``).
         :param references: If True lists all the names that are not listed by
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         names = self._names(**kwargs)
-        return [classes.Definition(self._inference_state, n) for n in names]
+        return [classes.Name(self._inference_state, n) for n in names]
 
     def get_syntax_errors(self):
         """

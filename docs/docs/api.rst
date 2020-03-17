@@ -110,10 +110,10 @@ Type Inference / Goto
     >>> script = jedi.Script(code)
     >>>
     >>> script.goto(8, 1)
-    [<Definition full_name='__main__.inception', description='inception = my_list[2]'>]
+    [<Name full_name='__main__.inception', description='inception = my_list[2]'>]
     >>>
     >>> script.infer(8, 1)
-    [<Definition full_name='__main__.my_func', description='def my_func'>]
+    [<Name full_name='__main__.my_func', description='def my_func'>]
 
 References
 ~~~~~~~~~~
@@ -130,9 +130,9 @@ References
     >>> script = jedi.Script(code)
     >>> rns = script.get_references(5, 8)
     >>> rns
-    [<Definition full_name='__main__.x', description='x = 3'>,
-     <Definition full_name='__main__.x', description='x = 4'>,
-     <Definition full_name='__main__.x', description='del x'>]
+    [<Name full_name='__main__.x', description='x = 3'>,
+     <Name full_name='__main__.x', description='x = 4'>,
+     <Name full_name='__main__.x', description='del x'>]
     >>> rns[1].line
     3
     >>> rns[1].column

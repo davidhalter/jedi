@@ -124,7 +124,7 @@ import pytest
 import jedi
 from jedi import debug
 from jedi._compatibility import unicode, is_py3
-from jedi.api.classes import Definition
+from jedi.api.classes import Name
 from jedi.api.completion import get_user_context
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
@@ -244,7 +244,7 @@ class IntegrationTestCase(BaseTestCase):
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
 
-                should_be |= set(Definition(inference_state, r.name) for r in results)
+                should_be |= set(Name(inference_state, r.name) for r in results)
             debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.

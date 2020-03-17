@@ -13,7 +13,7 @@ Abstract Base Class
 
 Name
 ~~~~
-.. autoclass:: jedi.api.classes.Definition
+.. autoclass:: jedi.api.classes.Name
     :members:
     :show-inheritance:
 

@@ -52,7 +52,7 @@ will probably be Jedi 1.0.0.
     - ``usages`` deprecated, use ``get_references`` instead
     - ``jedi.names`` deprecated, use ``jedi.Script(...).get_names()``
 - ``BaseName.goto_assignments`` renamed to ``BaseName.goto``
-- Add follow_imports to ``Definition.goto``. Now its signature matches
+- Add follow_imports to ``Name.goto``. Now its signature matches
   ``Script.goto``.
 - **Python 2 support deprecated**. For this release it is best effort. Python 2
   has reached the end of its life and now it's just about a smooth transition.
@@ -92,13 +92,13 @@ will probably be Jedi 1.0.0.
 
 New APIs:
 
-- ``Definition.get_signatures() -> List[Signature]``. Signatures are similar to
-  ``CallSignature``. ``Definition.params`` is therefore deprecated.
+- ``Name.get_signatures() -> List[Signature]``. Signatures are similar to
+  ``CallSignature``. ``Name.params`` is therefore deprecated.
 - ``Signature.to_string()`` to format signatures.
 - ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
   following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.
-- ``Definition.execute() -> List[Definition]``, makes it possible to infer
+- ``Name.execute() -> List[Name]``, makes it possible to infer
   return values of functions.
 
 
@@ -114,7 +114,7 @@ New APIs:
 - Added ``goto_*(prefer_stubs=True)`` as well as ``goto_*(prefer_stubs=True)``
 - Stubs are used now for type inference
 - Typeshed is used for better type inference
-- Reworked Definition.full_name, should have more correct return values
+- Reworked Name.full_name, should have more correct return values
 
 0.13.3 (2019-02-24)
 +++++++++++++++++++
@@ -194,7 +194,7 @@ New APIs:
 - Actual semantic completions for the complete Python syntax.
 - Basic type inference for ``yield from`` PEP 380.
 - PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
-- Added ``get_line_code`` to ``Definition`` and ``Completion`` objects.
+- Added ``get_line_code`` to ``Name`` and ``Completion`` objects.
 - Completely rewritten the type inference engine.
 - A new and better parser for (fast) parsing diffs of Python code.
 

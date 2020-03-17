@@ -612,6 +612,6 @@ def search_in_module(inference_state, module_context, names, wanted_names,
                         is_fuzzy=fuzzy,
                     )
                 else:
-                    def_ = classes.Definition(inference_state, n2)
+                    def_ = classes.Name(inference_state, n2)
                 if not wanted_type or wanted_type == def_.type:
                     yield def_

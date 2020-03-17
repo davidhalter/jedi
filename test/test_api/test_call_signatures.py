@@ -304,7 +304,7 @@ def test_builtins(Script):
 
 def test_signature_is_definition(Script):
     """
-    Through inheritance, a signature is a sub class of Definition.
+    Through inheritance, a signature is a sub class of Name.
     Check if the attributes match.
     """
     s = """class Spam(): pass\nSpam"""

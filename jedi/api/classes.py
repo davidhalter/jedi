@@ -2,7 +2,7 @@
 There are a couple of classes documented in here:
 
 - :class:`.BaseName` as an abstact base class for almost everything.
-- :class:`.Definition` used in a lot of places
+- :class:`.Name` used in a lot of places
 - :class:`.Completion` for completions
 - :class:`.BaseSignature` as a base class for signatures
 - :class:`.Signature` for :meth:`.Script.get_signatures` only
@@ -41,15 +41,15 @@ def defined_names(inference_state, context):
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
-    :rtype: list of Definition
+    :rtype: list of Name
     """
     filter = next(context.get_filters())
     names = [name for name in filter.values()]
-    return [Definition(inference_state, n) for n in _sort_names_by_start_pos(names)]
+    return [Name(inference_state, n) for n in _sort_names_by_start_pos(names)]
 
 
 def _values_to_definitions(values):
-    return [Definition(c.inference_state, c.name) for c in values]
+    return [Name(c.inference_state, c.name) for c in values]
 
 
 class BaseName(object):
@@ -150,10 +150,10 @@ class BaseName(object):
 
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
-        [<Definition full_name='keyword', description='module keyword'>,
-         <Definition full_name='__main__.C', description='class C'>,
-         <Definition full_name='__main__.D', description='instance D'>,
-         <Definition full_name='__main__.f', description='def f'>]
+        [<Name full_name='keyword', description='module keyword'>,
+         <Name full_name='__main__.C', description='class C'>,
+         <Name full_name='__main__.D', description='instance D'>,
+         <Name full_name='__main__.f', description='def f'>]
 
         Finally, here is what you can get from :attr:`type`:
 
@@ -280,7 +280,7 @@ class BaseName(object):
     @property
     def description(self):
         """
-        A description of the :class:`.Definition` object, which is heavily used
+        A description of the :class:`.Name` object, which is heavily used
         in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
 
         Example:
@@ -299,8 +299,8 @@ class BaseName(object):
         >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
-        [<Definition full_name='__main__.f', description='def f'>,
-         <Definition full_name='__main__.C', description='class C'>]
+        [<Name full_name='__main__.f', description='def f'>,
+         <Name full_name='__main__.C', description='class C'>]
         >>> str(defs[0].description)  # strip literals in python2
         'def f'
         >>> str(defs[1].description)
@@ -396,7 +396,7 @@ class BaseName(object):
             look up names in builtins (i.e. compiled or extension modules).
         :param only_stubs: Only return stubs for this goto call.
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
-        :rtype: list of :class:`Definition`
+        :rtype: list of :class:`Name`
         """
         with debug.increase_indent_cm('goto for %s' % self._name):
             return self._goto(**kwargs)
@@ -423,7 +423,7 @@ class BaseName(object):
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        return [self if n == self._name else Definition(self._inference_state, n)
+        return [self if n == self._name else Name(self._inference_state, n)
                 for n in names]
 
     def infer(self, **kwargs):  # Python 2...
@@ -441,7 +441,7 @@ class BaseName(object):
         :param only_stubs: Only return stubs for this goto call.
         :param prefer_stubs: Prefer stubs to Python objects for this type
             inference call.
-        :rtype: list of :class:`Definition`
+        :rtype: list of :class:`Name`
         """
         with debug.increase_indent_cm('infer for %s' % self._name):
             return self._infer(**kwargs)
@@ -462,7 +462,7 @@ class BaseName(object):
             prefer_stubs=prefer_stubs,
         )
         resulting_names = [c.name for c in values]
-        return [self if n == self._name else Definition(self._inference_state, n)
+        return [self if n == self._name else Name(self._inference_state, n)
                 for n in resulting_names]
 
     @property
@@ -477,7 +477,7 @@ class BaseName(object):
         # with overloading.
         for signature in self._get_signatures():
             return [
-                Definition(self._inference_state, n)
+                Name(self._inference_state, n)
                 for n in signature.get_param_names(resolve_stars=True)
             ]
 
@@ -491,7 +491,7 @@ class BaseName(object):
         """
         Returns the parent scope of this identifier.
 
-        :rtype: Definition
+        :rtype: Name
         """
         if not self._name.is_value_name:
             return None
@@ -518,7 +518,7 @@ class BaseName(object):
             # Happens for comprehension contexts
             context = context.parent_context
 
-        return Definition(self._inference_state, context.name)
+        return Name(self._inference_state, context.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (
@@ -576,7 +576,7 @@ class BaseName(object):
         Uses type inference to "execute" this identifier and returns the
         executed objects.
 
-        :rtype: list of :class:`Definition`
+        :rtype: list of :class:`Name`
         """
         return _values_to_definitions(self._name.infer().execute_with_values())
 
@@ -718,13 +718,13 @@ class Completion(BaseName):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
 
-class Definition(BaseName):
+class Name(BaseName):
     """
-    *Definition* objects are returned from many different APIs including
+    *Name* objects are returned from many different APIs including
     :meth:`.Script.goto` or :meth:`.Script.infer`.
     """
     def __init__(self, inference_state, definition):
-        super(Definition, self).__init__(inference_state, definition)
+        super(Name, self).__init__(inference_state, definition)
 
     @property
     def desc_with_module(self):
@@ -741,7 +741,7 @@ class Definition(BaseName):
         """
         List sub-definitions (e.g., methods in class).
 
-        :rtype: list of :class:`Definition`
+        :rtype: list of :class:`Name`
         """
         defs = self._name.infer()
         return sorted(
@@ -772,7 +772,7 @@ class Definition(BaseName):
         return hash((self._name.start_pos, self.module_path, self.name, self._inference_state))
 
 
-class BaseSignature(Definition):
+class BaseSignature(Name):
     """
     These signatures are returned by :meth:`BaseName.get_signatures`
     calls.
@@ -842,12 +842,12 @@ class Signature(BaseSignature):
         )
 
 
-class ParamDefinition(Definition):
+class ParamDefinition(Name):
     def infer_default(self):
         """
         Returns default values like the ``1`` of ``def foo(x=1):``.
 
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         return _values_to_definitions(self._name.infer_default())
 
@@ -855,7 +855,7 @@ class ParamDefinition(Definition):
         """
         :param execute_annotation: Default True; If False, values are not
             executed and classes are returned instead of instances.
-        :rtype: list of :class:`.Definition`
+        :rtype: list of :class:`.Name`
         """
         return _values_to_definitions(self._name.infer_annotation(ignore_stars=True, **kwargs))
 

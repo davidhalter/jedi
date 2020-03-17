@@ -230,7 +230,7 @@ class Project(object):
         :param bool all_scopes: Default False; searches not only for
             definitions on the top level of a module level, but also in
             functions and classes.
-        :yields: :class:`.Definition`
+        :yields: :class:`.Name`
         """
         return self._search(string, **kwargs)
 
