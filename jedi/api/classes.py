@@ -787,9 +787,9 @@ class BaseSignature(Name):
         Returns definitions for all parameters that a signature defines.
         This includes stuff like ``*args`` and ``**kwargs``.
 
-        :rtype: list of :class:`ParamDefinition`
+        :rtype: list of :class:`ParamName`
         """
-        return [ParamDefinition(self._inference_state, n)
+        return [ParamName(self._inference_state, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
     def to_string(self):
@@ -842,7 +842,7 @@ class Signature(BaseSignature):
         )
 
 
-class ParamDefinition(Name):
+class ParamName(Name):
     def infer_default(self):
         """
         Returns default values like the ``1`` of ``def foo(x=1):``.

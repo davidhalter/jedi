@@ -95,7 +95,7 @@ New APIs:
 - ``Name.get_signatures() -> List[Signature]``. Signatures are similar to
   ``CallSignature``. ``Name.params`` is therefore deprecated.
 - ``Signature.to_string()`` to format signatures.
-- ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
+- ``Signature.params -> List[ParamName]``, ParamName has the
   following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.
 - ``Name.execute() -> List[Name]``, makes it possible to infer
