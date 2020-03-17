@@ -6,7 +6,10 @@ Changelog
 0.17.0 (2020-03-)
 +++++++++++++++++++
 
-- Added the following refactorings: ``Script.rename``, ``Script.inline``,
+- Added support projects. This allows user to specify which folders Jedi should
+  search.
+- Added support for Refactoring. The following refactorings have been
+  implemented: ``Script.rename``, ``Script.inline``,
   ``Script.extract_variable`` and ``Script.extract_function``.
 - Added ``Script.get_syntax_errors`` to display syntax errors in the current
   script.
