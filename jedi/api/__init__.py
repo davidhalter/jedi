@@ -779,35 +779,30 @@ class Script(object):
 
 class Interpreter(Script):
     """
-    Jedi API for Python REPLs.
+    Jedi's API for Python REPLs.
 
     Implements all of the methods that are present in :class:`.Script` as well.
 
-    In addition to completion of simple attribute access, Jedi
-    supports code completion based on static code analysis.
-    Jedi can complete attributes of object which is not initialized
-    yet.
+    In addition to completions that normal REPL completion does like
+    ``str.upper``, Jedi also supports code completion based on static code
+    analysis. For example Jedi will complete ``str().upper``.
 
     >>> from os.path import join
     >>> namespace = locals()
     >>> script = Interpreter('join("").up', [namespace])
     >>> print(script.complete()[0].name)
     upper
+
+    All keyword arguments are same as the arguments for :class:`.Script`.
+
+    :param str code: Code to parse.
+    :type namespaces: list of dict
+    :param namespaces: A list of namespace dictionaries such as the one
+        returned by :func:`globals` and :func:`locals`.
     """
     _allow_descriptor_getattr_default = True
 
     def __init__(self, code, namespaces, **kwds):
-        """
-        Parse ``code`` and mixin interpreted Python objects from ``namespaces``.
-
-        :type code: str
-        :arg  code: Code to parse.
-        :type namespaces: list of dict
-        :arg  namespaces: a list of namespace dictionaries such as the one
-                          returned by :func:`globals`.
-
-        Other optional arguments are same as the ones for :class:`.Script`.
-        """
         try:
             namespaces = [dict(n) for n in namespaces]
         except Exception:
