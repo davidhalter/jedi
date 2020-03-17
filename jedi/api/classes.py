@@ -6,6 +6,7 @@ There are a couple of classes documented in here:
 - :class:`.Completion` for completions
 - :class:`.BaseSignature` as a base class for signatures
 - :class:`.Signature` for :meth:`.Script.get_signatures` only
+- :class:`.Refactoring` for refactorings
 - :class:`.SyntaxError` for :meth:`.Script.get_syntax_errors` only
 
 These classes are the much biggest part of the API, because they contain
