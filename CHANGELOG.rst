@@ -20,7 +20,8 @@ Changelog
   Now returns pydoc information as well for Python keywords/operators.  This
   means that on the class keyword it will now return the docstring of Python's
   builtin function ``help('class')``.
-- The API documentation is now way more readable and complete.
+- The API documentation is now way more readable and complete. Check it out
+  under https://jedi.readthedocs.io.
 - Removed Python 3.4 support
 - Many bugfixes
 

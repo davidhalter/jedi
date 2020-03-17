@@ -18,7 +18,7 @@ Docs
 ----
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    docs/usage
    docs/features
@@ -28,6 +28,7 @@ Docs
    docs/settings
    docs/development
    docs/testing
+   docs/changelog
 
 
 .. _resources:
