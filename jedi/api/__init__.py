@@ -852,7 +852,8 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
 def preload_module(*modules):
     """
     Preloading modules tells Jedi to load a module now, instead of lazy parsing
-    of modules. Usful for IDEs, to control which modules to load on startup.
+    of modules. This can be useful for IDEs, to control which modules to load
+    on startup.
 
     :param modules: different module names, list of string.
     """
@@ -868,7 +869,7 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
 
     If you don't specify any arguments, debug messages will be printed to stdout.
 
-    :param func_cb: The callback function for debug messages, with n params.
+    :param func_cb: The callback function for debug messages.
     """
     debug.debug_function = func_cb
     debug.enable_warning = warnings
