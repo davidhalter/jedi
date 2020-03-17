@@ -7,7 +7,7 @@ API Return Classes
 
 Abstract Base Class
 ~~~~~~~~~~~~~~~~~~~
-.. autoclass:: jedi.api.classes.BaseDefinition
+.. autoclass:: jedi.api.classes.BaseName
     :members:
     :show-inheritance:
 

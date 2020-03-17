@@ -445,7 +445,7 @@ class Script(object):
         Used to display a help window to users.  Uses :meth:`.Script.goto` and
         returns additional definitions for keywords and operators.
 
-        Typically you will want to display :meth:`.BaseDefinition.docstring` to the
+        Typically you will want to display :meth:`.BaseName.docstring` to the
         user for all the returned definitions.
 
         The additional definitions are ``Definition(...).type == 'keyword'``.

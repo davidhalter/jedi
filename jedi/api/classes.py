@@ -1,7 +1,7 @@
 """
 There are a couple of classes documented in here:
 
-- :class:`.BaseDefinition` as an abstact base class for almost everything.
+- :class:`.BaseName` as an abstact base class for almost everything.
 - :class:`.Definition` used in a lot of places
 - :class:`.Completion` for completions
 - :class:`.BaseSignature` as a base class for signatures
@@ -52,7 +52,7 @@ def _values_to_definitions(values):
     return [Definition(c.inference_state, c.name) for c in values]
 
 
-class BaseDefinition(object):
+class BaseName(object):
     """
     The base class for all definitions, completions and signatures.
     """
@@ -593,7 +593,7 @@ class BaseDefinition(object):
         return self._name.infer().get_type_hint()
 
 
-class Completion(BaseDefinition):
+class Completion(BaseName):
     """
     ``Completion`` objects are returned from :meth:`.Script.complete`. They
     provide additional information about a completion.
@@ -664,7 +664,7 @@ class Completion(BaseDefinition):
 
     def docstring(self, raw=False, fast=True):
         """
-        Documentated under :meth:`BaseDefinition.docstring`.
+        Documentated under :meth:`BaseName.docstring`.
         """
         if self._like_name_length >= 3:
             # In this case we can just resolve the like name, because we
@@ -702,7 +702,7 @@ class Completion(BaseDefinition):
     @property
     def type(self):
         """
-        Documentated under :meth:`BaseDefinition.type`.
+        Documentated under :meth:`BaseName.type`.
         """
         # Purely a speed optimization.
         if self._cached_name is not None:
@@ -718,7 +718,7 @@ class Completion(BaseDefinition):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
 
-class Definition(BaseDefinition):
+class Definition(BaseName):
     """
     *Definition* objects are returned from many different APIs including
     :meth:`.Script.goto` or :meth:`.Script.infer`.
@@ -774,7 +774,7 @@ class Definition(BaseDefinition):
 
 class BaseSignature(Definition):
     """
-    These signatures are returned by :meth:`BaseDefinition.get_signatures`
+    These signatures are returned by :meth:`BaseName.get_signatures`
     calls.
     """
     def __init__(self, inference_state, signature):

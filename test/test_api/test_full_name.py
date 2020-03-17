@@ -1,5 +1,5 @@
 """
-Tests for :attr:`.BaseDefinition.full_name`.
+Tests for :attr:`.BaseName.full_name`.
 
 There are three kinds of test:
 

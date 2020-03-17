@@ -51,7 +51,7 @@ will probably be Jedi 1.0.0.
     - ``call_signatures`` deprecated, use ``get_signatures`` instead
     - ``usages`` deprecated, use ``get_references`` instead
     - ``jedi.names`` deprecated, use ``jedi.Script(...).get_names()``
-- ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
+- ``BaseName.goto_assignments`` renamed to ``BaseName.goto``
 - Add follow_imports to ``Definition.goto``. Now its signature matches
   ``Script.goto``.
 - **Python 2 support deprecated**. For this release it is best effort. Python 2

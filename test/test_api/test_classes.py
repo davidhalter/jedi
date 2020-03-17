@@ -23,7 +23,7 @@ def test_basedefinition_type(Script, get_names):
         """
         Return a list of definitions for parametrized tests.
 
-        :rtype: [jedi.api_classes.BaseDefinition]
+        :rtype: [jedi.api_classes.BaseName]
         """
         source = dedent("""
         import sys
@@ -375,7 +375,7 @@ def test_type_II(Script):
 
 
 """
-This tests the BaseDefinition.goto function, not the jedi
+This tests the BaseName.goto function, not the jedi
 function. They are not really different in functionality, but really
 different as an implementation.
 """
