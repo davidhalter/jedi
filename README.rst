@@ -203,18 +203,6 @@ For more detailed information visit the `testing documentation
 <https://jedi.readthedocs.org/en/latest/docs/testing.html>`_.
 
 
-Acknowledgements
-================
-
-- Thanks to all the contributors, see also the ``AUTHORS.txt``.
-- Takafumi Arakaki (@tkf) for creating a solid test environment and a lot of
-  other things.
-- Danilo Bargen (@dbrgn) for general housekeeping and being a good friend :).
-- Guido van Rossum (@gvanrossum) for creating the parser generator pgen2
-  (originally used in lib2to3).
-
-
-
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: https://github.com/ycm-core/YouCompleteMe
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
