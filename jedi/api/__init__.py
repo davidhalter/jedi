@@ -260,7 +260,7 @@ class Script(object):
     @validate_line_column
     def complete(self, line=None, column=None, **kwargs):
         """
-        Return :class:`.Completion` objects.
+        Completes objects under the cursor.
 
         Those objects contain information about the completions, more than just
         names.
@@ -428,9 +428,9 @@ class Script(object):
 
     def complete_search(self, string, **kwargs):
         """
-        Like :meth:`.Script.search`, but returns completions for the current
-        string. If you want to have all possible definitions in a file you can
-        also provide an empty string.
+        Like :meth:`.Script.search`, but completes that string. If you want to
+        have all possible definitions in a file you can also provide an empty
+        string.
 
         :param bool all_scopes: Default False; searches not only for
             definitions on the top level of a module level, but also in
@@ -653,8 +653,7 @@ class Script(object):
     @_no_python2_support
     def rename(self, line=None, column=None, **kwargs):
         """
-        Returns an object that you can use to rename the variable under the
-        cursor and its references to a different name.
+        Renames all references of the variable under the cursor.
 
         :param new_name: The variable under the cursor will be renamed to this
             string.
@@ -671,7 +670,8 @@ class Script(object):
     @validate_line_column
     def extract_variable(self, line=None, column=None, **kwargs):
         """
-        Moves an expression of a selected range to a new statemenet.
+        Moves an expression to a new statemenet.
+
         For example if you have the cursor on ``foo`` and provide a
         ``new_name`` called ``bar``::
 
@@ -712,7 +712,8 @@ class Script(object):
     @_no_python2_support
     def extract_function(self, line, column, **kwargs):
         """
-        Moves an expression of a selected range to a new function.
+        Moves an expression to a new function.
+
         For example if you have the cursor on ``foo`` and provide a
         ``new_name`` called ``bar``::
 

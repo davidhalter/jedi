@@ -236,9 +236,8 @@ class Project(object):
 
     def complete_search(self, string, **kwargs):
         """
-        Like :meth:`.Project.search`, but returns completions for the current
-        string. An empty string lists all definitions in a project, so be
-        careful with that.
+        Like :meth:`.Script.search`, but completes that string. An empty string
+        lists all definitions in a project, so be careful with that.
 
         :param bool all_scopes: Default False; searches not only for
             definitions on the top level of a module level, but also in

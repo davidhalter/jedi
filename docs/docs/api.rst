@@ -19,6 +19,32 @@ The API consists of a few different parts:
 - A way to work with different :ref:`Folders / Projects <projects>`
 - Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 
+The methods that you are most likely going to use to work with Jedi are the
+following ones:
+
+.. currentmodule:: jedi
+
+.. autosummary::
+   :nosignatures:
+
+    Script.complete
+    Script.goto
+    Script.infer
+    Script.help
+    Script.get_signatures
+    Script.get_references
+    Script.get_context
+    Script.get_names
+    Script.get_syntax_errors
+    Script.rename
+    Script.inline
+    Script.extract_variable
+    Script.extract_function
+    Script.search
+    Script.complete_search
+    Project.search
+    Project.complete_search
+
 Script
 ------
 
