@@ -319,6 +319,65 @@ def merge_type_var_dicts(base_dict, new_dict):
                 base_dict[type_var_name] = values
 
 
+def merge_pairwise_generics(annotation_value, annotated_argument_class):
+    """
+    Match up the generic parameters from the given argument class to the
+    target annotation.
+
+    This walks the generic parameters immediately within the annotation and
+    argument's type, in order to determine the concrete values of the
+    annotation's parameters for the current case.
+
+    For example, given the following code:
+
+        def values(mapping: Mapping[K, V]) -> List[V]: ...
+
+        for val in values({1: 'a'}):
+            val
+
+    Then this function should be given representations of `Mapping[K, V]`
+    and `Mapping[int, str]`, so that it can determine that `K` is `int and
+    `V` is `str`.
+
+    Note that it is responsibility of the caller to traverse the MRO of the
+    argument type as needed in order to find the type matching the
+    annotation (in this case finding `Mapping[int, str]` as a parent of
+    `Dict[int, str]`).
+
+    Parameters
+    ----------
+
+    `annotation_value`: represents the annotation to infer the concrete
+        parameter types of.
+
+    `annotated_argument_class`: represents the annotated class of the
+        argument being passed to the object annotated by `annotation_value`.
+    """
+
+    type_var_dict = {}
+
+    if not isinstance(annotated_argument_class, DefineGenericBase):
+        return type_var_dict
+
+    annotation_generics = annotation_value.get_generics()
+    actual_generics = annotated_argument_class.get_generics()
+
+    for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+        for nested_annotation_value in annotation_generics_set:
+            merge_type_var_dicts(
+                type_var_dict,
+                _infer_type_vars(
+                    nested_annotation_value,
+                    actual_generic_set,
+                    # This is a note to ourselves that we have already
+                    # converted the instance representation to its class.
+                    is_class_value=True,
+                ),
+            )
+
+    return type_var_dict
+
+
 def _infer_type_vars(annotation_value, value_set, is_class_value=False):
     """
     This function tries to find information about undefined type vars and
@@ -356,59 +415,6 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
     type_var_dict = {}
     annotation_name = annotation_value.py__name__()
 
-    def merge_pairwise_generics(annotation_value, annotated_argument_class):
-        """
-        Match up the generic parameters from the given argument class to the
-        target annotation.
-
-        This walks the generic parameters immediately within the annotation and
-        argument's type, in order to determine the concrete values of the
-        annotation's parameters for the current case.
-
-        For example, given the following code:
-
-            def values(mapping: Mapping[K, V]) -> List[V]: ...
-
-            for val in values({1: 'a'}):
-                val
-
-        Then this function should be given representations of `Mapping[K, V]`
-        and `Mapping[int, str]`, so that it can determine that `K` is `int and
-        `V` is `str`.
-
-        Note that it is responsibility of the caller to traverse the MRO of the
-        argument type as needed in order to find the type matching the
-        annotation (in this case finding `Mapping[int, str]` as a parent of
-        `Dict[int, str]`).
-
-        Parameters
-        ----------
-
-        `annotation_value`: represents the annotation to infer the concrete
-            parameter types of.
-
-        `annotated_argument_class`: represents the annotated class of the
-            argument being passed to the object annotated by `annotation_value`.
-        """
-        if not isinstance(annotated_argument_class, DefineGenericBase):
-            return
-
-        annotation_generics = annotation_value.get_generics()
-        actual_generics = annotated_argument_class.get_generics()
-
-        for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
-            for nested_annotation_value in annotation_generics_set:
-                merge_type_var_dicts(
-                    type_var_dict,
-                    _infer_type_vars(
-                        nested_annotation_value,
-                        actual_generic_set,
-                        # This is a note to ourselves that we have already
-                        # converted the instance representation to its class.
-                        is_class_value=True,
-                    ),
-                )
-
     if isinstance(annotation_value, TypeVar):
         if not is_class_value:
             return {annotation_name: value_set.py__class__()}
@@ -421,7 +427,10 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                     for element in value_set:
                         element_name = element.py__name__()
                         if annotation_name == element_name:
-                            merge_pairwise_generics(annotation_value, element)
+                            merge_type_var_dicts(
+                                type_var_dict,
+                                merge_pairwise_generics(annotation_value, element),
+                            )
 
                 else:
                     for nested_annotation_value in given[0]:
@@ -474,7 +483,10 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                     if not isinstance(py_class, GenericClass):
                         py_class = element
 
-                    merge_pairwise_generics(annotation_value, py_class)
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        merge_pairwise_generics(annotation_value, py_class),
+                    )
 
     elif isinstance(annotation_value, GenericClass):
         if annotation_name == 'Iterable' and not is_class_value:
@@ -506,7 +518,10 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 for parent_class in py_class.py__mro__():
                     class_name = parent_class.py__name__()
                     if annotation_name == class_name:
-                        merge_pairwise_generics(annotation_value, parent_class)
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            merge_pairwise_generics(annotation_value, parent_class),
+                        )
                         break
 
     return type_var_dict
