@@ -270,7 +270,7 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
                 # TODO _dict_values is not public.
                 actual_value_set = actual_value_set.try_merge('_dict_values')
             for ann in annotation_value_set:
-                _merge_type_var_dicts(
+                merge_type_var_dicts(
                     annotation_variable_results,
                     _infer_type_vars(ann, actual_value_set),
                 )
@@ -303,14 +303,14 @@ def infer_type_vars_for_callable(arguments, lazy_params):
         # Infer unknown type var
         actual_value_set = lazy_value.infer()
         for v in callable_param_values:
-            _merge_type_var_dicts(
+            merge_type_var_dicts(
                 annotation_variable_results,
                 _infer_type_vars(v, actual_value_set),
             )
     return annotation_variable_results
 
 
-def _merge_type_var_dicts(base_dict, new_dict):
+def merge_type_var_dicts(base_dict, new_dict):
     for type_var_name, values in new_dict.items():
         if values:
             try:
@@ -398,7 +398,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
 
         for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
             for nested_annotation_value in annotation_generics_set:
-                _merge_type_var_dicts(
+                merge_type_var_dicts(
                     type_var_dict,
                     _infer_type_vars(
                         nested_annotation_value,
@@ -425,7 +425,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
 
                 else:
                     for nested_annotation_value in given[0]:
-                        _merge_type_var_dicts(
+                        merge_type_var_dicts(
                             type_var_dict,
                             _infer_type_vars(
                                 nested_annotation_value,
@@ -438,7 +438,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
             given = annotation_value.get_generics()
             if len(given) == 2:
                 for nested_annotation_value in given[1]:
-                    _merge_type_var_dicts(
+                    merge_type_var_dicts(
                         type_var_dict,
                         _infer_type_vars(
                             nested_annotation_value,
@@ -455,7 +455,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 # so we treat the incoming tuple like a iterable sequence
                 # rather than a positional container of elements.
                 for nested_annotation_value in annotation_generics[0]:
-                    _merge_type_var_dicts(
+                    merge_type_var_dicts(
                         type_var_dict,
                         _infer_type_vars(
                             nested_annotation_value,
@@ -481,7 +481,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
             given = annotation_value.get_generics()
             if given:
                 for nested_annotation_value in given[0]:
-                    _merge_type_var_dicts(
+                    merge_type_var_dicts(
                         type_var_dict,
                         _infer_type_vars(
                             nested_annotation_value,
