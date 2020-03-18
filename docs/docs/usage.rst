@@ -3,13 +3,8 @@
 End User Usage
 ==============
 
-If you are a not an IDE Developer, the odds are that you just want to use
-|jedi| as a browser plugin or in the shell. Yes that's :ref:`also possible
-<repl-completion>`!
-
-|jedi| is relatively young and can be used in a variety of Plugins and
-Software. If your Editor/IDE is not among them, recommend |jedi| to your IDE
-developers.
+|jedi| is can be used in a variety of plugins and software. It is also possible
+to use |jedi| in the :ref:`Python shell or with IPython <repl-completion>`.
 
 
 .. _editor-plugins:
@@ -17,60 +12,72 @@ developers.
 Editor Plugins
 --------------
 
-Vim:
+Vim
+~~~
 
 - jedi-vim_
 - YouCompleteMe_
 - deoplete-jedi_
 
-Visual Studio Code:
+Visual Studio Code
+~~~~~~~~~~~~~~~~~~
 
 - `Python Extension`_
 
-Emacs:
+Emacs
+~~~~~
 
 - Jedi.el_
 - elpy_
 - anaconda-mode_
 
-Sublime Text 2/3:
+Sublime Text 2/3
+~~~~~~~~~~~~~~~~
 
 - SublimeJEDI_ (ST2 & ST3)
 - anaconda_ (only ST3)
 
-SynWrite:
+SynWrite
+~~~~~~~~
 
 - SynJedi_
 
-TextMate:
+TextMate
+~~~~~~~~
 
 - Textmate_ (Not sure if it's actually working)
 
-Kate:
+Kate
+~~~~
 
 - Kate_ version 4.13+ `supports it natively
   <https://projects.kde.org/projects/kde/applications/kate/repository/entry/addons/kate/pate/src/plugins/python_autocomplete_jedi.py?rev=KDE%2F4.13>`__,
   you have to enable it, though.
 
-Atom:
+Atom
+~~~~
 
 - autocomplete-python-jedi_
 
-GNOME Builder:
+GNOME Builder
+~~~~~~~~~~~~~
 
 - `GNOME Builder`_ `supports it natively
   <https://git.gnome.org/browse/gnome-builder/tree/plugins/jedi>`__,
   and is enabled by default.
 
-Gedit:
+Gedit
+~~~~~
 
 - gedi_
 
-Eric IDE:
+Eric IDE
+~~~~~~~~
 
 - `Eric IDE`_ (Available as a plugin)
 
-Web Debugger:
+Web Debugger
+~~~~~~~~~~~~
 
 - wdb_
 
@@ -93,7 +100,7 @@ Using ``PYTHONSTARTUP``
 
 .. automodule:: jedi.api.replstartup
 
-Using a custom ``$HOME/.pythonrc.py``
+Using a Custom ``$HOME/.pythonrc.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: jedi.utils.setup_readline

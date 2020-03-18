@@ -1,3 +1,3 @@
 :orphan:
 
-.. |jedi| replace:: *Jedi*
+.. |jedi| replace:: Jedi
