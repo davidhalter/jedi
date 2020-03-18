@@ -223,6 +223,21 @@ first(specialised_instance)
 values(specialised_instance)[0]
 
 
+# Test that classes which have gneeric ancestry but neither they nor their
+# parents are not generic are still inferred correctly.
+class ChildOfSpecialised(Specialised):
+    pass
+
+
+child_of_specialised_instance = NotImplemented  # type: ChildOfSpecialised
+
+#? int()
+first(child_of_specialised_instance)
+
+#? str()
+values(child_of_specialised_instance)[0]
+
+
 # Test that unbound generics are inferred as much as possible
 class CustomPartialGeneric1(Mapping[str, T]):
     pass
