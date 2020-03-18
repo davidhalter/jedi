@@ -14,7 +14,6 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBase, GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
-from jedi.inference.gradual.typing import TypingClassValueWithIndex
 from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
@@ -272,7 +271,7 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
             for ann in annotation_value_set:
                 merge_type_var_dicts(
                     annotation_variable_results,
-                    _infer_type_vars(ann, actual_value_set),
+                    ann.infer_type_vars(actual_value_set),
                 )
     return annotation_variable_results
 
@@ -305,7 +304,7 @@ def infer_type_vars_for_callable(arguments, lazy_params):
         for v in callable_param_values:
             merge_type_var_dicts(
                 annotation_variable_results,
-                _infer_type_vars(v, actual_value_set),
+                v.infer_type_vars(actual_value_set),
             )
     return annotation_variable_results
 
@@ -366,163 +365,13 @@ def merge_pairwise_generics(annotation_value, annotated_argument_class):
         for nested_annotation_value in annotation_generics_set:
             merge_type_var_dicts(
                 type_var_dict,
-                _infer_type_vars(
-                    nested_annotation_value,
+                nested_annotation_value.infer_type_vars(
                     actual_generic_set,
                     # This is a note to ourselves that we have already
                     # converted the instance representation to its class.
                     is_class_value=True,
                 ),
             )
-
-    return type_var_dict
-
-
-def _infer_type_vars(annotation_value, value_set, is_class_value=False):
-    """
-    This function tries to find information about undefined type vars and
-    returns a dict from type var name to value set.
-
-    This is for example important to understand what `iter([1])` returns.
-    According to typeshed, `iter` returns an `Iterator[_T]`:
-
-        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
-
-    This functions would generate `int` for `_T` in this case, because it
-    unpacks the `Iterable`.
-
-    Parameters
-    ----------
-
-    `annotation_value`: represents the annotation of the current parameter to
-        infer the value for. In the above example, this would initially be the
-        `Iterable[_T]` of the `iterable` parameter and then, when recursing,
-        just the `_T` generic parameter.
-
-    `value_set`: represents the actual argument passed to the parameter we're
-        inferrined for, or (for recursive calls) their types. In the above
-        example this would first be the representation of the list `[1]` and
-        then, when recursing, just of `1`.
-
-    `is_class_value`: tells us whether or not to treat the `value_set` as
-        representing the instances or types being passed, which is neccesary to
-        correctly cope with `Type[T]` annotations. When it is True, this means
-        that we are being called with a nested portion of an annotation and that
-        the `value_set` represents the types of the arguments, rather than their
-        actual instances.
-        Note: not all recursive calls will neccesarily set this to True.
-    """
-    type_var_dict = {}
-    annotation_name = annotation_value.py__name__()
-
-    if isinstance(annotation_value, TypeVar):
-        if not is_class_value:
-            return {annotation_name: value_set.py__class__()}
-        return {annotation_name: value_set}
-    elif isinstance(annotation_value, TypingClassValueWithIndex):
-        if annotation_name == 'Type':
-            given = annotation_value.get_generics()
-            if given:
-                if is_class_value:
-                    for element in value_set:
-                        element_name = element.py__name__()
-                        if annotation_name == element_name:
-                            merge_type_var_dicts(
-                                type_var_dict,
-                                merge_pairwise_generics(annotation_value, element),
-                            )
-
-                else:
-                    for nested_annotation_value in given[0]:
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                value_set,
-                                is_class_value=True,
-                            ),
-                        )
-
-        elif annotation_name == 'Callable':
-            given = annotation_value.get_generics()
-            if len(given) == 2:
-                for nested_annotation_value in given[1]:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set.execute_annotation(),
-                        ),
-                    )
-
-        elif annotation_name == 'Tuple':
-            annotation_generics = annotation_value.get_generics()
-            tuple_annotation, = annotation_value.execute_annotation()
-            # TODO: is can we avoid using this private method?
-            if tuple_annotation._is_homogenous():
-                # The parameter annotation is of the form `Tuple[T, ...]`,
-                # so we treat the incoming tuple like a iterable sequence
-                # rather than a positional container of elements.
-                for nested_annotation_value in annotation_generics[0]:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set.merge_types_of_iterate(),
-                        ),
-                    )
-
-            else:
-                # The parameter annotation has only explicit type parameters
-                # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
-                # treat the incoming values as needing to match the annotation
-                # exactly, just as we would for non-tuple annotations.
-
-                for element in value_set:
-                    py_class = element.get_annotated_class_object()
-                    if not isinstance(py_class, GenericClass):
-                        py_class = element
-
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        merge_pairwise_generics(annotation_value, py_class),
-                    )
-
-    elif isinstance(annotation_value, GenericClass):
-        if annotation_name == 'Iterable' and not is_class_value:
-            given = annotation_value.get_generics()
-            if given:
-                for nested_annotation_value in given[0]:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set.merge_types_of_iterate(),
-                        ),
-                    )
-        else:
-            # Note: we need to handle the MRO _in order_, so we need to extract
-            # the elements from the set first, then handle them, even if we put
-            # them back in a set afterwards.
-            for element in value_set:
-                if element.api_type == u'function':
-                    # Functions & methods don't have an MRO and we're not
-                    # expecting a Callable (those are handled separately above).
-                    continue
-
-                if element.is_instance():
-                    py_class = element.get_annotated_class_object()
-                else:
-                    py_class = element
-
-                for parent_class in py_class.py__mro__():
-                    class_name = parent_class.py__name__()
-                    if annotation_name == class_name:
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            merge_pairwise_generics(annotation_value, parent_class),
-                        )
-                        break
 
     return type_var_dict
 

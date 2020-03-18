@@ -180,7 +180,79 @@ class _TypingClassMixin(ClassMixin):
 
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-    pass
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+        from jedi.inference.gradual.base import GenericClass
+
+        annotation_name = self.py__name__()
+        type_var_dict = {}
+        if annotation_name == 'Type':
+            given = self.get_generics()
+            if given:
+                if is_class_value:
+                    for element in value_set:
+                        element_name = element.py__name__()
+                        if annotation_name == element_name:
+                            merge_type_var_dicts(
+                                type_var_dict,
+                                merge_pairwise_generics(self, element),
+                            )
+
+                else:
+                    for nested_annotation_value in given[0]:
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            nested_annotation_value.infer_type_vars(
+                                value_set,
+                                is_class_value=True,
+                            ),
+                        )
+
+        elif annotation_name == 'Callable':
+            given = self.get_generics()
+            if len(given) == 2:
+                for nested_annotation_value in given[1]:
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        nested_annotation_value.infer_type_vars(
+                            value_set.execute_annotation(),
+                        ),
+                    )
+
+        elif annotation_name == 'Tuple':
+            annotation_generics = self.get_generics()
+            tuple_annotation, = self.execute_annotation()
+            # TODO: is can we avoid using this private method?
+            if tuple_annotation._is_homogenous():
+                # The parameter annotation is of the form `Tuple[T, ...]`,
+                # so we treat the incoming tuple like a iterable sequence
+                # rather than a positional container of elements.
+                for nested_annotation_value in annotation_generics[0]:
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        nested_annotation_value.infer_type_vars(
+                            value_set.merge_types_of_iterate(),
+                        ),
+                    )
+
+            else:
+                # The parameter annotation has only explicit type parameters
+                # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+                # treat the incoming values as needing to match the annotation
+                # exactly, just as we would for non-tuple annotations.
+
+                for element in value_set:
+                    py_class = element.get_annotated_class_object()
+                    if not isinstance(py_class, GenericClass):
+                        py_class = element
+
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        merge_pairwise_generics(self, py_class),
+                    )
+
+        return type_var_dict
 
 
 class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):

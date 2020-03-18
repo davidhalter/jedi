@@ -200,6 +200,48 @@ class GenericClass(ClassMixin, DefineGenericBase):
             return True
         return self._class_value.is_sub_class_of(class_value)
 
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+
+        annotation_name = self.py__name__()
+        type_var_dict = {}
+        if annotation_name == 'Iterable' and not is_class_value:
+            given = self.get_generics()
+            if given:
+                for nested_annotation_value in given[0]:
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        nested_annotation_value.infer_type_vars(
+                            value_set.merge_types_of_iterate(),
+                        ),
+                    )
+        else:
+            # Note: we need to handle the MRO _in order_, so we need to extract
+            # the elements from the set first, then handle them, even if we put
+            # them back in a set afterwards.
+            for element in value_set:
+                if element.api_type == u'function':
+                    # Functions & methods don't have an MRO and we're not
+                    # expecting a Callable (those are handled separately above).
+                    continue
+
+                if element.is_instance():
+                    py_class = element.get_annotated_class_object()
+                else:
+                    py_class = element
+
+                for parent_class in py_class.py__mro__():
+                    class_name = parent_class.py__name__()
+                    if annotation_name == class_name:
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            merge_pairwise_generics(self, parent_class),
+                        )
+                        break
+
+        return type_var_dict
+
 
 class _LazyGenericBaseClass(object):
     def __init__(self, class_value, lazy_base_class):
