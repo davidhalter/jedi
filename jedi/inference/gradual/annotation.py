@@ -268,11 +268,10 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
             elif kind is Parameter.VAR_KEYWORD:
                 # TODO _dict_values is not public.
                 actual_value_set = actual_value_set.try_merge('_dict_values')
-            for ann in annotation_value_set:
-                merge_type_var_dicts(
-                    annotation_variable_results,
-                    ann.infer_type_vars(actual_value_set),
-                )
+            merge_type_var_dicts(
+                annotation_variable_results,
+                annotation_value_set.infer_type_vars(actual_value_set),
+            )
     return annotation_variable_results
 
 
@@ -301,11 +300,10 @@ def infer_type_vars_for_callable(arguments, lazy_params):
         callable_param_values = lazy_callable_param.infer()
         # Infer unknown type var
         actual_value_set = lazy_value.infer()
-        for v in callable_param_values:
-            merge_type_var_dicts(
-                annotation_variable_results,
-                v.infer_type_vars(actual_value_set),
-            )
+        merge_type_var_dicts(
+            annotation_variable_results,
+            callable_param_values.infer_type_vars(actual_value_set),
+        )
     return annotation_variable_results
 
 
@@ -362,16 +360,15 @@ def merge_pairwise_generics(annotation_value, annotated_argument_class):
     actual_generics = annotated_argument_class.get_generics()
 
     for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
-        for nested_annotation_value in annotation_generics_set:
-            merge_type_var_dicts(
-                type_var_dict,
-                nested_annotation_value.infer_type_vars(
-                    actual_generic_set,
-                    # This is a note to ourselves that we have already
-                    # converted the instance representation to its class.
-                    is_class_value=True,
-                ),
-            )
+        merge_type_var_dicts(
+            type_var_dict,
+            annotation_generics_set.infer_type_vars(
+                actual_generic_set,
+                # This is a note to ourselves that we have already
+                # converted the instance representation to its class.
+                is_class_value=True,
+            ),
+        )
 
     return type_var_dict
 

@@ -200,25 +200,23 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                             )
 
                 else:
-                    for nested_annotation_value in given[0]:
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            nested_annotation_value.infer_type_vars(
-                                value_set,
-                                is_class_value=True,
-                            ),
-                        )
+                    merge_type_var_dicts(
+                        type_var_dict,
+                        given[0].infer_type_vars(
+                            value_set,
+                            is_class_value=True,
+                        ),
+                    )
 
         elif annotation_name == 'Callable':
             given = self.get_generics()
             if len(given) == 2:
-                for nested_annotation_value in given[1]:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        nested_annotation_value.infer_type_vars(
-                            value_set.execute_annotation(),
-                        ),
-                    )
+                merge_type_var_dicts(
+                    type_var_dict,
+                    given[1].infer_type_vars(
+                        value_set.execute_annotation(),
+                    ),
+                )
 
         elif annotation_name == 'Tuple':
             annotation_generics = self.get_generics()
@@ -228,13 +226,12 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                 # The parameter annotation is of the form `Tuple[T, ...]`,
                 # so we treat the incoming tuple like a iterable sequence
                 # rather than a positional container of elements.
-                for nested_annotation_value in annotation_generics[0]:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        nested_annotation_value.infer_type_vars(
-                            value_set.merge_types_of_iterate(),
-                        ),
-                    )
+                merge_type_var_dicts(
+                    type_var_dict,
+                    annotation_generics[0].infer_type_vars(
+                        value_set.merge_types_of_iterate(),
+                    ),
+                )
 
             else:
                 # The parameter annotation has only explicit type parameters
