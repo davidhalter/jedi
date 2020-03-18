@@ -53,8 +53,8 @@ from jedi.utils import version_info
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# The short X.Y version.
-version = '.'.join(str(x) for x in version_info()[:2])
+# The short X.Y.Z version.
+version = '.'.join(str(x) for x in version_info()[:3])
 # The full version, including alpha/beta/rc tags.
 release = jedi.__version__
 
