@@ -429,8 +429,9 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                                 nested_annotation_value,
                                 value_set,
                                 is_class_value=True,
-                            )
+                            ),
                         )
+
         elif annotation_name == 'Callable':
             given = annotation_value.get_generics()
             if len(given) == 2:
@@ -440,8 +441,9 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         _infer_type_vars(
                             nested_annotation_value,
                             value_set.execute_annotation(),
-                        )
+                        ),
                     )
+
         elif annotation_name == 'Tuple':
             annotation_generics = annotation_value.get_generics()
             tuple_annotation, = annotation_value.execute_annotation()
@@ -458,6 +460,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             value_set.merge_types_of_iterate(),
                         ),
                     )
+
             else:
                 # The parameter annotation has only explicit type parameters
                 # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
@@ -484,7 +487,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         _infer_type_vars(
                             nested_annotation_value,
                             value_set.merge_types_of_iterate(),
-                        )
+                        ),
                     )
         else:
             # Note: we need to handle the MRO _in order_, so we need to extract
