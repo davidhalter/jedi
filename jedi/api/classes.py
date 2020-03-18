@@ -6,6 +6,7 @@ There are a couple of classes documented in here:
 - :class:`.Completion` for completions
 - :class:`.BaseSignature` as a base class for signatures
 - :class:`.Signature` for :meth:`.Script.get_signatures` only
+- :class:`.ParamName` used for parameters of signatures
 - :class:`.Refactoring` for refactorings
 - :class:`.SyntaxError` for :meth:`.Script.get_syntax_errors` only
 
@@ -389,7 +390,7 @@ class BaseName(object):
         """
         Like :meth:`.Script.goto` (also supports the same params), but does it
         for the current name. This is typically useful if you are using
-        something like :meth:`Script.get_names()`.
+        something like :meth:`.Script.get_names()`.
 
         :param follow_imports: The goto call will follow imports.
         :param follow_builtin_imports: If follow_imports is True will try to
@@ -650,7 +651,7 @@ class Completion(BaseName):
     @property
     def name_with_symbols(self):
         """
-        Similar to :attr:`name`, but like :attr:`name` returns also the
+        Similar to :attr:`.name`, but like :attr:`.name` returns also the
         symbols, for example assuming the following function definition::
 
             def foo(param=0):
@@ -787,7 +788,7 @@ class BaseSignature(Name):
         Returns definitions for all parameters that a signature defines.
         This includes stuff like ``*args`` and ``**kwargs``.
 
-        :rtype: list of :class:`ParamName`
+        :rtype: list of :class:`.ParamName`
         """
         return [ParamName(self._inference_state, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]

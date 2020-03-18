@@ -1,7 +1,7 @@
 """
 Docstrings are another source of information for functions and classes.
-:mod:`jedi.inference.dynamic` tries to find all executions of functions, while
-the docstring parsing is much easier. There are three different types of
+:mod:`jedi.inference.dynamic_params` tries to find all executions of functions,
+while the docstring parsing is much easier. There are three different types of
 docstrings that |jedi| understands:
 
 - `Sphinx <http://sphinx-doc.org/markup/desc.html#info-field-lists>`_

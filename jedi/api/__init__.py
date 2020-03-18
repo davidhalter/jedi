@@ -114,7 +114,7 @@ class Script(object):
         ``code``, if it is not a ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
     :param sys_path: Deprecated, use the project parameter.
-    :type sys_path: list of str
+    :type sys_path: typing.List[str]
     :param Environment environment: Provide a predefined :ref:`Environment <environments>`
         to work with a specific Python version or virtualenv.
     :param Project project: Provide a :class:`.Project` to make sure finding
@@ -799,7 +799,7 @@ class Interpreter(Script):
     All keyword arguments are same as the arguments for :class:`.Script`.
 
     :param str code: Code to parse.
-    :type namespaces: list of dict
+    :type namespaces: typing.List[dict]
     :param namespaces: A list of namespace dictionaries such as the one
         returned by :func:`globals` and :func:`locals`.
     """

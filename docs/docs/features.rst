@@ -75,7 +75,7 @@ Caveats
 
 Importing ``numpy`` can be quite slow sometimes, as well as loading the
 builtins the first time. If you want to speed things up, you could preload
-libriaries in |jedi|, with :func:`preload_module`. However, once loaded, this
+libriaries in |jedi|, with :func:`.preload_module`. However, once loaded, this
 should not be a problem anymore.  The same is true for huge modules like
 ``PySide``, ``wx``, ``tensorflow``, ``pandas``, etc.
 

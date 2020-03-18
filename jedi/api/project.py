@@ -2,7 +2,7 @@
 Projects are a way to handle Python projects within Jedi. For simpler plugins
 you might not want to deal with projects, but if you want to give the user more
 flexibility to define sys paths and Python interpreters for a project,
-:class:`Project` is the perfect way to allow for that.
+:class:`.Project` is the perfect way to allow for that.
 
 Projects can be saved to disk and loaded again, to allow project definitions to
 be used across repositories.

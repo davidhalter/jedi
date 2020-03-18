@@ -30,8 +30,14 @@ BaseSignature
     :show-inheritance:
 
 Signature
-~~~~~~~~~~
+~~~~~~~~~
 .. autoclass:: jedi.api.classes.Signature
+    :members:
+    :show-inheritance:
+
+ParamName
+~~~~~~~~~
+.. autoclass:: jedi.api.classes.ParamName
     :members:
     :show-inheritance:
 

@@ -362,7 +362,7 @@ def create_environment(path, safe=True):
     Virtualenv path or an executable path.
 
     :raises: :exc:`.InvalidPythonEnvironment`
-    :returns: :class:`Environment`
+    :returns: :class:`.Environment`
     """
     if os.path.isfile(path):
         _assert_safe(path, safe)
