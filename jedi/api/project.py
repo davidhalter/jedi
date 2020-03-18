@@ -213,7 +213,7 @@ class Project(object):
 
     def search(self, string, **kwargs):
         """
-        Tries to look in a whole project for names. If the project is very big,
+        Searches a name in the whole project. If the project is very big,
         at some point Jedi will stop searching. However it's also very much
         recommended to not exhaust the generator. Just display the first ten
         results to the user.

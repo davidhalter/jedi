@@ -66,20 +66,20 @@ def _no_python2_support(func):
 class Script(object):
     """
     A Script is the base for completions, goto or whatever you want to do with
-    |jedi|. The counter part of this class is :class:`Interpreter`, which works
-    with actual namespaces and can complete in a shell as well. This class
+    Jedi. The counter part of this class is :class:`Interpreter`, which works
+    with actual dictionaries and can work with a REPL. This class
     should be used when a user edits code in an editor.
 
     You can either use the ``code`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
-    The script might be analyzed in a different ``sys.path`` than |jedi|:
+    The Script's ``sys.path`` is very customizable:
 
     - If `project` is provided with a ``sys_path``, that is going to be used.
     - If `environment` is provided, its ``sys.path`` will be used
       (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
     - Otherwise ``sys.path`` will match that of the default environment of
-      |jedi|, which typically matches the sys path that was used at the time
+      Jedi, which typically matches the sys path that was used at the time
       when Jedi was imported.
 
     Most methods have a ``line`` and a ``column`` parameter. Lines in Jedi are
@@ -504,7 +504,7 @@ class Script(object):
     @validate_line_column
     def get_signatures(self, line=None, column=None):
         """
-        Return the function object of the call the cursor is on.
+        Return the function object of the call under the cursor.
 
         E.g. if the cursor is here::
 
@@ -541,8 +541,8 @@ class Script(object):
     @validate_line_column
     def get_context(self, line=None, column=None):
         """
-        Returns the context of cursor. This basically means the function, class
-        or module where the cursor is at.
+        Returns the scope context under the cursor. This basically means the
+        function, class or module where the cursor is at.
 
         :rtype: :class:`.Name`
         """
@@ -615,7 +615,7 @@ class Script(object):
 
     def get_names(self, **kwargs):
         """
-        Returns names defined in the current module.
+        Returns names defined in the current file.
 
         :param all_scopes: If True lists the names of all scopes instead of
             only the module namespace.
