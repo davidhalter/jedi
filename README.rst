@@ -194,6 +194,12 @@ Tests are also run automatically on `Travis CI
 For more detailed information visit the `testing documentation
 <https://jedi.readthedocs.org/en/latest/docs/testing.html>`_.
 
+Acknowledgements
+================
+
+Thanks a lot to all the
+`contributors <https://jedi.readthedocs.org/en/latest/docs/acknowledgements.html>`_!
+
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: https://github.com/ycm-core/YouCompleteMe
