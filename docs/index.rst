@@ -28,6 +28,7 @@ Docs
    docs/settings
    docs/development
    docs/testing
+   docs/acknowledgements
    docs/changelog
 
 
