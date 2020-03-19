@@ -54,7 +54,6 @@ Jedi can currently be used with the following editors/projects:
 
 and many more!
 
-
 Here are some pictures taken from jedi-vim_:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
@@ -67,9 +66,7 @@ Display of function/class bodies, docstrings.
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
-Pydoc support (Shift+k).
-
-There is also support for goto and renaming.
+Documentation support (Shift+k).
 
 Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 (master branch should always be kind of stable/working).
@@ -181,18 +178,14 @@ There's a pretty good and extensive `development documentation
 Testing
 =======
 
-The test suite depends on ``tox`` and ``pytest``::
+The test suite depends on ``pytest``::
 
-    pip install tox pytest
+    pip install pytest
 
-To run the tests for all supported Python versions::
+If you want to test only a specific Python version (e.g. Python 3.8), it is as
+easy as::
 
-    tox
-
-If you want to test only a specific Python version (e.g. Python 2.7), it's as
-easy as ::
-
-    tox -e py27
+    python3.8 -m pytest
 
 Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
