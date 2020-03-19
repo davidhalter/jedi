@@ -2,13 +2,13 @@
 Jedi - an awesome autocompletion, static analysis and refactoring library for Python
 ####################################################################################
 
-.. image:: https://img.shields.io/pypi/v/jedi.svg?style=flat
-    :target: https://pypi.python.org/pypi/jedi
-    :alt: PyPI version
+.. image:: http://isitmaintained.com/badge/open/davidhalter/jedi.svg
+    :target: https://github.com/davidhalter/jedi/issues
+    :alt: The percentage of open issues and pull requests
 
-.. image:: https://img.shields.io/pypi/pyversions/jedi.svg
-    :target: https://pypi.python.org/pypi/jedi
-    :alt: Supported Python versions
+.. image:: http://isitmaintained.com/badge/resolution/davidhalter/jedi.svg
+    :target: https://github.com/davidhalter/jedi/issues
+    :alt: The resolution time is the median time an issue or pull request stays open.
 
 .. image:: https://travis-ci.org/davidhalter/jedi.svg?branch=master
     :target: https://travis-ci.org/davidhalter/jedi
