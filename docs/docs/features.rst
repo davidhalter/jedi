@@ -122,15 +122,24 @@ Type Hinting
 
 If |jedi| cannot detect the type of a function argument correctly (due to the
 dynamic nature of Python), you can help it by hinting the type using
-one of the following docstring/annotation syntax styles:
+one of the docstring/annotation styles below. **Only gradual typing will
+always work**, all the docstring solutions are glorified hacks and more
+complicated cases will probably not work.
 
-**PEP-0484 style**
+Official Gradual Typing (Recommended)
++++++++++++++++++++++++++++++++++++++
 
-https://www.python.org/dev/peps/pep-0484/
+You can read a lot about Python's gradual typing system in the corresponding
+PEPs like:
 
-function annotations
+- `PEP 484 <https://www.python.org/dev/peps/pep-0484/>`_ as an introduction
+- `PEP 526 <https://www.python.org/dev/peps/pep-0526/>`_ for variable annotations
+- `PEP 589 <https://www.python.org/dev/peps/pep-0589/>`_ for ``TypeDict``
+- There are probably more :)
 
-::
+Below you can find a few examples how you can use this feature.
+
+Function annotations::
 
     def myfunction(node: ProgramNode, foo: str) -> None:
         """Do something with a ``node``.
@@ -139,55 +148,58 @@ function annotations
         node.| # complete here
 
 
-assignment, for-loop and with-statement type hints (all Python versions).
-Note that the type hints must be on the same line as the statement
+Assignment, for-loop and with-statement type hints::
 
-::
+    import typing
+    x: int = foo()
+    y: typing.Optional[int] = 3
 
-    x = foo()  # type: int
-    x, y = 2, 3  # type: typing.Optional[int], typing.Union[int, str] # typing module is mostly supported
-    for key, value in foo.items():  # type: str, Employee  # note that Employee must be in scope
+    key: str
+    value: Employee
+    for key, value in foo.items():
         pass
-    with foo() as f:  # type: int
+
+    f: Union[int, float]
+    with foo() as f:
         print(f + 3)
 
-Most of the features in PEP-0484 are supported including the typing module
-(for Python < 3.5 you have to do ``pip install typing`` to use these),
-and forward references.
-
-You can also use stub files.
+PEP-0484 should be supported in its entirety. Feel free to open issues if that
+is not the case. You can also use stub files.
 
 
-**Sphinx style**
+Sphinx style
+++++++++++++
 
 http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 
 ::
 
     def myfunction(node, foo):
-        """Do something with a ``node``.
+        """
+        Do something with a ``node``.
 
         :type node: ProgramNode
         :param str foo: foo parameter description
-
         """
         node.| # complete here
 
-**Epydoc**
+Epydoc
+++++++
 
 http://epydoc.sourceforge.net/manual-fields.html
 
 ::
 
     def myfunction(node):
-        """Do something with a ``node``.
+        """
+        Do something with a ``node``.
 
         @type node: ProgramNode
-
         """
         node.| # complete here
 
-**Numpydoc**
+Numpydoc
+++++++++
 
 https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
@@ -197,7 +209,8 @@ In order to support the numpydoc format, you need to install the `numpydoc
 ::
 
     def foo(var1, var2, long_var_name='hi'):
-        r"""A one-line summary that does not use variable names or the
+        r"""
+        A one-line summary that does not use variable names or the
         function name.
 
         ...
