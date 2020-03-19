@@ -1,6 +1,6 @@
-###################################################################
-Jedi - an awesome autocompletion/static analysis library for Python
-###################################################################
+####################################################################################
+Jedi - an awesome autocompletion, static analysis and refactoring library for Python
+####################################################################################
 
 .. image:: https://img.shields.io/pypi/v/jedi.svg?style=flat
     :target: https://pypi.python.org/pypi/jedi
@@ -21,10 +21,6 @@ Jedi - an awesome autocompletion/static analysis library for Python
 .. image:: https://coveralls.io/repos/davidhalter/jedi/badge.svg?branch=master
     :target: https://coveralls.io/r/davidhalter/jedi
     :alt: Coverage status
-
-
-*If you have specific questions, please add an issue or ask on* `Stack Overflow
-<https://stackoverflow.com/questions/tagged/python-jedi>`_ *with the label* ``python-jedi``.
 
 
 Jedi is a static analysis tool for Python that can be used in IDEs/editors.
@@ -87,31 +83,28 @@ If you want to stay up-to-date (News / RFCs), please subscribe to this `github
 thread <https://github.com/davidhalter/jedi/issues/1063>`_.:
 
 
+Questions
+=========
+
+If you have specific questions, please add an issue or ask on `Stack Overflow
+<https://stackoverflow.com/questions/tagged/python-jedi>`_ with the label ``python-jedi``.
+
 
 Installation
 ============
 
-    pip install jedi
-
-Note: This just installs the Jedi library, not the editor plugins. For
-information about how to make it work with your editor, refer to the
-corresponding documentation.
-
-You don't want to use ``pip``? Please refer to the `manual
-<https://jedi.readthedocs.org/en/latest/docs/installation.html>`_.
+`Check out the docs <https://jedi.readthedocs.org/en/latest/docs/installation.html>`_.
 
 
 Features and Limitations
 ========================
 
-Jedi really understands your Python code. For a comprehensive list what Jedi
-understands, see: `Features
-<https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
-caveats can be found on the same page.
+Jedi's features are listed here:
+`Features <https://jedi.readthedocs.org/en/latest/docs/features.html>`_.
 
 You can run Jedi on CPython 2.7 or 3.5+ but it should also
-understand/parse code older than those versions. Additionally you should be able
-to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
+understand code that is older than those versions. Additionally you should be
+able to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
 very well.
 
 Tips on how to use Jedi efficiently can be found `here
@@ -120,19 +113,23 @@ Tips on how to use Jedi efficiently can be found `here
 API
 ---
 
-You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/api.html>`_.
+You can find a comprehensive documentation for the
+`API here <https://jedi.readthedocs.org/en/latest/docs/api.html>`_.
 
+Autocompletion / Goto / Documentation
+-------------------------------------
 
-Autocompletion / Goto / Pydoc
------------------------------
-
-Please check the API for a good explanation. There are the following commands:
+There are the following commands:
 
 - ``jedi.Script.goto``
+- ``jedi.Script.infer``
+- ``jedi.Script.help``
 - ``jedi.Script.complete``
 - ``jedi.Script.get_references``
+- ``jedi.Script.get_signatures``
+- ``jedi.Script.get_context``
 
-The returned objects are very powerful and really all you might need.
+The returned objects are very powerful and are really all you might need.
 
 
 Autocompletion in your REPL (IPython, etc.)
@@ -149,9 +146,9 @@ This means that in Python you can enable tab completion in a `REPL
 Static Analysis
 ---------------
 
-To do all forms of static analysis, please try to use
-``jedi.Script(...).get_names``. It will return a list of names that you can use
-to infer types and so on. There is also a way to list the syntax errors in a
+For a lot of forms of static analysis, you can try to use
+``jedi.Script(...).get_names``. It will return a list of names that you can
+then filter and work with. There is also a way to list the syntax errors in a
 file: ``jedi.Script.get_syntax_errors``.
 
 
@@ -171,7 +168,8 @@ Code Search
 There is support for module search with ``jedi.Script.search``, and project
 search for ``jedi.Project.search``. The way to search is either by providing a
 name like ``foo`` or by using dotted syntax like ``foo.bar``. Additionally you
-can provide the API type like ``class foo.bar.Bar``.
+can provide the API type like ``class foo.bar.Bar``. There are also the
+functions ``jedi.Script.complete_search`` and ``jedi.Project.complete_search``.
 
 Development
 ===========

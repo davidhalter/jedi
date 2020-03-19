@@ -1,13 +1,13 @@
 .. include global.rst
 
-Jedi - an awesome autocompletion/static analysis library for Python
-===================================================================
+Jedi - an awesome autocompletion, static analysis and refactoring library for Python
+====================================================================================
 
 Release v\ |release|. (:doc:`Installation <docs/installation>`)
 
 .. automodule:: jedi
 
-Autocompletion can look like this (e.g. VIM plugin):
+Autocompletion can for example look like this in jedi-vim:
 
 .. figure:: _screenshots/screenshot_complete.png
 
