@@ -19,15 +19,14 @@ READLINE_DEBUG = False
 
 def setup_readline(namespace_module=__main__, fuzzy=False):
     """
-    Install Jedi completer to :mod:`readline`.
+    This function sets up :mod:`readline` to use Jedi in a Python interactive
+    shell.
 
-    This function setups :mod:`readline` to use Jedi in Python interactive
-    shell.  If you want to use a custom ``PYTHONSTARTUP`` file (typically
+    If you want to use a custom ``PYTHONSTARTUP`` file (typically
     ``$HOME/.pythonrc.py``), you can add this piece of code::
 
         try:
             from jedi.utils import setup_readline
-            setup_readline()
         except ImportError:
             # Fallback to the stdlib readline completer if it is installed.
             # Taken from http://docs.python.org/2/library/rlcompleter.html
@@ -38,6 +37,8 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
                 readline.parse_and_bind("tab: complete")
             except ImportError:
                 print("Readline is not installed either. No tab completion is enabled.")
+        else:
+            setup_readline()
 
     This will fallback to the readline completer if Jedi is not installed.
     The readline completer will only complete names in the global namespace,
@@ -45,18 +46,18 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
 
         ran<TAB>
 
-    will complete to ``range``
+    will complete to ``range``.
 
-    with both Jedi and readline, but::
+    With Jedi the following code::
 
         range(10).cou<TAB>
 
-    will show complete to ``range(10).count`` only with Jedi.
+    will complete to ``range(10).count``, this does not work with the default
+    cPython :mod:`readline` completer.
 
-    You'll also need to add ``export PYTHONSTARTUP=$HOME/.pythonrc.py`` to
+    You will also need to add ``export PYTHONSTARTUP=$HOME/.pythonrc.py`` to
     your shell profile (usually ``.bash_profile`` or ``.profile`` if you use
     bash).
-
     """
     if READLINE_DEBUG:
         logging.basicConfig(

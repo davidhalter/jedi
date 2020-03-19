@@ -101,8 +101,8 @@ You don't want to use ``pip``? Please refer to the `manual
 <https://jedi.readthedocs.org/en/latest/docs/installation.html>`_.
 
 
-Feature Support and Caveats
-===========================
+Features and Limitations
+========================
 
 Jedi really understands your Python code. For a comprehensive list what Jedi
 understands, see: `Features
