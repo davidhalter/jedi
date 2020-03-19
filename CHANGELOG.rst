@@ -21,7 +21,7 @@ Changelog
   means that on the class keyword it will now return the docstring of Python's
   builtin function ``help('class')``.
 - The API documentation is now way more readable and complete. Check it out
-  under https://jedi.readthedocs.io.
+  under https://jedi.readthedocs.io. A lot of it has been rewritten.
 - Removed Python 3.4 support
 - Many bugfixes
 

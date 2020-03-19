@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-Refactoring tests work a little bit similar to Black Box tests. But the idea is
-here to compare two versions of code.
+Refactoring tests work a little bit similar to integration tests. But the idea
+is here to compare two versions of code. If you want to add a new test case,
+just look at the existing ones in the ``test/refactor`` folder and copy them.
 """
 from __future__ import with_statement
 import os

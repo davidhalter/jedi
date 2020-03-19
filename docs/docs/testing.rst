@@ -28,8 +28,8 @@ simple and readable testing structure.
 
 .. _blackbox:
 
-Blackbox Tests (run.py)
-~~~~~~~~~~~~~~~~~~~~~~~
+Integration Tests (run.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: test.run
 
