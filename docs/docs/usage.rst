@@ -90,11 +90,14 @@ and many more!
 Tab Completion in the Python Shell
 ----------------------------------
 
-Starting with Ipython `6.0.0` Jedi is a dependency of IPython. Autocompletion
-in IPython is therefore possible without additional configuration.
+Jedi is a dependency of IPython. Autocompletion in IPython is therefore
+possible without additional configuration.
+
+Here is an `example video <https://vimeo.com/122332037>`_ how REPL completion
+can look like in a different shell.
 
 There are two different options how you can use Jedi autocompletion in
-your Python interpreter. One with your custom ``$HOME/.pythonrc.py`` file
+your ``python`` interpreter. One with your custom ``$HOME/.pythonrc.py`` file
 and one that uses ``PYTHONSTARTUP``.
 
 Using ``PYTHONSTARTUP``

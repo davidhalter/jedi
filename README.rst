@@ -132,11 +132,12 @@ The returned objects are very powerful and are really all you might need.
 Autocompletion in your REPL (IPython, etc.)
 -------------------------------------------
 
-Starting with IPython `6.0.0` Jedi is a dependency of IPython. Autocompletion
-in IPython is therefore possible without additional configuration.
+Jedi is a dependency of IPython. Autocompletion in IPython with Jedi is
+therefore possible without additional configuration.
 
-It's possible to have Jedi autocompletion in REPL modes - `example video <https://vimeo.com/122332037>`_.
-This means that in Python you can enable tab completion in a `REPL
+Here is an `example video <https://vimeo.com/122332037>`_ how REPL completion
+can look like.
+For the ``python`` shell you can enable tab completion in a `REPL
 <https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
 
 
