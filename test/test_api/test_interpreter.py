@@ -678,5 +678,5 @@ def bar():
 def test_string_annotation(annotations, result, code):
     x = lambda foo: 1
     x.__annotations__ = annotations
-    defs = jedi.Interpreter(code or 'x()', [locals()]).goto_definitions()
+    defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result

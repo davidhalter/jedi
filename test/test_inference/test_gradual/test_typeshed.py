@@ -136,10 +136,13 @@ def test_math(Script):
     assert value
 
 
-def test_type_var(Script):
+def test_type_var(Script, environment):
     def_, = Script('import typing; T = typing.TypeVar("T1")').infer()
     assert def_.name == 'TypeVar'
-    assert def_.description == 'class TypeVar'
+    if environment.version_info.major == 2:
+        assert def_.description == 'TypeVar = object()'
+    else:
+        assert def_.description == 'class TypeVar'
 
 
 @pytest.mark.parametrize(

@@ -87,7 +87,7 @@ def test_version_info(Script):
 
         sys.version_info"""))
 
-    c, = s.completions()
+    c, = s.complete()
     assert c.docstring() == 'sys.version_info\n\nVersion information as a named tuple.'
 
 

@@ -450,7 +450,7 @@ def test_completion_cache(Script, module_injector):
 
 @pytest.mark.parametrize('module', ['typing', 'os'])
 def test_module_completions(Script, module):
-    for c in Script('import {module}; {module}.'.format(module=module)).completions():
+    for c in Script('import {module}; {module}.'.format(module=module)).complete():
         # Just make sure that there are no errors
         c.type
         c.docstring()
