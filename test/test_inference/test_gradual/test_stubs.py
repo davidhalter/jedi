@@ -54,7 +54,7 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
         has_python = False
 
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
-    s = Script(code, _project=project)
+    s = Script(code, project=project)
     prefer_stubs = kwargs['prefer_stubs']
     only_stubs = kwargs['only_stubs']
 

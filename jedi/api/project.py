@@ -1,9 +1,9 @@
 import os
+import errno
 import json
 
 from jedi._compatibility import FileNotFoundError, PermissionError, IsADirectoryError
-from jedi.api.environment import SameEnvironment, \
-    get_cached_default_environment
+from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import discover_buildout_paths
@@ -30,13 +30,15 @@ def _force_unicode_list(lst):
 
 
 class Project(object):
-    # TODO serialize environment
-    _serializer_ignore_attributes = ('_environment',)
     _environment = None
 
     @staticmethod
+    def _get_config_folder_path(base_path):
+        return os.path.join(base_path, _CONFIG_FOLDER)
+
+    @staticmethod
     def _get_json_path(base_path):
-        return os.path.join(base_path, _CONFIG_FOLDER, 'project.json')
+        return os.path.join(Project._get_config_folder_path(base_path), 'project.json')
 
     @classmethod
     def load(cls, path):
@@ -47,9 +49,7 @@ class Project(object):
             version, data = json.load(f)
 
         if version == 1:
-            self = cls.__new__()
-            self.__dict__.update(data)
-            return self
+            return cls(**data)
         else:
             raise WrongVersion(
                 "The Jedi version of this project seems newer than what we can handle."
@@ -58,35 +58,40 @@ class Project(object):
     def __init__(self, path, **kwargs):
         """
         :param path: The base path for this project.
+        :param python_path: The Python executable path, typically the path of a
+            virtual environment.
+        :param load_unsafe_extensions: Loads extensions that are not in the
+            sys path and in the local directories. With this option enabled,
+            this is potentially unsafe if you clone a git repository and
+            analyze it's code, because those compiled extensions will be
+            important and therefore have execution privileges.
         :param sys_path: list of str. You can override the sys path if you
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
+        :param added_sys_path: list of str. Adds these paths at the end of the
+            sys path.
         :param smart_sys_path: If this is enabled (default), adds paths from
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, environment=None, sys_path=None,
-                     smart_sys_path=True, _django=False):
+        def py2_comp(path, python_path=None, load_unsafe_extensions=False,
+                     sys_path=None, added_sys_path=(), smart_sys_path=True):
             self._path = os.path.abspath(path)
-            if isinstance(environment, SameEnvironment):
-                self._environment = environment
 
+            self._python_path = python_path
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
-            self._django = _django
+            self._load_unsafe_extensions = load_unsafe_extensions
+            self._django = False
+            self.added_sys_path = list(added_sys_path)
+            """The sys path that is going to be added at the end of the """
 
         py2_comp(path, **kwargs)
 
     @inference_state_as_method_param_cache()
-    def _get_base_sys_path(self, inference_state, environment=None):
-        if self._sys_path is not None:
-            return self._sys_path
-
+    def _get_base_sys_path(self, inference_state):
         # The sys path has not been set explicitly.
-        if environment is None:
-            environment = self.get_environment()
-
-        sys_path = list(environment.get_sys_path())
+        sys_path = list(inference_state.environment.get_sys_path())
         try:
             sys_path.remove('')
         except ValueError:
@@ -94,16 +99,19 @@ class Project(object):
         return sys_path
 
     @inference_state_as_method_param_cache()
-    def _get_sys_path(self, inference_state, environment=None,
-                      add_parent_paths=True, add_init_paths=False):
+    def _get_sys_path(self, inference_state, add_parent_paths=True, add_init_paths=False):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
         """
-        suffixed = []
+        suffixed = list(self.added_sys_path)
         prefixed = []
 
-        sys_path = list(self._get_base_sys_path(inference_state, environment))
+        if self._sys_path is None:
+            sys_path = list(self._get_base_sys_path(inference_state))
+        else:
+            sys_path = list(self._sys_path)
+
         if self._smart_sys_path:
             prefixed.append(self._path)
 
@@ -136,16 +144,25 @@ class Project(object):
 
     def save(self):
         data = dict(self.__dict__)
-        for attribute in self._serializer_ignore_attributes:
-            data.pop(attribute, None)
+        data.pop('_environment', None)
+        data.pop('_django', None)  # TODO make django setting public?
+        data = {k.lstrip('_'): v for k, v in data.items()}
 
-        with open(self._get_json_path(self._path), 'wb') as f:
+        # TODO when dropping Python 2 use pathlib.Path.mkdir(parents=True, exist_ok=True)
+        try:
+            os.makedirs(self._get_config_folder_path(self._path))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        with open(self._get_json_path(self._path), 'w') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
     def get_environment(self):
         if self._environment is None:
-            return get_cached_default_environment()
-
+            if self._python_path is not None:
+                self._environment = create_environment(self._python_path, safe=False)
+            else:
+                self._environment = get_cached_default_environment()
         return self._environment
 
     def __repr__(self):
@@ -192,7 +209,9 @@ def get_default_project(path=None):
                 first_no_init_file = dir
 
         if _is_django_path(dir):
-            return Project(dir, _django=True)
+            project = Project(dir)
+            project._django = True
+            return project
 
         if probable_path is None and _is_potential_project(dir):
             probable_path = dir

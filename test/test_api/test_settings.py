@@ -4,11 +4,9 @@ import pytest
 
 from jedi import api
 from jedi.inference import imports
-from ..helpers import cwd_at
 
 
 @pytest.mark.skipif('True', reason='Skip for now, test case is not really supported.')
-@cwd_at('jedi')
 def test_add_dynamic_mods(Script):
     fname = '__main__.py'
     api.settings.additional_dynamic_modules = [fname]

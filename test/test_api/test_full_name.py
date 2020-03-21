@@ -97,9 +97,10 @@ def test_sub_module(Script, jedi_path):
     path.
     """
     sys_path = [jedi_path]
-    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).infer()
+    project = jedi.Project('.', sys_path=sys_path)
+    defs = Script('from jedi.api import classes; classes', project=project).infer()
     assert [d.full_name for d in defs] == ['jedi.api.classes']
-    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).infer()
+    defs = Script('import jedi.api; jedi.api', project=project).infer()
     assert [d.full_name for d in defs] == ['jedi.api']
 
 

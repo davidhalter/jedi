@@ -9,7 +9,7 @@ import pytest
 def ScriptInStubFolder(Script):
     path = get_example_dir('stub_packages')
     project = Project(path, sys_path=[path], smart_sys_path=False)
-    return partial(Script, _project=project)
+    return partial(Script, project=project)
 
 
 @pytest.mark.parametrize(

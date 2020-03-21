@@ -4,7 +4,7 @@ Test compiled module
 import os
 
 import jedi
-from ..helpers import cwd_at
+from ..helpers import get_example_dir
 import pytest
 
 
@@ -34,9 +34,9 @@ def test_get_signatures_stdlib(Script):
 
 
 # Check only on linux 64 bit platform and Python3.4.
+@pytest.mark.parametrize('load_unsafe_extensions', [False, True])
 @pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
-@cwd_at('test/examples')
-def test_init_extension_module(Script):
+def test_init_extension_module(Script, load_unsafe_extensions):
     """
     ``__init__`` extension modules are also packages and Jedi should understand
     that.
@@ -50,8 +50,26 @@ def test_init_extension_module(Script):
 
     This is also why this test only runs on certain systems (and Python 3.4).
     """
-    s = jedi.Script('import init_extension_module as i\ni.', path='not_existing.py')
-    assert 'foo' in [c.name for c in s.complete()]
 
-    s = jedi.Script('from init_extension_module import foo\nfoo', path='not_existing.py')
-    assert ['foo'] == [c.name for c in s.complete()]
+    project = jedi.Project(get_example_dir(), load_unsafe_extensions=load_unsafe_extensions)
+    s = jedi.Script(
+        'import init_extension_module as i\ni.',
+        path='not_existing.py',
+        project=project,
+    )
+    if load_unsafe_extensions:
+        assert 'foo' in [c.name for c in s.complete()]
+    else:
+        assert 'foo' not in [c.name for c in s.complete()]
+
+    s = jedi.Script(
+        'from init_extension_module import foo\nfoo',
+        path='not_existing.py',
+        project=project,
+    )
+    c, = s.complete()
+    assert c.name == 'foo'
+    if load_unsafe_extensions:
+        assert c.infer()
+    else:
+        assert not c.infer()

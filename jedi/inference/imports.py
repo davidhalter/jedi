@@ -191,18 +191,19 @@ class Importer(object):
                 import_path = base + tuple(import_path)
             else:
                 path = module_context.py__file__()
+                project_path = self._inference_state.project._path
                 import_path = list(import_path)
                 if path is None:
                     # If no path is defined, our best guess is that the current
                     # file is edited by a user on the current working
                     # directory. We need to add an initial path, because it
                     # will get removed as the name of the current file.
-                    directory = os.getcwd()
+                    directory = project_path
                 else:
                     directory = os.path.dirname(path)
 
                 base_import_path, base_directory = _level_to_base_import_path(
-                    self._inference_state.project._path, directory, level,
+                    project_path, directory, level,
                 )
                 if base_directory is None:
                     # Everything is lost, the relative import does point
@@ -454,8 +455,12 @@ def _load_python_module(inference_state, file_io,
 
 
 def _load_builtin_module(inference_state, import_names=None, sys_path=None):
+    project = inference_state.project
     if sys_path is None:
         sys_path = inference_state.get_sys_path()
+    if not project._load_unsafe_extensions:
+        safe_paths = project._get_base_sys_path(inference_state)
+        sys_path = [p for p in sys_path if p in safe_paths]
 
     dotted_name = '.'.join(import_names)
     assert dotted_name is not None
