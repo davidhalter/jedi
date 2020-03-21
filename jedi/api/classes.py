@@ -730,7 +730,7 @@ class Name(BaseName):
     @property
     def desc_with_module(self):
         warnings.warn(
-            "Deprecated since version 0.17.0. There's no replacement for now.",
+            "Deprecated since version 0.17.0. No replacement for now, maybe .full_name helps",
             DeprecationWarning,
             stacklevel=2
         )

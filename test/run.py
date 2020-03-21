@@ -218,7 +218,7 @@ class IntegrationTestCase(BaseTestCase):
 
         def comparison(definition):
             suffix = '()' if definition.type == 'instance' else ''
-            return definition.desc_with_module + suffix
+            return definition.full_name + suffix
 
         def definition(correct, correct_start, path):
             should_be = set()
