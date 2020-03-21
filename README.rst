@@ -23,18 +23,15 @@ Jedi - an awesome autocompletion, static analysis and refactoring library for Py
     :alt: Coverage status
 
 
-Jedi is a static analysis tool for Python that can be used in IDEs/editors.
-Jedi has a focus on autocompletion and goto functionality. Jedi is fast and is
-very well tested. It understands Python and stubs on a deep level.
+Jedi is a static analysis tool for Python that is typically used in
+IDEs/editors plugins. Jedi has a focus on autocompletion and goto
+functionality. Other features include refactoring, code search and finding
+references.
 
-Jedi has support for different goto functions. It's possible to search for
-references and list names in a Python file to get information about them.
-
-Jedi uses a very simple API to connect with IDE's. There's a reference
-implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
-which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
-Autocompletion in your REPL is also possible, IPython uses it natively and for
-the CPython REPL you have to install it.
+Jedi has a simple API to work with. There is a reference implementation as a
+`VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_. Autocompletion in your
+REPL is also possible, IPython uses it natively and for the CPython REPL you
+can install it. Jedi is well tested and bugs should be rare.
 
 Jedi can currently be used with the following editors/projects:
 
@@ -43,7 +40,7 @@ Jedi can currently be used with the following editors/projects:
 - Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - TextMate_ (Not sure if it's actually working)
-- Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
+- Kate_ version 4.13+ supports it natively, you have to enable it, though.  [`see
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 - Atom_ (autocomplete-python-jedi_)
 - `GNOME Builder`_ (with support for GObject Introspection)
@@ -72,26 +69,25 @@ Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 (master branch should always be kind of stable/working).
 
 Docs are available at `https://jedi.readthedocs.org/en/latest/
-<https://jedi.readthedocs.org/en/latest/>`_. Pull requests with documentation
-enhancements and/or fixes are awesome and most welcome. Jedi uses `semantic
-versioning <https://semver.org/>`_.
+<https://jedi.readthedocs.org/en/latest/>`_. Pull requests with enhancements
+and/or fixes are awesome and most welcome. Jedi uses `semantic versioning
+<https://semver.org/>`_.
 
 If you want to stay up-to-date (News / RFCs), please subscribe to this `github
 thread <https://github.com/davidhalter/jedi/issues/1063>`_.:
 
+Issues & Questions
+==================
 
-Questions
-=========
-
-If you have specific questions, please add an issue or ask on `Stack Overflow
-<https://stackoverflow.com/questions/tagged/python-jedi>`_ with the label ``python-jedi``.
-
+You can file issues and questions in the `issue tracker
+<https://github.com/davidhalter/jedi/>`. Alternatively you can also ask on
+`Stack Overflow <https://stackoverflow.com/questions/tagged/python-jedi>`_ with
+the label ``python-jedi``.
 
 Installation
 ============
 
 `Check out the docs <https://jedi.readthedocs.org/en/latest/docs/installation.html>`_.
-
 
 Features and Limitations
 ========================
@@ -128,7 +124,6 @@ There are the following commands:
 
 The returned objects are very powerful and are really all you might need.
 
-
 Autocompletion in your REPL (IPython, etc.)
 -------------------------------------------
 
@@ -139,7 +134,6 @@ Here is an `example video <https://vimeo.com/122332037>`_ how REPL completion
 can look like.
 For the ``python`` shell you can enable tab completion in a `REPL
 <https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
-
 
 Static Analysis
 ---------------
@@ -175,11 +169,10 @@ Development
 There's a pretty good and extensive `development documentation
 <https://jedi.readthedocs.org/en/latest/docs/development.html>`_.
 
-
 Testing
 =======
 
-The test suite depends on ``pytest``::
+The test suite uses ``pytest``::
 
     pip install pytest
 
@@ -187,9 +180,6 @@ If you want to test only a specific Python version (e.g. Python 3.8), it is as
 easy as::
 
     python3.8 -m pytest
-
-Tests are also run automatically on `Travis CI
-<https://travis-ci.org/davidhalter/jedi/>`_.
 
 For more detailed information visit the `testing documentation
 <https://jedi.readthedocs.org/en/latest/docs/testing.html>`_.
