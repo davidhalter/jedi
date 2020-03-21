@@ -283,7 +283,11 @@ class Script(object):
             return completion.complete()
 
     def completions(self, fuzzy=False):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).complete instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.complete(*self._pos, fuzzy=fuzzy)
 
     @validate_line_column
@@ -307,7 +311,11 @@ class Script(object):
             return self._infer(line, column, **kwargs)
 
     def goto_definitions(self, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.infer(*self._pos, **kwargs)
 
     def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
@@ -334,7 +342,11 @@ class Script(object):
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).goto instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.goto(*self._pos,
                          follow_imports=follow_imports,
                          follow_builtin_imports=follow_builtin_imports,
@@ -468,7 +480,11 @@ class Script(object):
         return []
 
     def usages(self, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).get_references instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.get_references(*self._pos, **kwargs)
 
     @validate_line_column
@@ -498,7 +514,11 @@ class Script(object):
         return _references(**kwargs)
 
     def call_signatures(self):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).get_signatures instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.get_signatures(*self._pos)
 
     @validate_line_column

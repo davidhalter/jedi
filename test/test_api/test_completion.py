@@ -96,7 +96,7 @@ def test_complete_expanduser(Script):
     expected_name = item.name
     if item.is_dir():
         expected_name += os.path.sep
-    assert expected_name in [c.name for c in s.completions(column=len(line)-1)]
+    assert expected_name in [c.name for c in s.complete(column=len(line)-1)]
 
 
 def test_fake_subnodes(Script):
