@@ -316,7 +316,8 @@ def test_signature_is_definition(Script):
     # Now compare all the attributes that a Signature must also have.
     for attr_name in dir(definition):
         dont_scan = ['defined_names', 'parent', 'goto_assignments', 'infer',
-                     'params', 'get_signatures', 'execute', 'goto']
+                     'params', 'get_signatures', 'execute', 'goto',
+                     'desc_with_module']
         if attr_name.startswith('_') or attr_name in dont_scan:
             continue
 

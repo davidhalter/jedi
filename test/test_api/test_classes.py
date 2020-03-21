@@ -193,7 +193,7 @@ def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()
 
-    script = Script(source='from hashlib import sha256')
+    script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
     assert [p.name for p in sig.params] == ['arg']

@@ -92,11 +92,11 @@ def test_complete_expanduser(Script):
     non_dots = [p for p in possibilities if not p.name.startswith('.') and len(p.name) > 1]
     item = non_dots[0]
     line = "'~%s%s'" % (os.sep, item.name)
-    s = Script(line, line=1, column=len(line)-1)
+    s = Script(line)
     expected_name = item.name
     if item.is_dir():
         expected_name += os.path.sep
-    assert expected_name in [c.name for c in s.completions()]
+    assert expected_name in [c.name for c in s.completions(column=len(line)-1)]
 
 
 def test_fake_subnodes(Script):

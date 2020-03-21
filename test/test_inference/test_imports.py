@@ -259,7 +259,7 @@ def test_goto_following_on_imports(Script):
 
 
 def test_goto(Script):
-    sys, = Script("import sys", 1, 10).goto(follow_imports=True)
+    sys, = Script("import sys").goto(follow_imports=True)
     assert sys.type == 'module'
 
 
@@ -472,6 +472,6 @@ def test_relative_import_star(Script):
     from . import *
     furl.c
     """
-    script = Script(source, 'export.py')
+    script = Script(source, path='export.py')
 
     assert script.complete(3, len("furl.c"))

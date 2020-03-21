@@ -58,9 +58,9 @@ def test_implicit_nested_namespace_package(Script):
     code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
     project = Project('.', sys_path=[example_dir])
-    script = Script(project=project, source=code, line=1, column=61)
+    script = Script(code, project=project)
 
-    result = script.infer()
+    result = script.infer(line=1, column=61)
 
     assert len(result) == 1
 
@@ -70,41 +70,41 @@ def test_implicit_nested_namespace_package(Script):
 
 
 def test_implicit_namespace_package_import_autocomplete(Script):
-    CODE = 'from implicit_name'
+    code = 'from implicit_name'
 
     project = Project('.', sys_path=[example_dir])
-    script = Script(project=project, source=CODE)
+    script = Script(code, project=project)
     compl = script.complete()
     assert [c.name for c in compl] == ['implicit_namespace_package']
 
 
 def test_namespace_package_in_multiple_directories_autocompletion(Script):
-    CODE = 'from pkg.'
+    code = 'from pkg.'
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
 
     project = Project('.', sys_path=sys_path)
-    script = Script(project=project, source=CODE)
+    script = Script(code, project=project)
     compl = script.complete()
     assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
 
 
 def test_namespace_package_in_multiple_directories_goto_definition(Script):
-    CODE = 'from pkg import ns1_file'
+    code = 'from pkg import ns1_file'
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
     project = Project('.', sys_path=sys_path)
-    script = Script(project=project, source=CODE)
+    script = Script(code, project=project)
     result = script.infer()
     assert len(result) == 1
 
 
 def test_namespace_name_autocompletion_full_name(Script):
-    CODE = 'from pk'
+    code = 'from pk'
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
 
     project = Project('.', sys_path=sys_path)
-    script = Script(project=project, source=CODE)
+    script = Script(code, project=project)
     compl = script.complete()
     assert set(c.full_name for c in compl) == set(['pkg'])
