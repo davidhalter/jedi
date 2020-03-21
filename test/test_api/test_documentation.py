@@ -97,3 +97,21 @@ def test_builtin_docstring(goto_or_help_or_infer, skip_python2):
     doc = d.docstring()
     assert doc.startswith('open(file: Union[')
     assert 'Open file' in doc
+
+
+def test_docstring_decorator(goto_or_help_or_infer, skip_python2):
+    code = dedent('''
+        import types
+
+        def dec(func):
+            return types.FunctionType()
+
+        @dec
+        def func(a, b):
+            "hello"
+            return
+        func''')
+    d, = goto_or_help_or_infer(code)
+
+    doc = d.docstring()
+    assert doc == 'FunctionType(*args: Any, **kwargs: Any) -> Any\n\nhello'

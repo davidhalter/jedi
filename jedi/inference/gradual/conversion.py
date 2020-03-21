@@ -4,12 +4,17 @@ from jedi.inference.base_value import ValueSet, \
 from jedi.inference.utils import to_list
 from jedi.inference.gradual.stub_value import StubModuleValue
 from jedi.inference.gradual.typeshed import try_to_load_stub_cached
+from jedi.inference.value.decorator import Decoratee
 
 
 def _stub_to_python_value_set(stub_value, ignore_compiled=False):
     stub_module_context = stub_value.get_root_context()
     if not stub_module_context.is_stub():
         return ValueSet([stub_value])
+
+    decorates = None
+    if isinstance(stub_value, Decoratee):
+        decorates = stub_value._original_value
 
     was_instance = stub_value.is_instance()
     if was_instance:
@@ -37,6 +42,8 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
         # Now that the instance has been properly created, we can simply get
         # the method.
         values = values.py__getattribute__(method_name)
+    if decorates is not None:
+        values = ValueSet(Decoratee(v, decorates) for v in values)
     return values
 
 
