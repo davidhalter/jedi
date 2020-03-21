@@ -139,7 +139,7 @@ def test_math(Script):
 def test_type_var(Script):
     def_, = Script('import typing; T = typing.TypeVar("T1")').infer()
     assert def_.name == 'TypeVar'
-    assert def_.description == 'TypeVar = object()'
+    assert def_.description == 'class TypeVar'
 
 
 @pytest.mark.parametrize(

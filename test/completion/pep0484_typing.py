@@ -341,9 +341,8 @@ typing.Optional[0]
 
 TYPE_VARX = typing.TypeVar('TYPE_VARX')
 TYPE_VAR_CONSTRAINTSX = typing.TypeVar('TYPE_VAR_CONSTRAINTSX', str, int)
-# TODO there should at least be some results.
-#? []
-TYPE_VARX.
+#? ['__class__']
+TYPE_VARX.__clas
 #! ["TYPE_VARX = typing.TypeVar('TYPE_VARX')"]
 TYPE_VARX
 
