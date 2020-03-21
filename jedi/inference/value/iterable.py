@@ -140,7 +140,6 @@ class ComprehensionMixin(object):
         input_node = comp_for.children[3]
         parent_context = parent_context or self._defining_context
         input_types = parent_context.infer_node(input_node)
-        # TODO: simulate await if self.is_async
 
         cn = ContextualizedNode(parent_context, input_node)
         iterated = input_types.iterate(cn, is_async=is_async)
@@ -578,33 +577,31 @@ class MergedArray(Sequence):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
 
 
-def unpack_tuple_to_dict(value, types, exprlist):
+def unpack_tuple_to_dict(context, types, exprlist):
     """
     Unpacking tuple assignments in for statements and expr_stmts.
     """
     if exprlist.type == 'name':
         return {exprlist.value: types}
     elif exprlist.type == 'atom' and exprlist.children[0] in ('(', '['):
-        return unpack_tuple_to_dict(value, types, exprlist.children[1])
+        return unpack_tuple_to_dict(context, types, exprlist.children[1])
     elif exprlist.type in ('testlist', 'testlist_comp', 'exprlist',
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
         n = 0
-        for lazy_value in types.iterate(exprlist):
+        for lazy_value in types.iterate(ContextualizedNode(context, exprlist)):
             n += 1
             try:
                 part = next(parts)
             except StopIteration:
-                # TODO this value is probably not right.
-                analysis.add(value, 'value-error-too-many-values', part,
+                analysis.add(context, 'value-error-too-many-values', part,
                              message="ValueError: too many values to unpack (expected %s)" % n)
             else:
-                dct.update(unpack_tuple_to_dict(value, lazy_value.infer(), part))
+                dct.update(unpack_tuple_to_dict(context, lazy_value.infer(), part))
         has_parts = next(parts, None)
         if types and has_parts is not None:
-            # TODO this value is probably not right.
-            analysis.add(value, 'value-error-too-few-values', has_parts,
+            analysis.add(context, 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct
     elif exprlist.type == 'power' or exprlist.type == 'atom_expr':
