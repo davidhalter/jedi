@@ -93,17 +93,16 @@ def _get_string_prefix_and_quote(string):
     return match.group(1), match.group(2)
 
 
-def _get_string_quote(string):
-    return _get_string_prefix_and_quote(string)[1]
-
-
 def _matches_quote_at_position(code_lines, quote, position):
     string = code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
     return string == quote
 
 
 def get_quote_ending(string, code_lines, position, invert_result=False):
-    quote = _get_string_quote(string)
+    _, quote = _get_string_prefix_and_quote(string)
+    if quote is None:
+        return ''
+
     # Add a quote only if it's not already there.
     if _matches_quote_at_position(code_lines, quote, position) != invert_result:
         return ''

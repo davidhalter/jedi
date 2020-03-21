@@ -3,6 +3,7 @@ import re
 
 from parso import python_bytes_to_unicode
 
+from jedi.debug import dbg
 from jedi.file_io import KnownContentFileIO
 from jedi.inference.imports import SubModuleName, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
@@ -192,14 +193,15 @@ def gitignored_lines(folder_io, file_io):
     return ignored_paths, ignored_names
 
 
-def _recurse_find_python_files(folder_io, except_paths):
+def recurse_find_python_folders_and_files(folder_io, except_paths=()):
+    except_paths = set(except_paths)
     for root_folder_io, folder_ios, file_ios in folder_io.walk():
         # Delete folders that we don't want to iterate over.
         for file_io in file_ios:
             path = file_io.path
             if path.endswith('.py') or path.endswith('.pyi'):
                 if path not in except_paths:
-                    yield file_io
+                    yield None, file_io
 
             if path.endswith('.gitignore'):
                 ignored_paths, ignored_names = \
@@ -212,6 +214,14 @@ def _recurse_find_python_files(folder_io, except_paths):
             if folder_io.path not in except_paths
             and folder_io.get_base_name() not in _IGNORE_FOLDERS
         ]
+        for folder_io in folder_ios:
+            yield folder_io, None
+
+
+def recurse_find_python_files(folder_io, except_paths=()):
+    for folder_io, file_io in recurse_find_python_folders_and_files(folder_io, except_paths):
+        if file_io is not None:
+            yield file_io
 
 
 def _find_python_files_in_sys_path(inference_state, module_contexts):
@@ -228,7 +238,7 @@ def _find_python_files_in_sys_path(inference_state, module_contexts):
             path = folder_io.path
             if not any(path.startswith(p) for p in sys_path) or path in except_paths:
                 break
-            for file_io in _recurse_find_python_files(folder_io, except_paths):
+            for file_io in recurse_find_python_files(folder_io, except_paths):
                 if file_io.path not in yielded_paths:
                     yield file_io
             except_paths.add(path)
@@ -254,19 +264,28 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
     if len(name) <= 2:
         return
 
+    file_io_iterator = _find_python_files_in_sys_path(inference_state, module_contexts)
+    for x in search_in_file_ios(inference_state, file_io_iterator, name,
+                                limit_reduction=limit_reduction):
+        yield x  # Python 2...
+
+
+def search_in_file_ios(inference_state, file_io_iterator, name, limit_reduction=1):
     parse_limit = _PARSED_FILE_LIMIT / limit_reduction
     open_limit = _OPENED_FILE_LIMIT / limit_reduction
     file_io_count = 0
     parsed_file_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
-    for file_io in _find_python_files_in_sys_path(inference_state, module_contexts):
+    for file_io in file_io_iterator:
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)
         if m is not None:
             parsed_file_count += 1
             yield m
             if parsed_file_count >= parse_limit:
+                dbg('Hit limit of parsed files: %s', parse_limit)
                 break
 
         if file_io_count >= open_limit:
+            dbg('Hit limit of opened files: %s', open_limit)
             break

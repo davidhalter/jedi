@@ -300,6 +300,9 @@ class _PseudoTreeNameClass(Value):
     def name(self):
         return ValueName(self, self._tree_name)
 
+    def get_qualified_names(self):
+        return (self._tree_name.value,)
+
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 

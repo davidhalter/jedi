@@ -1,5 +1,5 @@
 """
-Tests for :attr:`.BaseDefinition.full_name`.
+Tests for :attr:`.BaseName.full_name`.
 
 There are three kinds of test:
 
@@ -121,3 +121,10 @@ def test_param_name(Script):
     name, = Script('class X:\n def foo(bar): bar''').goto()
     assert name.type == 'param'
     assert name.full_name is None
+
+
+def test_variable_in_func(Script):
+    names = Script('def f(): x = 3').get_names(all_scopes=True)
+    x = names[-1]
+    assert x.name == 'x'
+    assert x.full_name == '__main__.f.x'

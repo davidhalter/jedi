@@ -29,11 +29,11 @@ def pyc_project_path(tmpdir):
     path = tmpdir.strpath
     dummy_package_path = os.path.join(path, "dummy_package")
     os.mkdir(dummy_package_path)
-    with open(os.path.join(dummy_package_path, "__init__.py"), 'w'):
+    with open(os.path.join(dummy_package_path, "__init__.py"), 'w', newline=''):
         pass
 
     dummy_path = os.path.join(dummy_package_path, 'dummy.py')
-    with open(dummy_path, 'w') as f:
+    with open(dummy_path, 'w', newline='') as f:
         f.write(SRC)
     import compileall
     compileall.compile_file(dummy_path)
@@ -56,6 +56,7 @@ def pyc_project_path(tmpdir):
 
 
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_pyc(pyc_project_path, environment, load_unsafe_extensions):
     """
     The list of completion must be greater than 2.

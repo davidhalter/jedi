@@ -130,7 +130,7 @@ def test_p(monkeypatch):
     #? ['setattr']
     monkeypatch.setatt
 
-# python > 3.4
+# python > 2.7
 
 #? ['capsysbinary']
 def test_p(capsysbin

@@ -74,9 +74,3 @@ def test_wrong_encoding(Script, tmpdir):
     project = Project('.', sys_path=[tmpdir.strpath])
     c, = Script('import x; x.foo', project=project).complete()
     assert c.name == 'foobar'
-
-
-def test_encoding_parameter(Script):
-    name = u('hö')
-    s = Script(name.encode('latin-1'), encoding='latin-1')
-    assert s._module_node.get_code() == name

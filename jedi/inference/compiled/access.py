@@ -507,22 +507,6 @@ class DirectObjectAccess(object):
         obj = self._obj
         if py_version < 33:
             raise ValueError("inspect.signature was introduced in 3.3")
-        if py_version == 34:
-            # In 3.4 inspect.signature are wrong for str and int. This has
-            # been fixed in 3.5. The signature of object is returned,
-            # because no signature was found for str. Here we imitate 3.5
-            # logic and just ignore the signature if the magic methods
-            # don't match object.
-            # 3.3 doesn't even have the logic and returns nothing for str
-            # and classes that inherit from object.
-            user_def = inspect._signature_get_user_defined_method
-            if (inspect.isclass(obj)
-                    and not user_def(type(obj), '__init__')
-                    and not user_def(type(obj), '__new__')
-                    and (obj.__init__ != object.__init__
-                         or obj.__new__ != object.__new__)):
-                raise ValueError
-
         try:
             return inspect.signature(obj)
         except (RuntimeError, TypeError):

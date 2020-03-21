@@ -202,9 +202,6 @@ class MethodValue(FunctionValue):
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
-    def is_function_execution(self):
-        return True
-
     def _infer_annotations(self):
         raise NotImplementedError
 

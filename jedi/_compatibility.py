@@ -11,7 +11,6 @@ import os
 import re
 import pkgutil
 import warnings
-import inspect
 import subprocess
 import weakref
 try:
@@ -219,65 +218,6 @@ if the module is contained in a package.
 """
 
 
-def _iter_modules(paths, prefix=''):
-    # Copy of pkgutil.iter_modules adapted to work with namespaces
-
-    for path in paths:
-        importer = pkgutil.get_importer(path)
-
-        if not isinstance(importer, importlib.machinery.FileFinder):
-            # We're only modifying the case for FileFinder. All the other cases
-            # still need to be checked (like zip-importing). Do this by just
-            # calling the pkgutil version.
-            for mod_info in pkgutil.iter_modules([path], prefix):
-                yield mod_info
-            continue
-
-        # START COPY OF pkutils._iter_file_finder_modules.
-        if importer.path is None or not os.path.isdir(importer.path):
-            return
-
-        yielded = {}
-
-        try:
-            filenames = os.listdir(importer.path)
-        except OSError:
-            # ignore unreadable directories like import does
-            filenames = []
-        filenames.sort()  # handle packages before same-named modules
-
-        for fn in filenames:
-            modname = inspect.getmodulename(fn)
-            if modname == '__init__' or modname in yielded:
-                continue
-
-            # jedi addition: Avoid traversing special directories
-            if fn.startswith('.') or fn == '__pycache__':
-                continue
-
-            path = os.path.join(importer.path, fn)
-            ispkg = False
-
-            if not modname and os.path.isdir(path) and '.' not in fn:
-                modname = fn
-                # A few jedi modifications: Don't check if there's an
-                # __init__.py
-                try:
-                    os.listdir(path)
-                except OSError:
-                    # ignore unreadable directories like import does
-                    continue
-                ispkg = True
-
-            if modname and '.' not in modname:
-                yielded[modname] = 1
-                yield importer, prefix + modname, ispkg
-        # END COPY
-
-
-iter_modules = _iter_modules if py_version >= 34 else pkgutil.iter_modules
-
-
 class ImplicitNSInfo(object):
     """Stores information returned from an implicit namespace spec"""
     def __init__(self, name, paths):
@@ -442,64 +382,6 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-if sys.version_info[:2] == (3, 3):
-    """
-    Monkeypatch the unpickler in Python 3.3. This is needed, because the
-    argument `encoding='bytes'` is not supported in 3.3, but badly needed to
-    communicate with Python 2.
-    """
-
-    class NewUnpickler(pickle._Unpickler):
-        dispatch = dict(pickle._Unpickler.dispatch)
-
-        def _decode_string(self, value):
-            # Used to allow strings from Python 2 to be decoded either as
-            # bytes or Unicode strings.  This should be used only with the
-            # STRING, BINSTRING and SHORT_BINSTRING opcodes.
-            if self.encoding == "bytes":
-                return value
-            else:
-                return value.decode(self.encoding, self.errors)
-
-        def load_string(self):
-            data = self.readline()[:-1]
-            # Strip outermost quotes
-            if len(data) >= 2 and data[0] == data[-1] and data[0] in b'"\'':
-                data = data[1:-1]
-            else:
-                raise pickle.UnpicklingError("the STRING opcode argument must be quoted")
-            self.append(self._decode_string(pickle.codecs.escape_decode(data)[0]))
-        dispatch[pickle.STRING[0]] = load_string
-
-        def load_binstring(self):
-            # Deprecated BINSTRING uses signed 32-bit length
-            len, = pickle.struct.unpack('<i', self.read(4))
-            if len < 0:
-                raise pickle.UnpicklingError("BINSTRING pickle has negative byte count")
-            data = self.read(len)
-            self.append(self._decode_string(data))
-        dispatch[pickle.BINSTRING[0]] = load_binstring
-
-        def load_short_binstring(self):
-            len = self.read(1)[0]
-            data = self.read(len)
-            self.append(self._decode_string(data))
-        dispatch[pickle.SHORT_BINSTRING[0]] = load_short_binstring
-
-    def load(file, fix_imports=True, encoding="ASCII", errors="strict"):
-        return NewUnpickler(file, fix_imports=fix_imports,
-                            encoding=encoding, errors=errors).load()
-
-    def loads(s, fix_imports=True, encoding="ASCII", errors="strict"):
-        if isinstance(s, str):
-            raise TypeError("Can't load pickle from unicode string")
-        file = pickle.io.BytesIO(s)
-        return NewUnpickler(file, fix_imports=fix_imports,
-                            encoding=encoding, errors=errors).load()
-
-    pickle.Unpickler = NewUnpickler
-    pickle.load = load
-    pickle.loads = loads
 
 
 def pickle_load(file):

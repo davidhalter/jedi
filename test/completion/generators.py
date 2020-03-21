@@ -242,7 +242,7 @@ def x():
 # yield from
 # -----------------
 
-# python >= 3.4
+# python > 2.7
 
 def yield_from():
     yield from iter([1])

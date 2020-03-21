@@ -283,7 +283,7 @@ def testnewtype2(y):
     y
     #? []
     y.
-# python >= 3.4
+# python > 2.7
 
 class TestDefaultDict(typing.DefaultDict[str, int]):
     def setdud(self):
@@ -311,7 +311,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.4
+# python > 2.7
 
 
 """
@@ -341,9 +341,8 @@ typing.Optional[0]
 
 TYPE_VARX = typing.TypeVar('TYPE_VARX')
 TYPE_VAR_CONSTRAINTSX = typing.TypeVar('TYPE_VAR_CONSTRAINTSX', str, int)
-# TODO there should at least be some results.
-#? []
-TYPE_VARX.
+#? ['__class__']
+TYPE_VARX.__clas
 #! ["TYPE_VARX = typing.TypeVar('TYPE_VARX')"]
 TYPE_VARX
 

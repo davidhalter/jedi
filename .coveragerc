@@ -4,7 +4,6 @@ omit =
     jedi/inference/compiled/subprocess/__main__.py
     jedi/__main__.py
     # For now this is not being used.
-    jedi/refactoring.py
 
 [report]
 # Regexes for lines to exclude from consideration

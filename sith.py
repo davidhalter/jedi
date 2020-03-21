@@ -168,7 +168,7 @@ class TestCase(object):
 
     def show_definitions(self):
         for completion in self.objects:
-            print(completion.desc_with_module)
+            print(completion.full_name)
             if completion.module_path is None:
                 continue
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):

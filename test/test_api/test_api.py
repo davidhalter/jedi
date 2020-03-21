@@ -141,7 +141,7 @@ def test_infer_on_generator(Script):
 
 def test_goto_definition_not_multiple(Script):
     """
-    There should be only one Definition result if it leads back to the same
+    There should be only one result if it leads back to the same
     origin (e.g. instance method)
     """
 

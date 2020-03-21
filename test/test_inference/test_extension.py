@@ -33,9 +33,9 @@ def test_get_signatures_stdlib(Script):
     assert len(sigs[0].params) == 1
 
 
-# Check only on linux 64 bit platform and Python3.4.
+# Check only on linux 64 bit platform and Python3.8.
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
-@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
+@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 8)')
 def test_init_extension_module(Script, load_unsafe_extensions):
     """
     ``__init__`` extension modules are also packages and Jedi should understand
@@ -45,10 +45,10 @@ def test_init_extension_module(Script, load_unsafe_extensions):
 
     This test was built by the module.c and setup.py combination you can find
     in the init_extension_module folder. You can easily build the
-    `__init__.cpython-34m.so` by compiling it (create a virtualenv and run
+    `__init__.cpython-38m.so` by compiling it (create a virtualenv and run
     `setup.py install`.
 
-    This is also why this test only runs on certain systems (and Python 3.4).
+    This is also why this test only runs on certain systems and Python 3.8.
     """
 
     project = jedi.Project(get_example_dir(), load_unsafe_extensions=load_unsafe_extensions)

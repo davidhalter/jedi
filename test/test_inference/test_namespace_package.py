@@ -71,9 +71,7 @@ def test_nested_namespace_package(Script):
 
     sys_path = [example_dir]
     project = Project('.', sys_path=sys_path)
-    script = Script(project=project, source=code)
-
-    result = script.infer(line=1, column=45)
+    result = Script(code, project=project).infer(line=1, column=45)
 
     assert len(result) == 1
 
@@ -82,7 +80,7 @@ def test_relative_import(Script, environment, tmpdir):
     """
     Attempt a relative import in a very simple namespace package.
     """
-    if environment.version_info < (3, 4):
+    if environment.version_info < (3, 5):
         pytest.skip()
 
     directory = get_example_dir('namespace_package_relative_import')

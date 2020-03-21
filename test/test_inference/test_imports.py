@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from jedi.file_io import FileIO, KnownContentFileIO
+from jedi.file_io import FileIO
 from jedi._compatibility import find_module_py33, find_module
 from jedi.inference import compiled
 from jedi.inference import imports
@@ -259,7 +259,7 @@ def test_goto_following_on_imports(Script):
 
 
 def test_goto(Script):
-    sys, = Script("import sys", 1, 10).goto(follow_imports=True)
+    sys, = Script("import sys").goto(follow_imports=True)
     assert sys.type == 'module'
 
 
@@ -342,23 +342,6 @@ def test_get_modules_containing_name(inference_state, path, goal, is_package):
     )
     assert input_module is module_context
     assert found_module.string_names == goal
-
-
-@pytest.mark.parametrize(
-    ('path', 'base_names', 'is_package', 'names'), [
-        ('/foo/bar.py', ('foo',), False, ('foo', 'bar')),
-        ('/foo/bar.py', ('foo', 'baz'), False, ('foo', 'baz', 'bar')),
-        ('/foo/__init__.py', ('foo',), True, ('foo',)),
-        ('/__init__.py', ('foo',), True, ('foo',)),
-        ('/foo/bar/__init__.py', ('foo',), True, ('foo',)),
-        ('/foo/bar/__init__.py', ('foo', 'bar'), True, ('foo', 'bar')),
-    ]
-)
-def test_load_module_from_path(inference_state, path, base_names, is_package, names):
-    file_io = KnownContentFileIO(path, '')
-    m = imports.load_module_from_path(inference_state, file_io, base_names)
-    assert m.is_package() == is_package
-    assert m.string_names == names
 
 
 @pytest.mark.parametrize(
@@ -489,6 +472,6 @@ def test_relative_import_star(Script):
     from . import *
     furl.c
     """
-    script = Script(source, 'export.py')
+    script = Script(source, path='export.py')
 
     assert script.complete(3, len("furl.c"))

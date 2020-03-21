@@ -19,8 +19,8 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance, ModuleValue
-from jedi.inference.names import ParamNameWrapper
-from jedi.inference.gradual.conversion import convert_values
+from jedi.inference.names import ParamNameWrapper, SubModuleName
+from jedi.inference.gradual.conversion import convert_values, convert_names
 from jedi.parser_utils import cut_value_at_position
 from jedi.plugins import plugin_manager
 
@@ -48,11 +48,7 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cac
         string = name.string_name
         if settings.case_insensitive_completion:
             string = string.lower()
-        if fuzzy:
-            match = helpers.fuzzy_match(string, like_name)
-        else:
-            match = helpers.start_match(string, like_name)
-        if match:
+        if helpers.match(string, like_name, fuzzy=fuzzy):
             new = classes.Completion(
                 inference_state,
                 name,
@@ -135,7 +131,7 @@ class Completion:
 
         if string is not None and not prefixed_completions:
             prefixed_completions = list(complete_file_name(
-                self._inference_state, self._module_context, start_leaf, string,
+                self._inference_state, self._module_context, start_leaf, quote, string,
                 self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
                 self._fuzzy
@@ -361,80 +357,7 @@ class Completion:
     def _complete_trailer_for_values(self, values):
         user_context = get_user_context(self._module_context, self._position)
 
-        completion_names = []
-        for value in values:
-            for filter in value.get_filters(origin_scope=user_context.tree_node):
-                completion_names += filter.values()
-
-            if not value.is_stub() and isinstance(value, TreeInstance):
-                completion_names += self._complete_getattr(value)
-
-        python_values = convert_values(values)
-        for c in python_values:
-            if c not in values:
-                for filter in c.get_filters(origin_scope=user_context.tree_node):
-                    completion_names += filter.values()
-        return completion_names
-
-    def _complete_getattr(self, instance):
-        """
-        A heuristic to make completion for proxy objects work. This is not
-        intended to work in all cases. It works exactly in this case:
-
-            def __getattr__(self, name):
-                ...
-                return getattr(any_object, name)
-
-        It is important that the return contains getattr directly, otherwise it
-        won't work anymore. It's really just a stupid heuristic. It will not
-        work if you write e.g. `return (getatr(o, name))`, because of the
-        additional parentheses. It will also not work if you move the getattr
-        to some other place that is not the return statement itself.
-
-        It is intentional that it doesn't work in all cases. Generally it's
-        really hard to do even this case (as you can see below). Most people
-        will write it like this anyway and the other ones, well they are just
-        out of luck I guess :) ~dave.
-        """
-        names = (instance.get_function_slot_names(u'__getattr__')
-                 or instance.get_function_slot_names(u'__getattribute__'))
-        functions = ValueSet.from_sets(
-            name.infer()
-            for name in names
-        )
-        for func in functions:
-            tree_node = func.tree_node
-            for return_stmt in tree_node.iter_return_stmts():
-                # Basically until the next comment we just try to find out if a
-                # return statement looks exactly like `return getattr(x, name)`.
-                if return_stmt.type != 'return_stmt':
-                    continue
-                atom_expr = return_stmt.children[1]
-                if atom_expr.type != 'atom_expr':
-                    continue
-                atom = atom_expr.children[0]
-                trailer = atom_expr.children[1]
-                if len(atom_expr.children) != 2 or atom.type != 'name' \
-                        or atom.value != 'getattr':
-                    continue
-                arglist = trailer.children[1]
-                if arglist.type != 'arglist' or len(arglist.children) < 3:
-                    continue
-                context = func.as_context()
-                object_node = arglist.children[0]
-
-                # Make sure it's a param: foo in __getattr__(self, foo)
-                name_node = arglist.children[2]
-                name_list = context.goto(name_node, name_node.start_pos)
-                if not any(n.api_type == 'param' for n in name_list):
-                    continue
-
-                # Now that we know that these are most probably completion
-                # objects, we just infer the object and return them as
-                # completions.
-                objects = context.infer_node(object_node)
-                return self._complete_trailer_for_values(objects)
-        return []
+        return complete_trailer(user_context, values)
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
@@ -572,3 +495,123 @@ def _extract_string_while_in_string(leaf, position):
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
     return None, None, None
+
+
+def complete_trailer(user_context, values):
+    completion_names = []
+    for value in values:
+        for filter in value.get_filters(origin_scope=user_context.tree_node):
+            completion_names += filter.values()
+
+        if not value.is_stub() and isinstance(value, TreeInstance):
+            completion_names += _complete_getattr(user_context, value)
+
+    python_values = convert_values(values)
+    for c in python_values:
+        if c not in values:
+            for filter in c.get_filters(origin_scope=user_context.tree_node):
+                completion_names += filter.values()
+    return completion_names
+
+
+def _complete_getattr(user_context, instance):
+    """
+    A heuristic to make completion for proxy objects work. This is not
+    intended to work in all cases. It works exactly in this case:
+
+        def __getattr__(self, name):
+            ...
+            return getattr(any_object, name)
+
+    It is important that the return contains getattr directly, otherwise it
+    won't work anymore. It's really just a stupid heuristic. It will not
+    work if you write e.g. `return (getatr(o, name))`, because of the
+    additional parentheses. It will also not work if you move the getattr
+    to some other place that is not the return statement itself.
+
+    It is intentional that it doesn't work in all cases. Generally it's
+    really hard to do even this case (as you can see below). Most people
+    will write it like this anyway and the other ones, well they are just
+    out of luck I guess :) ~dave.
+    """
+    names = (instance.get_function_slot_names(u'__getattr__')
+             or instance.get_function_slot_names(u'__getattribute__'))
+    functions = ValueSet.from_sets(
+        name.infer()
+        for name in names
+    )
+    for func in functions:
+        tree_node = func.tree_node
+        for return_stmt in tree_node.iter_return_stmts():
+            # Basically until the next comment we just try to find out if a
+            # return statement looks exactly like `return getattr(x, name)`.
+            if return_stmt.type != 'return_stmt':
+                continue
+            atom_expr = return_stmt.children[1]
+            if atom_expr.type != 'atom_expr':
+                continue
+            atom = atom_expr.children[0]
+            trailer = atom_expr.children[1]
+            if len(atom_expr.children) != 2 or atom.type != 'name' \
+                    or atom.value != 'getattr':
+                continue
+            arglist = trailer.children[1]
+            if arglist.type != 'arglist' or len(arglist.children) < 3:
+                continue
+            context = func.as_context()
+            object_node = arglist.children[0]
+
+            # Make sure it's a param: foo in __getattr__(self, foo)
+            name_node = arglist.children[2]
+            name_list = context.goto(name_node, name_node.start_pos)
+            if not any(n.api_type == 'param' for n in name_list):
+                continue
+
+            # Now that we know that these are most probably completion
+            # objects, we just infer the object and return them as
+            # completions.
+            objects = context.infer_node(object_node)
+            return complete_trailer(user_context, objects)
+    return []
+
+
+def search_in_module(inference_state, module_context, names, wanted_names,
+                     wanted_type, complete=False, fuzzy=False,
+                     ignore_imports=False, convert=False):
+    for s in wanted_names[:-1]:
+        new_names = []
+        for n in names:
+            if s == n.string_name:
+                if n.tree_name is not None and n.api_type == 'module' \
+                        and ignore_imports:
+                    continue
+                new_names += complete_trailer(
+                    module_context,
+                    n.infer()
+                )
+        debug.dbg('dot lookup on search %s from %s', new_names, names[:10])
+        names = new_names
+
+    last_name = wanted_names[-1].lower()
+    for n in names:
+        string = n.string_name.lower()
+        if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
+                or not complete and string == last_name:
+            if isinstance(n, SubModuleName):
+                names = [v.name for v in n.infer()]
+            else:
+                names = [n]
+            if convert:
+                names = convert_names(names)
+            for n2 in names:
+                if complete:
+                    def_ = classes.Completion(
+                        inference_state, n2,
+                        stack=None,
+                        like_name_length=len(last_name),
+                        is_fuzzy=fuzzy,
+                    )
+                else:
+                    def_ = classes.Name(inference_state, n2)
+                if not wanted_type or wanted_type == def_.type:
+                    yield def_

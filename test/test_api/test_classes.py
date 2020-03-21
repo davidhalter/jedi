@@ -23,7 +23,7 @@ def test_basedefinition_type(Script, get_names):
         """
         Return a list of definitions for parametrized tests.
 
-        :rtype: [jedi.api_classes.BaseDefinition]
+        :rtype: [jedi.api_classes.BaseName]
         """
         source = dedent("""
         import sys
@@ -193,7 +193,7 @@ def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()
 
-    script = Script(source='from hashlib import sha256')
+    script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
     assert [p.name for p in sig.params] == ['arg']
@@ -278,7 +278,7 @@ def test_parent_on_function(Script):
     code = 'def spam():\n pass'
     def_, = Script(code).goto(line=1, column=len('def spam'))
     parent = def_.parent()
-    assert parent.name == ''
+    assert parent.name == '__main__'
     assert parent.type == 'module'
 
 
@@ -328,7 +328,7 @@ def test_parent_on_closure(Script):
     assert foo.parent().name == 'inner'
     assert foo.parent().parent().name == 'bar'
     assert foo.parent().parent().parent().name == 'Foo'
-    assert foo.parent().parent().parent().parent().name == ''
+    assert foo.parent().parent().parent().parent().name == '__main__'
 
     assert inner_func.parent().name == 'bar'
     assert inner_func.parent().parent().name == 'Foo'
@@ -344,7 +344,7 @@ def test_parent_on_comprehension(Script):
 
     assert [name.name for name in ns] == ['spam', 'i']
 
-    assert ns[0].parent().name == ''
+    assert ns[0].parent().name == '__main__'
     assert ns[0].parent().type == 'module'
     assert ns[1].parent().name == 'spam'
     assert ns[1].parent().type == 'function'
@@ -375,7 +375,7 @@ def test_type_II(Script):
 
 
 """
-This tests the BaseDefinition.goto function, not the jedi
+This tests the BaseName.goto function, not the jedi
 function. They are not really different in functionality, but really
 different as an implementation.
 """

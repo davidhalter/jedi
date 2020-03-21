@@ -123,23 +123,17 @@ def _assert_interpreter_complete(source, namespace, completions,
 
 def test_complete_raw_function():
     from os.path import join
-    _assert_interpreter_complete('join("").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('join("").up', locals(), ['upper'])
 
 
 def test_complete_raw_function_different_name():
     from os.path import join as pjoin
-    _assert_interpreter_complete('pjoin("").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('pjoin("").up', locals(), ['upper'])
 
 
 def test_complete_raw_module():
     import os
-    _assert_interpreter_complete('os.path.join("a").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('os.path.join("a").up', locals(), ['upper'])
 
 
 def test_complete_raw_instance():
@@ -148,31 +142,19 @@ def test_complete_raw_instance():
     completions = ['time', 'timetz', 'timetuple']
     if is_py3:
         completions += ['timestamp']
-    _assert_interpreter_complete('(dt - dt).ti',
-                                 locals(),
-                                 completions)
+    _assert_interpreter_complete('(dt - dt).ti', locals(), completions)
 
 
 def test_list():
     array = ['haha', 1]
-    _assert_interpreter_complete('array[0].uppe',
-                                 locals(),
-                                 ['upper'])
-    _assert_interpreter_complete('array[0].real',
-                                 locals(),
-                                 [])
+    _assert_interpreter_complete('array[0].uppe', locals(), ['upper'])
+    _assert_interpreter_complete('array[0].real', locals(), [])
 
     # something different, no index given, still just return the right
-    _assert_interpreter_complete('array[int].real',
-                                 locals(),
-                                 ['real'])
-    _assert_interpreter_complete('array[int()].real',
-                                 locals(),
-                                 ['real'])
+    _assert_interpreter_complete('array[int].real', locals(), ['real'])
+    _assert_interpreter_complete('array[int()].real', locals(), ['real'])
     # inexistent index
-    _assert_interpreter_complete('array[2].upper',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('array[2].upper', locals(), ['upper'])
 
 
 def test_getattr():
@@ -186,9 +168,7 @@ def test_slice():
     class Foo1:
         bar = []
     baz = 'xbarx'
-    _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append',
-                                 locals(),
-                                 ['append'])
+    _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append', locals(), ['append'])
 
 
 def test_getitem_side_effects():
@@ -698,5 +678,5 @@ def bar():
 def test_string_annotation(annotations, result, code):
     x = lambda foo: 1
     x.__annotations__ = annotations
-    defs = jedi.Interpreter(code or 'x()', [locals()]).goto_definitions()
+    defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result
