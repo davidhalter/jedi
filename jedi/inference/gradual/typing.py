@@ -183,7 +183,6 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
     def infer_type_vars(self, value_set, is_class_value=False):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-        from jedi.inference.gradual.base import GenericClass
 
         type_var_dict = {}
         annotation_generics = self.get_generics()
@@ -216,30 +215,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
         elif annotation_name == 'Tuple':
             tuple_annotation, = self.execute_annotation()
-            # TODO: is can we avoid using this private method?
-            if tuple_annotation._is_homogenous():
-                # The parameter annotation is of the form `Tuple[T, ...]`,
-                # so we treat the incoming tuple like a iterable sequence
-                # rather than a positional container of elements.
-                return annotation_generics[0].infer_type_vars(
-                    value_set.merge_types_of_iterate(),
-                )
-
-            else:
-                # The parameter annotation has only explicit type parameters
-                # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
-                # treat the incoming values as needing to match the annotation
-                # exactly, just as we would for non-tuple annotations.
-
-                for element in value_set:
-                    py_class = element.get_annotated_class_object()
-                    if not isinstance(py_class, GenericClass):
-                        py_class = element
-
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        merge_pairwise_generics(self, py_class),
-                    )
+            return tuple_annotation.infer_type_vars(value_set, is_class_value)
 
         return type_var_dict
 
@@ -337,6 +313,38 @@ class Tuple(BaseTypingValueWithGenerics):
         tuple_, = self.inference_state.builtins_module \
             .py__getattribute__('tuple').execute_annotation()
         return tuple_
+
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+        from jedi.inference.gradual.base import GenericClass
+
+        if self._is_homogenous():
+            # The parameter annotation is of the form `Tuple[T, ...]`,
+            # so we treat the incoming tuple like a iterable sequence
+            # rather than a positional container of elements.
+            return self.get_generics()[0].infer_type_vars(
+                value_set.merge_types_of_iterate(),
+            )
+
+        else:
+            # The parameter annotation has only explicit type parameters
+            # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+            # treat the incoming values as needing to match the annotation
+            # exactly, just as we would for non-tuple annotations.
+
+            type_var_dict = {}
+            for element in value_set:
+                py_class = element.get_annotated_class_object()
+                if not isinstance(py_class, GenericClass):
+                    py_class = element
+
+                merge_type_var_dicts(
+                    type_var_dict,
+                    merge_pairwise_generics(self, py_class),
+                )
+
+            return type_var_dict
 
 
 class Generic(BaseTypingValueWithGenerics):
