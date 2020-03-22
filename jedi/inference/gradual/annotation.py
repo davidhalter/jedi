@@ -390,6 +390,8 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
         `annotated_argument_class`: represents the annotated class of the
             argument being passed to the object annotated by `annotation_value`.
         """
+        if not isinstance(annotated_argument_class, DefineGenericBase):
+            return
 
         annotation_generics = annotation_value.get_generics()
         actual_generics = annotated_argument_class.get_generics()
@@ -472,9 +474,6 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                     if not isinstance(py_class, GenericClass):
                         py_class = element
 
-                    if not isinstance(py_class, DefineGenericBase):
-                        continue
-
                     merge_pairwise_generics(annotation_value, py_class)
 
     elif isinstance(annotation_value, GenericClass):
@@ -507,11 +506,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                 for parent_class in py_class.py__mro__():
                     class_name = parent_class.py__name__()
                     if annotation_name == class_name:
-                        if not isinstance(parent_class, DefineGenericBase):
-                            continue
-
                         merge_pairwise_generics(annotation_value, parent_class)
-
                         break
 
     return type_var_dict
