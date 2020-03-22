@@ -200,22 +200,16 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                             )
 
                 else:
-                    merge_type_var_dicts(
-                        type_var_dict,
-                        given[0].infer_type_vars(
-                            value_set,
-                            is_class_value=True,
-                        ),
+                    return given[0].infer_type_vars(
+                        value_set,
+                        is_class_value=True,
                     )
 
         elif annotation_name == 'Callable':
             given = self.get_generics()
             if len(given) == 2:
-                merge_type_var_dicts(
-                    type_var_dict,
-                    given[1].infer_type_vars(
-                        value_set.execute_annotation(),
-                    ),
+                return given[1].infer_type_vars(
+                    value_set.execute_annotation(),
                 )
 
         elif annotation_name == 'Tuple':
@@ -226,11 +220,8 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                 # The parameter annotation is of the form `Tuple[T, ...]`,
                 # so we treat the incoming tuple like a iterable sequence
                 # rather than a positional container of elements.
-                merge_type_var_dicts(
-                    type_var_dict,
-                    annotation_generics[0].infer_type_vars(
-                        value_set.merge_types_of_iterate(),
-                    ),
+                return annotation_generics[0].infer_type_vars(
+                    value_set.merge_types_of_iterate(),
                 )
 
             else:

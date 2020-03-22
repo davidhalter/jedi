@@ -209,11 +209,8 @@ class GenericClass(ClassMixin, DefineGenericBase):
         if annotation_name == 'Iterable' and not is_class_value:
             given = self.get_generics()
             if given:
-                merge_type_var_dicts(
-                    type_var_dict,
-                    given[0].infer_type_vars(
-                        value_set.merge_types_of_iterate(),
-                    ),
+                return given[0].infer_type_vars(
+                    value_set.merge_types_of_iterate(),
                 )
         else:
             # Note: we need to handle the MRO _in order_, so we need to extract
