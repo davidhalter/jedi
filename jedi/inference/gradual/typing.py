@@ -185,26 +185,28 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
         from jedi.inference.gradual.base import GenericClass
 
-        annotation_name = self.py__name__()
         type_var_dict = {}
         annotation_generics = self.get_generics()
 
-        if annotation_name == 'Type':
-            if annotation_generics:
-                if is_class_value:
-                    for element in value_set:
-                        element_name = element.py__name__()
-                        if annotation_name == element_name:
-                            merge_type_var_dicts(
-                                type_var_dict,
-                                merge_pairwise_generics(self, element),
-                            )
+        if not annotation_generics:
+            return type_var_dict
 
-                else:
-                    return annotation_generics[0].infer_type_vars(
-                        value_set,
-                        is_class_value=True,
-                    )
+        annotation_name = self.py__name__()
+        if annotation_name == 'Type':
+            if is_class_value:
+                for element in value_set:
+                    element_name = element.py__name__()
+                    if annotation_name == element_name:
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            merge_pairwise_generics(self, element),
+                        )
+
+            else:
+                return annotation_generics[0].infer_type_vars(
+                    value_set,
+                    is_class_value=True,
+                )
 
         elif annotation_name == 'Callable':
             if len(annotation_generics) == 2:
