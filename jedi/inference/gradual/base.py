@@ -207,11 +207,12 @@ class GenericClass(ClassMixin, DefineGenericBase):
         annotation_name = self.py__name__()
         type_var_dict = {}
         if annotation_name == 'Iterable' and not is_class_value:
-            given = self.get_generics()
-            if given:
-                return given[0].infer_type_vars(
+            annotation_generics = self.get_generics()
+            if annotation_generics:
+                return annotation_generics[0].infer_type_vars(
                     value_set.merge_types_of_iterate(),
                 )
+
         else:
             # Note: we need to handle the MRO _in order_, so we need to extract
             # the elements from the set first, then handle them, even if we put

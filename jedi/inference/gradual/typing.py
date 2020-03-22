@@ -187,9 +187,10 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
         annotation_name = self.py__name__()
         type_var_dict = {}
+        annotation_generics = self.get_generics()
+
         if annotation_name == 'Type':
-            given = self.get_generics()
-            if given:
+            if annotation_generics:
                 if is_class_value:
                     for element in value_set:
                         element_name = element.py__name__()
@@ -200,20 +201,18 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                             )
 
                 else:
-                    return given[0].infer_type_vars(
+                    return annotation_generics[0].infer_type_vars(
                         value_set,
                         is_class_value=True,
                     )
 
         elif annotation_name == 'Callable':
-            given = self.get_generics()
-            if len(given) == 2:
-                return given[1].infer_type_vars(
+            if len(annotation_generics) == 2:
+                return annotation_generics[1].infer_type_vars(
                     value_set.execute_annotation(),
                 )
 
         elif annotation_name == 'Tuple':
-            annotation_generics = self.get_generics()
             tuple_annotation, = self.execute_annotation()
             # TODO: is can we avoid using this private method?
             if tuple_annotation._is_homogenous():
