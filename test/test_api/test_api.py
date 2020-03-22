@@ -342,6 +342,7 @@ def test_file_fuzzy_completion(Script):
     script = Script('"{}/ep08_i'.format(path))
     expected = [
         'pep0484_basic.py"',
+        'pep0484_generic_mismatches.py"',
         'pep0484_generic_parameters.py"',
         'pep0484_generic_passthroughs.py"',
         'pep0484_typing.py"',

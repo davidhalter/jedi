@@ -494,6 +494,11 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
             # the elements from the set first, then handle them, even if we put
             # them back in a set afterwards.
             for element in value_set:
+                if element.api_type == u'function':
+                    # Functions & methods don't have an MRO and we're not
+                    # expecting a Callable (those are handled separately above).
+                    continue
+
                 if element.is_instance():
                     py_class = element.get_annotated_class_object()
                 else:
