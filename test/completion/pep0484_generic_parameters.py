@@ -208,7 +208,7 @@ for x9 in unwrap_custom2(custom_instance_list_int):
     x9
 
 
-# Test that classes which have gneeric parents but are not generic themselves
+# Test that classes which have generic parents but are not generic themselves
 # are still inferred correctly.
 class Specialised(Mapping[int, str]):
     pass
@@ -223,7 +223,7 @@ first(specialised_instance)
 values(specialised_instance)[0]
 
 
-# Test that classes which have gneeric ancestry but neither they nor their
+# Test that classes which have generic ancestry but neither they nor their
 # parents are not generic are still inferred correctly.
 class ChildOfSpecialised(Specialised):
     pass
