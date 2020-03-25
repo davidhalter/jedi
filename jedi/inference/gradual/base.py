@@ -220,7 +220,8 @@ class GenericClass(ClassMixin, DefineGenericBase):
             for element in value_set:
                 if element.api_type == u'function':
                     # Functions & methods don't have an MRO and we're not
-                    # expecting a Callable (those are handled separately above).
+                    # expecting a Callable (those are handled separately within
+                    # TypingClassValueWithIndex).
                     continue
 
                 if element.is_instance():
