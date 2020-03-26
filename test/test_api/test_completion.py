@@ -299,6 +299,9 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         (f2, os_path + 'join(["tes"]', 10, ['t' + s]),
         (f2, os_path + 'join(["tes"])', 10, ['t' + s]),
         (f2, os_path + 'join("test", "test_cac" + x,', 22, ['he.py']),
+
+        # GH #1528
+        (f2, "'a' 'b'", 4, Ellipsis),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
@@ -306,7 +309,7 @@ def test_file_path_completions(Script, file, code, column, expected):
     if isinstance(column, tuple):
         line, column = column
     comps = Script(code, path=file).complete(line=line, column=column)
-    if expected == "A LOT":
+    if expected is Ellipsis:
         assert len(comps) > 100  # This is basically global completions.
     else:
         assert [c.complete for c in comps] == expected

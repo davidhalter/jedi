@@ -457,6 +457,8 @@ def _extract_string_while_in_string(leaf, position):
         if leaf.line == position[0]:
             kwargs['endpos'] = position[1] - leaf.column
         match = _string_start.match(leaf.value, **kwargs)
+        if not match:
+            return None, None, None
         start = match.group(0)
         if leaf.line == position[0] and position[1] < leaf.column + match.end():
             return None, None, None
