@@ -174,10 +174,11 @@ def test_qualified_names(same_process_inference_state, obj, expected_names):
 
 def test_operation(Script, inference_state, create_compiled_object):
     b = create_compiled_object(bool)
-    true, = _infer_comparison_part(
+    false, true = _infer_comparison_part(
         inference_state, b.parent_context,
         left=list(b.execute_with_values())[0],
         operator=u'is not',
         right=b,
     )
+    assert false.py__name__() == 'bool'
     assert true.py__name__() == 'bool'

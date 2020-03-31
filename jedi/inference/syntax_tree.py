@@ -603,7 +603,11 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
-                return ValueSet([_bool_to_value(inference_state, bool_)])
+                # Only if == returns True or != returns False, we can continue.
+                # There's no guarantee that they are not equal. This can help
+                # in some cases, but does not cover everything.
+                if (str_operator in ('is', '==')) == bool_:
+                    return ValueSet([_bool_to_value(inference_state, bool_)])
 
             if isinstance(left, VersionInfo):
                 version_info = _get_tuple_ints(right)
