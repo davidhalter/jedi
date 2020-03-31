@@ -10,6 +10,43 @@ class BaseValue(object):
                 return value
             value = value.parent_context
 
+    def infer_type_vars(self, value_set, is_class_value=False):
+        """
+        When the current instance represents a type annotation, this method
+        tries to find information about undefined type vars and returns a dict
+        from type var name to value set.
+
+        This is for example important to understand what `iter([1])` returns.
+        According to typeshed, `iter` returns an `Iterator[_T]`:
+
+            def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+        This functions would generate `int` for `_T` in this case, because it
+        unpacks the `Iterable`.
+
+        Parameters
+        ----------
+
+        `self`: represents the annotation of the current parameter to infer the
+            value for. In the above example, this would initially be the
+            `Iterable[_T]` of the `iterable` parameter and then, when recursing,
+            just the `_T` generic parameter.
+
+        `value_set`: represents the actual argument passed to the parameter
+            we're inferrined for, or (for recursive calls) their types. In the
+            above example this would first be the representation of the list
+            `[1]` and then, when recursing, just of `1`.
+
+        `is_class_value`: tells us whether or not to treat the `value_set` as
+            representing the instances or types being passed, which is neccesary
+            to correctly cope with `Type[T]` annotations. When it is True, this
+            means that we are being called with a nested portion of an
+            annotation and that the `value_set` represents the types of the
+            arguments, rather than their actual instances. Note: not all
+            recursive calls will neccesarily set this to True.
+        """
+        return {}
+
 
 class BaseValueSet(object):
     def __init__(self, iterable):

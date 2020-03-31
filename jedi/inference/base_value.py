@@ -438,6 +438,18 @@ class ValueSet(BaseValueSet):
             s = 'Optional[%s]' % s
         return s
 
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_type_var_dicts
+
+        type_var_dict = {}
+        for value in self._set:
+            merge_type_var_dicts(
+                type_var_dict,
+                value.infer_type_vars(value_set, is_class_value),
+            )
+        return type_var_dict
+
 
 NO_VALUES = ValueSet([])
 
