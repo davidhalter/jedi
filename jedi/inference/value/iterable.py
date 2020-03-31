@@ -328,6 +328,11 @@ class SequenceLiteralValue(Sequence):
             self.array_type = SequenceLiteralValue.mapping[atom.children[0]]
             """The builtin name of the array (list, set, tuple or dict)."""
 
+    def _get_generics(self):
+        if self.array_type == u'tuple':
+            return tuple(x.infer().py__class__() for x in self.py__iter__())
+        return super(SequenceLiteralValue, self)._get_generics()
+
     def py__simple_getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if isinstance(index, slice):

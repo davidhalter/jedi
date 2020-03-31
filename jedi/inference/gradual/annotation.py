@@ -331,27 +331,110 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
 
     This functions would generate `int` for `_T` in this case, because it
     unpacks the `Iterable`.
+
+    Parameters
+    ----------
+
+    `annotation_value`: represents the annotation of the current parameter to
+        infer the value for. In the above example, this would initially be the
+        `Iterable[_T]` of the `iterable` parameter and then, when recursing,
+        just the `_T` generic parameter.
+
+    `value_set`: represents the actual argument passed to the parameter we're
+        inferrined for, or (for recursive calls) their types. In the above
+        example this would first be the representation of the list `[1]` and
+        then, when recursing, just of `1`.
+
+    `is_class_value`: tells us whether or not to treat the `value_set` as
+        representing the instances or types being passed, which is neccesary to
+        correctly cope with `Type[T]` annotations. When it is True, this means
+        that we are being called with a nested portion of an annotation and that
+        the `value_set` represents the types of the arguments, rather than their
+        actual instances.
+        Note: not all recursive calls will neccesarily set this to True.
     """
     type_var_dict = {}
+    annotation_name = annotation_value.py__name__()
+
+    def merge_pairwise_generics(annotation_value, annotated_argument_class):
+        """
+        Match up the generic parameters from the given argument class to the
+        target annotation.
+
+        This walks the generic parameters immediately within the annotation and
+        argument's type, in order to determine the concrete values of the
+        annotation's parameters for the current case.
+
+        For example, given the following code:
+
+            def values(mapping: Mapping[K, V]) -> List[V]: ...
+
+            for val in values({1: 'a'}):
+                val
+
+        Then this function should be given representations of `Mapping[K, V]`
+        and `Mapping[int, str]`, so that it can determine that `K` is `int and
+        `V` is `str`.
+
+        Note that it is responsibility of the caller to traverse the MRO of the
+        argument type as needed in order to find the type matching the
+        annotation (in this case finding `Mapping[int, str]` as a parent of
+        `Dict[int, str]`).
+
+        Parameters
+        ----------
+
+        `annotation_value`: represents the annotation to infer the concrete
+            parameter types of.
+
+        `annotated_argument_class`: represents the annotated class of the
+            argument being passed to the object annotated by `annotation_value`.
+        """
+        if not isinstance(annotated_argument_class, DefineGenericBase):
+            return
+
+        annotation_generics = annotation_value.get_generics()
+        actual_generics = annotated_argument_class.get_generics()
+
+        for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+            for nested_annotation_value in annotation_generics_set:
+                _merge_type_var_dicts(
+                    type_var_dict,
+                    _infer_type_vars(
+                        nested_annotation_value,
+                        actual_generic_set,
+                        # This is a note to ourselves that we have already
+                        # converted the instance representation to its class.
+                        is_class_value=True,
+                    ),
+                )
+
     if isinstance(annotation_value, TypeVar):
         if not is_class_value:
-            return {annotation_value.py__name__(): value_set.py__class__()}
-        return {annotation_value.py__name__(): value_set}
+            return {annotation_name: value_set.py__class__()}
+        return {annotation_name: value_set}
     elif isinstance(annotation_value, TypingClassValueWithIndex):
-        name = annotation_value.py__name__()
-        if name == 'Type':
+        if annotation_name == 'Type':
             given = annotation_value.get_generics()
             if given:
-                for nested_annotation_value in given[0]:
-                    _merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set,
-                            is_class_value=True,
+                if is_class_value:
+                    for element in value_set:
+                        element_name = element.py__name__()
+                        if annotation_name == element_name:
+                            merge_pairwise_generics(annotation_value, element)
+
+                else:
+                    for nested_annotation_value in given[0]:
+                        _merge_type_var_dicts(
+                            type_var_dict,
+                            _infer_type_vars(
+                                nested_annotation_value,
+                                value_set,
+                                is_class_value=True,
+                            ),
                         )
-                    )
-        elif name == 'Callable':
+
+        elif annotation_name == 'Callable':
             given = annotation_value.get_generics()
             if len(given) == 2:
                 for nested_annotation_value in given[1]:
@@ -360,11 +443,41 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         _infer_type_vars(
                             nested_annotation_value,
                             value_set.execute_annotation(),
-                        )
+                        ),
                     )
+
+        elif annotation_name == 'Tuple':
+            annotation_generics = annotation_value.get_generics()
+            tuple_annotation, = annotation_value.execute_annotation()
+            # TODO: is can we avoid using this private method?
+            if tuple_annotation._is_homogenous():
+                # The parameter annotation is of the form `Tuple[T, ...]`,
+                # so we treat the incoming tuple like a iterable sequence
+                # rather than a positional container of elements.
+                for nested_annotation_value in annotation_generics[0]:
+                    _merge_type_var_dicts(
+                        type_var_dict,
+                        _infer_type_vars(
+                            nested_annotation_value,
+                            value_set.merge_types_of_iterate(),
+                        ),
+                    )
+
+            else:
+                # The parameter annotation has only explicit type parameters
+                # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+                # treat the incoming values as needing to match the annotation
+                # exactly, just as we would for non-tuple annotations.
+
+                for element in value_set:
+                    py_class = element.get_annotated_class_object()
+                    if not isinstance(py_class, GenericClass):
+                        py_class = element
+
+                    merge_pairwise_generics(annotation_value, py_class)
+
     elif isinstance(annotation_value, GenericClass):
-        name = annotation_value.py__name__()
-        if name == 'Iterable':
+        if annotation_name == 'Iterable' and not is_class_value:
             given = annotation_value.get_generics()
             if given:
                 for nested_annotation_value in given[0]:
@@ -372,35 +485,30 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                         type_var_dict,
                         _infer_type_vars(
                             nested_annotation_value,
-                            value_set.merge_types_of_iterate()
-                        )
+                            value_set.merge_types_of_iterate(),
+                        ),
                     )
-        elif name == 'Mapping':
-            given = annotation_value.get_generics()
-            if len(given) == 2:
-                for value in value_set:
-                    try:
-                        method = value.get_mapping_item_values
-                    except AttributeError:
-                        continue
-                    key_values, value_values = method()
+        else:
+            # Note: we need to handle the MRO _in order_, so we need to extract
+            # the elements from the set first, then handle them, even if we put
+            # them back in a set afterwards.
+            for element in value_set:
+                if element.api_type == u'function':
+                    # Functions & methods don't have an MRO and we're not
+                    # expecting a Callable (those are handled separately above).
+                    continue
 
-                    for nested_annotation_value in given[0]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                key_values,
-                            )
-                        )
-                    for nested_annotation_value in given[1]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                value_values,
-                            )
-                        )
+                if element.is_instance():
+                    py_class = element.get_annotated_class_object()
+                else:
+                    py_class = element
+
+                for parent_class in py_class.py__mro__():
+                    class_name = parent_class.py__name__()
+                    if annotation_name == class_name:
+                        merge_pairwise_generics(annotation_value, parent_class)
+                        break
+
     return type_var_dict
 
 

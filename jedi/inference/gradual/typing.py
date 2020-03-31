@@ -245,12 +245,7 @@ class Callable(BaseTypingValueWithGenerics):
             return infer_return_for_callable(arguments, param_values, result_values)
 
 
-class Tuple(LazyValueWrapper):
-    def __init__(self, parent_context, name, generics_manager):
-        self.inference_state = parent_context.inference_state
-        self.parent_context = parent_context
-        self._generics_manager = generics_manager
-
+class Tuple(BaseTypingValueWithGenerics):
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
