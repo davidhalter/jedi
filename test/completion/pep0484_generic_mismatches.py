@@ -1,4 +1,5 @@
 # python >= 3.4
+import typing
 from typing import (
     Callable,
     Dict,
@@ -48,6 +49,10 @@ x0 = list_t_to_list_t("abc")[0]
 x0
 
 x1 = list_t_to_list_t(foo)[0]
+#?
+x1
+
+x1 = list_t_to_list_t(typing)[0]
 #?
 x1
 

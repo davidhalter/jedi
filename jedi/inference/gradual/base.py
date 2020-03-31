@@ -217,17 +217,18 @@ class GenericClass(ClassMixin, DefineGenericBase):
             # Note: we need to handle the MRO _in order_, so we need to extract
             # the elements from the set first, then handle them, even if we put
             # them back in a set afterwards.
-            for element in value_set:
-                if element.api_type == u'function':
-                    # Functions & methods don't have an MRO and we're not
+            for py_class in value_set:
+                if not is_class_value:
+                    if py_class.is_instance():
+                        py_class = py_class.get_annotated_class_object()
+                    else:
+                        continue
+
+                if py_class.api_type != u'class':
+                    # Functions & modules don't have an MRO and we're not
                     # expecting a Callable (those are handled separately within
                     # TypingClassValueWithIndex).
                     continue
-
-                if element.is_instance():
-                    py_class = element.get_annotated_class_object()
-                else:
-                    py_class = element
 
                 for parent_class in py_class.py__mro__():
                     class_name = parent_class.py__name__()
