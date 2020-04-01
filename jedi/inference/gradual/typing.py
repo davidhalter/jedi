@@ -197,14 +197,18 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
         annotation_name = self.py__name__()
         if annotation_name == 'Type':
             if is_class_value:
+                # This only applies if we are comparing something like
+                # List[Type[int]] with Iterable[Type[int]]. First, Jedi tries to
+                # match List/Iterable. After that we will land here, because
+                # is_class_value will be True at that point. Obviously we also
+                # compare below that both sides are `Type`.
                 for element in value_set:
                     element_name = element.py__name__()
-                    if annotation_name == element_name:
+                    if element_name == 'Type':
                         merge_type_var_dicts(
                             type_var_dict,
                             merge_pairwise_generics(self, element),
                         )
-
             else:
                 return annotation_generics[0].infer_type_vars(
                     value_set,
