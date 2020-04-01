@@ -219,7 +219,7 @@ class GenericClass(ClassMixin, DefineGenericBase):
             # them back in a set afterwards.
             for py_class in value_set:
                 if not is_class_value:
-                    if py_class.is_instance():
+                    if py_class.is_instance() and not py_class.is_compiled():
                         py_class = py_class.get_annotated_class_object()
                     else:
                         continue
