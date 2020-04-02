@@ -254,7 +254,14 @@ def get_cached_default_environment():
 
 @time_cache(seconds=10 * 60)  # 10 Minutes
 def _get_cached_default_environment():
-    return get_default_environment()
+    try:
+        return get_default_environment()
+    except InvalidPythonEnvironment:
+        # It's possible that `sys.executable` is wrong. Typically happens
+        # when Jedi is used in an executable that embeds Python. For further
+        # information, have a look at:
+        # https://github.com/davidhalter/jedi/issues/1531
+        return InterpreterEnvironment()
 
 
 def find_virtualenvs(paths=None, **kwargs):
