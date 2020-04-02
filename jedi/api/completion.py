@@ -33,7 +33,7 @@ class ParamNameWithEquals(ParamNameWrapper):
 def get_signature_param_names(signatures):
     # add named params
     for call_sig in signatures:
-        for p in call_sig.get_signatures().params():
+        for p in call_sig.get_signatures().params:
             # Allow protected access, because it's a public API.
             if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
                                       Parameter.KEYWORD_ONLY):
