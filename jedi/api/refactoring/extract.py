@@ -186,8 +186,8 @@ def _remove_unwanted_expression_nodes(parent_node, pos, until_pos):
                     end_index += 1
 
                 # Something like `not foo or bar` should not be cut after not
-                for n in nodes[i:]:
-                    if _is_not_extractable_syntax(n):
+                for n2 in nodes[i:]:
+                    if _is_not_extractable_syntax(n2):
                         end_index += 1
                     else:
                         break
