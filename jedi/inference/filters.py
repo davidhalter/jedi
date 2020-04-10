@@ -77,22 +77,20 @@ class AbstractUsedNamesFilter(AbstractFilter):
         self._used_names = self._module_node.get_used_names()
         self.parent_context = parent_context
 
-    def get(self, name, **filter_kwargs):
+    def get(self, name):
         return self._convert_names(self._filter(
             _get_definition_names(self._used_names, name),
-            **filter_kwargs
         ))
 
     def _convert_names(self, names):
         return [self.name_class(self.parent_context, name) for name in names]
 
-    def values(self, **filter_kwargs):
+    def values(self):
         return self._convert_names(
             name
             for name_key in self._used_names
             for name in self._filter(
                 _get_definition_names(self._used_names, name_key),
-                **filter_kwargs
             )
         )
 
