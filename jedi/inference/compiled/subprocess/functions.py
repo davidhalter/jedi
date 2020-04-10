@@ -84,7 +84,6 @@ def safe_literal_eval(inference_state, value):
 
 def iter_module_names(*args, **kwargs):
     return list(_iter_module_names(*args, **kwargs))
-    return sorted(set(_iter_module_names(*args, **kwargs)))
 
 
 def _iter_module_names(inference_state, paths):
