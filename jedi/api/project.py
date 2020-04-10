@@ -29,7 +29,8 @@ from jedi.file_io import FolderIO
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
-_CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'requirements.txt', 'MANIFEST.in'
+_CONTAINS_POTENTIAL_PROJECT = \
+    'setup.py', '.git', '.hg', 'requirements.txt', 'MANIFEST.in', 'pyproject.toml'
 
 _SERIALIZER_VERSION = 1
 
