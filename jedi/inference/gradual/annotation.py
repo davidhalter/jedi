@@ -110,7 +110,7 @@ def _split_comment_param_declaration(decl_text):
 @inference_state_method_cache()
 def infer_param(function_value, param, ignore_stars=False):
     values = _infer_param(function_value, param)
-    if ignore_stars:
+    if ignore_stars or not values:
         return values
     inference_state = function_value.inference_state
     if param.star_count == 1:
@@ -118,15 +118,13 @@ def infer_param(function_value, param, ignore_stars=False):
         return ValueSet([GenericClass(
             tuple_,
             TupleGenericManager((values,)),
-        ) for c in values])
+        )])
     elif param.star_count == 2:
         dct = builtin_from_name(inference_state, 'dict')
         generics = (
             ValueSet([builtin_from_name(inference_state, 'str')]),
             values
         )
-        if not values:
-            return NO_VALUES
         return ValueSet([GenericClass(
             dct,
             TupleGenericManager(generics),
