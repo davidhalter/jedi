@@ -214,9 +214,11 @@ class ClassMixin(object):
                 for instance in type_.py__call__(args):
                     instance_filters = instance.get_filters()
                     # Filter out self filters
-                    next(instance_filters)
-                    next(instance_filters)
-                    yield next(instance_filters)
+                    next(instance_filters, None)
+                    next(instance_filters, None)
+                    x = next(instance_filters, None)
+                    assert x is not None
+                    yield x
 
     def get_signatures(self):
         # Since calling staticmethod without a function is illegal, the Jedi

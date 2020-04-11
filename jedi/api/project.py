@@ -361,8 +361,6 @@ def _is_django_path(directory):
     except (FileNotFoundError, IsADirectoryError, PermissionError):
         return False
 
-    return False
-
 
 def get_default_project(path=None):
     """

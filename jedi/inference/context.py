@@ -314,7 +314,7 @@ class ModuleContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
         # Skip the first filter and replace it.
-        next(filters)
+        next(filters, None)
         yield MergedFilter(
             ParserTreeFilter(
                 parent_context=self,
@@ -494,5 +494,7 @@ def get_global_filters(context, until_position, origin_scope):
 
         context = context.parent_context
 
+    b = next(base_context.inference_state.builtins_module.get_filters(), None)
+    assert b is not None
     # Add builtins to the global scope.
-    yield next(base_context.inference_state.builtins_module.get_filters())
+    yield b

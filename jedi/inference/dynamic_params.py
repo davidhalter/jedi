@@ -48,7 +48,6 @@ def _avoid_recursions(func):
                 finally:
                     inf.dynamic_params_depth -= 1
             return NO_VALUES
-        return
     return wrapper
 
 

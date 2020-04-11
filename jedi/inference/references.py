@@ -109,8 +109,8 @@ def _find_global_variables(names, search_name):
             for global_name in method().get(search_name):
                 yield global_name
                 c = module_context.create_context(global_name.tree_name)
-                for name in _add_names_in_same_context(c, global_name.string_name):
-                    yield name
+                for n in _add_names_in_same_context(c, global_name.string_name):
+                    yield n
 
 
 def find_references(module_context, tree_name):

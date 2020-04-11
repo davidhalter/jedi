@@ -99,7 +99,9 @@ class ModuleMixin(SubModuleDictMixin):
 
     def iter_star_filters(self):
         for star_module in self.star_imports():
-            yield next(star_module.get_filters())
+            f = next(star_module.get_filters(), None)
+            assert f is not None
+            yield f
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need

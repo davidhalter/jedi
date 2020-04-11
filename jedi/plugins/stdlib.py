@@ -158,7 +158,6 @@ def argument_clinic(string, want_value=False, want_context=False,
             callback = kwargs.pop('callback')
             assert not kwargs  # Python 2...
             debug.dbg('builtin start %s' % value, color='MAGENTA')
-            result = NO_VALUES
             if want_context:
                 kwargs['context'] = arguments.context
             if want_value:
@@ -541,7 +540,7 @@ class MergedPartialArguments(AbstractArguments):
         unpacked = self._partial_arguments.unpack(funcdef)
         # Ignore this one, it's the function. It was checked before that it's
         # there.
-        next(unpacked)
+        next(unpacked, None)
         if self._instance is not None:
             yield None, LazyKnownValue(self._instance)
         for key_lazy_value in unpacked:

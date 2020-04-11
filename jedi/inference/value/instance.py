@@ -241,7 +241,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
     def py__getitem__(self, index_value_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
         if not names:
-            return super(AbstractInstanceValue, self).py__getitem__(
+            return super(_BaseTreeInstance, self).py__getitem__(
                 index_value_set,
                 contextualized_node,
             )
@@ -252,7 +252,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
     def py__iter__(self, contextualized_node=None):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
         if not iter_slot_names:
-            return super(AbstractInstanceValue, self).py__iter__(contextualized_node)
+            return super(_BaseTreeInstance, self).py__iter__(contextualized_node)
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):
@@ -278,7 +278,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
         names = self.get_function_slot_names(u'__call__')
         if not names:
             # Means the Instance is not callable.
-            return super(AbstractInstanceValue, self).py__call__(arguments)
+            return super(_BaseTreeInstance, self).py__call__(arguments)
 
         return ValueSet.from_sets(name.infer().execute(arguments) for name in names)
 
@@ -317,8 +317,7 @@ class TreeInstance(_BaseTreeInstance):
             if settings.dynamic_array_additions:
                 arguments = get_dynamic_array_instance(self, arguments)
 
-        super(_BaseTreeInstance, self).__init__(inference_state, parent_context,
-                                                class_value)
+        super(TreeInstance, self).__init__(inference_state, parent_context, class_value)
         self._arguments = arguments
         self.tree_node = class_value.tree_node
 

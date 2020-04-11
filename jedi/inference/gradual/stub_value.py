@@ -63,7 +63,9 @@ class StubModuleContext(ModuleContext):
 class TypingModuleWrapper(StubModuleValue):
     def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
-        yield TypingModuleFilterWrapper(next(filters))
+        f = next(filters, None)
+        assert f is not None
+        yield TypingModuleFilterWrapper(f)
         for f in filters:
             yield f
 

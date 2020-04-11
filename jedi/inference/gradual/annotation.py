@@ -125,11 +125,12 @@ def infer_param(function_value, param, ignore_stars=False):
             ValueSet([builtin_from_name(inference_state, 'str')]),
             values
         )
+        if not values:
+            return NO_VALUES
         return ValueSet([GenericClass(
             dct,
             TupleGenericManager(generics),
-        ) for c in values])
-        pass
+        )])
     return values
 
 
