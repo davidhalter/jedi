@@ -589,9 +589,6 @@ def _parse_function_doc(doc):
 
 def create_from_name(inference_state, compiled_value, name):
     access_paths = compiled_value.access_handle.getattr_paths(name, default=None)
-    parent_context = compiled_value
-    if parent_context.is_class():
-        parent_context = parent_context.parent_context
 
     value = None
     for access_path in access_paths:

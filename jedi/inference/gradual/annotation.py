@@ -220,8 +220,6 @@ def infer_return_types(function, arguments):
             function.get_default_param_context(),
             match.group(1).strip()
         ).execute_annotation()
-        if annotation is None:
-            return NO_VALUES
 
     context = function.get_default_param_context()
     unknown_type_vars = find_unknown_type_vars(context, annotation)

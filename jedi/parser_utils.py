@@ -267,7 +267,6 @@ def get_parent_scope(node, include_flows=False):
                         continue
             return scope
         scope = scope.parent
-    return scope
 
 
 get_cached_parent_scope = _get_parent_scope_cache(get_parent_scope)

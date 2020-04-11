@@ -70,8 +70,6 @@ class HelperValueMixin(object):
                     yield f
 
     def goto(self, name_or_str, name_context=None, analysis_errors=True):
-        if name_context is None:
-            name_context = self
         from jedi.inference import finder
         filters = self._get_value_filters(name_or_str)
         names = finder.filter_name(filters, name_or_str)
@@ -218,7 +216,6 @@ class Value(HelperValueMixin, BaseValue):
             return ''
         else:
             return clean_scope_docstring(self.tree_node)
-        return None
 
     def get_safe_value(self, default=sentinel):
         if default is sentinel:

@@ -63,7 +63,6 @@ only *inferes* what needs to be *inferred*. All the statements and modules
 that are not used are just being ignored.
 """
 import parso
-from parso import python_bytes_to_unicode
 from jedi.file_io import FileIO
 
 from jedi import debug
@@ -186,7 +185,7 @@ class InferenceState(object):
                 file_io = FileIO(path)
             code = file_io.read()
         # We cannot just use parso, because it doesn't use errors='replace'.
-        code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+        code = parso.python_bytes_to_unicode(code, encoding=encoding, errors='replace')
 
         if len(code) > settings._cropped_file_size:
             code = code[:settings._cropped_file_size]

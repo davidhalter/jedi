@@ -161,7 +161,9 @@ def unpack_arglist(arglist):
         if child == ',':
             continue
         elif child in ('*', '**'):
-            yield len(child.value), next(iterator)
+            c = next(iterator, None)
+            assert c is not None
+            yield len(child.value), c
         elif child.type == 'argument' and \
                 child.children[0] in ('*', '**'):
             assert len(child.children) == 2

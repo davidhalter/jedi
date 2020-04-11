@@ -38,8 +38,8 @@ def _resolve_names(definition_names, avoid_names=()):
             yield name
 
         if name.api_type == 'module':
-            for name in _resolve_names(name.goto(), definition_names):
-                yield name
+            for n in _resolve_names(name.goto(), definition_names):
+                yield n
 
 
 def _dictionarize(names):

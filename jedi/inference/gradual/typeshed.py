@@ -103,9 +103,6 @@ def import_module_decorator(func):
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                python_parent = next(iter(parent_module_values))
-                if python_parent is None:
-                    python_parent, = inference_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, (n,), None, sys_path,)
                     for n in [u'posixpath', u'ntpath', u'macpath', u'os2emxpath']

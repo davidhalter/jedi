@@ -186,7 +186,6 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
             module_file = None
 
         if module_file is None:
-            code = None
             return None, is_package
 
         with module_file:
