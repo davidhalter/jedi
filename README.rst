@@ -55,15 +55,14 @@ Here are some pictures taken from jedi-vim_:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
 
-Completion for almost anything (Ctrl+Space).
+Completion for almost anything:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_function.png
 
-Display of function/class bodies, docstrings.
+Documentation:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
-Documentation support (Shift+k).
 
 Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 (master branch should always be kind of stable/working).
