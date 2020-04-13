@@ -6,8 +6,8 @@ Changelog
 0.17.0 (2020-03-)
 +++++++++++++++++++
 
-- Added support projects. This allows user to specify which folders Jedi should
-  search.
+- Added ``Project`` support. This allows a user to specify which folders Jedi
+  should work with.
 - Added support for Refactoring. The following refactorings have been
   implemented: ``Script.rename``, ``Script.inline``,
   ``Script.extract_variable`` and ``Script.extract_function``.
