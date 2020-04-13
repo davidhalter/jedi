@@ -687,8 +687,7 @@ class Script(object):
         return refactoring.rename(self._inference_state, definitions, new_name)
 
     @_no_python2_support
-    @validate_line_column
-    def extract_variable(self, line=None, column=None, **kwargs):
+    def extract_variable(self, line, column, **kwargs):
         """
         Moves an expression to a new statemenet.
 
@@ -715,6 +714,7 @@ class Script(object):
         """
         return self._extract_variable(line, column, **kwargs)  # Python 2...
 
+    @validate_line_column
     def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None
@@ -764,6 +764,7 @@ class Script(object):
         """
         return self._extract_function(line, column, **kwargs)  # Python 2...
 
+    @validate_line_column
     def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None

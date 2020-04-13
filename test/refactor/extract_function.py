@@ -300,7 +300,7 @@ def x(v1):
 x
 # -------------------------------------------------- in-class-range-1
 class X1:
-    #? 11 text {'new_name': 'f', 'until_line': 4}
+    #? 9 text {'new_name': 'f', 'until_line': 4}
     a = 3
     c = a + 2
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -311,7 +311,7 @@ def f():
 
 
 class X1:
-    #? 11 text {'new_name': 'f', 'until_line': 4}
+    #? 9 text {'new_name': 'f', 'until_line': 4}
     c = f()
 # -------------------------------------------------- in-method-range-1
 glob1 = 1
