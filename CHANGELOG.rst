@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.17.0 (2020-03-)
+0.17.0 (2020-04-14)
 +++++++++++++++++++
 
 - Added ``Project`` support. This allows a user to specify which folders Jedi
