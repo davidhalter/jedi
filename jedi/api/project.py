@@ -120,8 +120,8 @@ class Project(object):
     def __init__(self, path, **kwargs):
         """
         :param path: The base path for this project.
-        :param python_path: The Python executable path, typically the path of a
-            virtual environment.
+        :param environment_path: The Python executable path, typically the path
+            of a virtual environment.
         :param load_unsafe_extensions: Default False, Loads extensions that are not in the
             sys path and in the local directories. With this option enabled,
             this is potentially unsafe if you clone a git repository and
@@ -136,11 +136,11 @@ class Project(object):
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, python_path=None, load_unsafe_extensions=False,
+        def py2_comp(path, environment_path=None, load_unsafe_extensions=False,
                      sys_path=None, added_sys_path=(), smart_sys_path=True):
             self._path = os.path.abspath(path)
 
-            self._python_path = python_path
+            self._environment_path = environment_path
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._load_unsafe_extensions = load_unsafe_extensions
@@ -206,8 +206,8 @@ class Project(object):
 
     def get_environment(self):
         if self._environment is None:
-            if self._python_path is not None:
-                self._environment = create_environment(self._python_path, safe=False)
+            if self._environment_path is not None:
+                self._environment = create_environment(self._environment_path, safe=False)
             else:
                 self._environment = get_cached_default_environment()
         return self._environment
