@@ -56,6 +56,7 @@ Code Contributors
 - Shane Steinert-Threlkeld (@shanest) <ssshanest@gmail.com>
 - Tim Gates (@timgates42) <tim.gates@iress.com>
 - Lior Goldberg (@goldberglior)
+- Ryan Clary (@mrclary)
 
 And a few more "anonymous" contributors.
 

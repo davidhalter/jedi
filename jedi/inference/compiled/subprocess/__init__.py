@@ -181,6 +181,15 @@ class CompiledSubprocess(object):
             os.path.dirname(os.path.dirname(parso_path)),
             '.'.join(str(x) for x in sys.version_info[:3]),
         )
+        # Use explicit envionment to ensure reliable results (#1540)
+        env = {}
+        if os.name == 'nt':
+            # if SYSTEMROOT (or case variant) exists in environment,
+            # ensure it goes to subprocess
+            for k, v in os.environ.items():
+                if 'SYSTEMROOT' == k.upper():
+                    env.update({k: os.environ[k]})
+                    break  # don't risk multiple entries
         process = GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
@@ -188,7 +197,8 @@ class CompiledSubprocess(object):
             stderr=subprocess.PIPE,
             # Use system default buffering on Python 2 to improve performance
             # (this is already the case on Python 3).
-            bufsize=-1
+            bufsize=-1,
+            env=env
         )
         self._stderr_queue = Queue()
         self._stderr_thread = t = Thread(
