@@ -135,7 +135,7 @@ def test_search(string, full_names, kwargs, skip_pre_python36):
         defs = project.complete_search(string, **kwargs)
     else:
         defs = project.search(string, **kwargs)
-    assert [('stub:' if d.is_stub() else '') + d.full_name for d in defs] == full_names
+    assert sorted([('stub:' if d.is_stub() else '') + d.full_name for d in defs]) == full_names
 
 
 @pytest.mark.parametrize(
