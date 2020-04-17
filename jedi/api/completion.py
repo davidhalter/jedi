@@ -30,14 +30,41 @@ class ParamNameWithEquals(ParamNameWrapper):
         return self.string_name + '='
 
 
-def get_signature_param_names(signatures):
-    # add named params
+def _get_signature_param_names(signatures, positional_count, used_kwargs):
+    # Add named params
     for call_sig in signatures:
-        for p in call_sig.params:
+        for i, p in enumerate(call_sig.params):
             # Allow protected access, because it's a public API.
-            if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
-                                      Parameter.KEYWORD_ONLY):
+            # TODO reconsider with Python 2 drop
+            kind = p._name.get_kind()
+            if i < positional_count and kind == Parameter.POSITIONAL_OR_KEYWORD:
+                continue
+            if kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY) \
+                    and p.name not in used_kwargs:
                 yield ParamNameWithEquals(p._name)
+
+
+def _must_be_kwarg(signatures, positional_count, used_kwargs):
+    if used_kwargs:
+        return True
+
+    must_be_kwarg = True
+    for signature in signatures:
+        for i, p in enumerate(signature.params):
+            # TODO reconsider with Python 2 drop
+            kind = p._name.get_kind()
+            if kind is Parameter.VAR_POSITIONAL:
+                # In case there were not already kwargs, the next param can
+                # always be a normal argument.
+                return False
+
+            if i >= positional_count and kind in (Parameter.POSITIONAL_OR_KEYWORD,
+                                                  Parameter.POSITIONAL_ONLY):
+                must_be_kwarg = False
+                break
+        if not must_be_kwarg:
+            break
+    return must_be_kwarg
 
 
 def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cached_name):
@@ -264,20 +291,34 @@ class Completion:
             elif self._is_parameter_completion():
                 completion_names += self._complete_params(leaf)
             else:
-                completion_names += self._complete_global_scope()
-                completion_names += self._complete_inherited(is_function=False)
+                # Apparently this looks like it's good enough to filter most cases
+                # so that signature completions don't randomly appear.
+                # To understand why this works, three things are important:
+                # 1. trailer with a `,` in it is either a subscript or an arglist.
+                # 2. If there's no `,`, it's at the start and only signatures start
+                #    with `(`. Other trailers could start with `.` or `[`.
+                # 3. Decorators are very primitive and have an optional `(` with
+                #    optional arglist in them.
+                kwargs_only = False
+                if nodes[-1] in ['(', ','] \
+                        and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
+                    signatures = self._signatures_callback(*self._position)
+                    if signatures:
+                        call_details = signatures[0]._call_details
+                        used_kwargs = list(call_details.iter_used_keyword_arguments())
+                        positional_count = call_details.count_positional_arguments()
 
-            # Apparently this looks like it's good enough to filter most cases
-            # so that signature completions don't randomly appear.
-            # To understand why this works, three things are important:
-            # 1. trailer with a `,` in it is either a subscript or an arglist.
-            # 2. If there's no `,`, it's at the start and only signatures start
-            #    with `(`. Other trailers could start with `.` or `[`.
-            # 3. Decorators are very primitive and have an optional `(` with
-            #    optional arglist in them.
-            if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
-                signatures = self._signatures_callback(*self._position)
-                completion_names += get_signature_param_names(signatures)
+                        completion_names += _get_signature_param_names(
+                            signatures,
+                            positional_count,
+                            used_kwargs,
+                        )
+
+                        kwargs_only = _must_be_kwarg(signatures, positional_count, used_kwargs)
+
+                if not kwargs_only:
+                    completion_names += self._complete_global_scope()
+                    completion_names += self._complete_inherited(is_function=False)
 
         return cached_name, completion_names
 

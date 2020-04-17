@@ -89,3 +89,52 @@ def x(): pass
 #? 8 ['xyz=']
 @foo(xyz)
 def x(): pass
+
+# -----------------
+# Only keyword arguments are valid
+# -----------------
+# python >= 3.5
+
+def x(bam, *, bar, baz):
+    pass
+def y(bam, *bal, bar, baz, **bag):
+    pass
+def z(bam, bar=2, *, bas=1):
+    pass
+
+#? 7 ['bar=', 'baz=']
+x(1, ba)
+
+#? 14 ['baz=']
+x(1, bar=2, ba)
+#? 7 ['bar=', 'baz=']
+x(1, ba, baz=3)
+#? 14 ['baz=']
+x(1, bar=2, baz=3)
+#? 7 ['BaseException']
+x(basee)
+#? 22 ['bar=', 'baz=']
+x(1, 2, 3, 4, 5, 6, bar=2)
+
+#? 14 ['baz=']
+y(1, bar=2, ba)
+#? 7 ['bar=', 'BaseException', 'baz=']
+y(1, ba, baz=3)
+#? 14 ['baz=']
+y(1, bar=2, baz=3)
+#? 7 ['BaseException']
+y(basee)
+#? 22 ['bar=', 'BaseException', 'baz=']
+y(1, 2, 3, 4, 5, 6, bar=2)
+
+#? 11 ['bar=', 'bas=']
+z(bam=1, bar=2, bas=3)
+#? 8 ['BaseException', 'bas=']
+z(1, bas=2)
+#? 12 ['BaseException']
+z(1, bas=bas)
+
+#? 19 ['dict']
+z(1, bas=bas, **dic)
+#? 18 ['dict']
+z(1, bas=bas, *dic)
