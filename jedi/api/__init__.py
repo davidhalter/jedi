@@ -128,15 +128,6 @@ class Script(object):
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
 
-        # TODO deprecate and remove sys_path from the Script API.
-        if sys_path is not None:
-            project._sys_path = sys_path
-            warnings.warn(
-                "Deprecated since version 0.17.0. Use the project API instead, "
-                "which means Script(project=Project(dir, sys_path=sys_path)) instead.",
-                DeprecationWarning,
-                stacklevel=2
-            )
         if encoding is None:
             encoding = 'utf-8'
         else:
@@ -179,6 +170,15 @@ class Script(object):
             # Load the Python grammar of the current interpreter.
             project = get_default_project(
                 os.path.dirname(self.path) if path else None
+            )
+        # TODO deprecate and remove sys_path from the Script API.
+        if sys_path is not None:
+            project._sys_path = sys_path
+            warnings.warn(
+                "Deprecated since version 0.17.0. Use the project API instead, "
+                "which means Script(project=Project(dir, sys_path=sys_path)) instead.",
+                DeprecationWarning,
+                stacklevel=2
             )
 
         self._inference_state = InferenceState(
