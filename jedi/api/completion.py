@@ -258,12 +258,7 @@ class Completion:
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
 
-        completion_names += self._complete_keywords(
-            allowed_transitions,
-            only_values=not (not current_line or current_line[-1] in ' \t.;'
-                             and current_line[-3:] != '...')
-        )
-
+        kwargs_only = False
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
@@ -299,7 +294,6 @@ class Completion:
                 #    with `(`. Other trailers could start with `.` or `[`.
                 # 3. Decorators are very primitive and have an optional `(` with
                 #    optional arglist in them.
-                kwargs_only = False
                 if nodes[-1] in ['(', ','] \
                         and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
                     signatures = self._signatures_callback(*self._position)
@@ -319,6 +313,13 @@ class Completion:
                 if not kwargs_only:
                     completion_names += self._complete_global_scope()
                     completion_names += self._complete_inherited(is_function=False)
+
+        if not kwargs_only:
+            completion_names += self._complete_keywords(
+                allowed_transitions,
+                only_values=not (not current_line or current_line[-1] in ' \t.;'
+                                 and current_line[-3:] != '...')
+            )
 
         return cached_name, completion_names
 

@@ -22,7 +22,7 @@ def test_empty_init(Script):
     code = dedent('''\
     class X(object): pass
     X(''')
-    assert Script(code).complete()
+    assert not Script(code).complete()
 
 
 def test_in_empty_space(Script):
