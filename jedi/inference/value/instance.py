@@ -332,13 +332,14 @@ class TreeInstance(_BaseTreeInstance):
         for signature in self.class_value.py__getattribute__('__init__').get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            if not signature.matches_signature(args) \
-                    or signature.value.tree_node is None:
+            funcdef = signature.value.tree_node
+            if funcdef is None or funcdef.type != 'funcdef' \
+                    or not signature.matches_signature(args):
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
             bound_method = BoundMethod(self, self.class_value.as_context(), signature.value)
-            all_annotations = py__annotations__(signature.value.tree_node)
+            all_annotations = py__annotations__(funcdef)
             type_var_dict = infer_type_vars_for_execution(bound_method, args, all_annotations)
             if type_var_dict:
                 defined, = self.class_value.define_generics(
