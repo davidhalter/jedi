@@ -44,13 +44,20 @@ def _complete():
     import jedi
     import pdb
 
+    if '-d' in sys.argv:
+        sys.argv.remove('-d')
+        jedi.set_debug_function()
+
     try:
-        for c in jedi.Script(sys.argv[2]).complete():
+        completions = jedi.Script(sys.argv[2]).complete()
+        for c in completions:
             c.docstring()
             c.type
     except Exception as e:
-        print(e)
+        print(repr(e))
         pdb.post_mortem()
+    else:
+        print(completions)
 
 
 if len(sys.argv) == 2 and sys.argv[1] == 'repl':
