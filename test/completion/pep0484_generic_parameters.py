@@ -6,6 +6,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -57,6 +58,26 @@ x1
 for b in list_type_t_to_list_t(list_of_int_type):
     #? int()
     b
+
+
+# Test construction of nested generic tuple return parameters
+def list_t_to_list_tuple_t(the_list: List[T]) -> List[Tuple[T]]:
+    return [(x,) for x in the_list]
+
+
+x1t = list_t_to_list_tuple_t(list_of_ints)[0][0]
+#? int()
+x1t
+
+
+for c1 in list_t_to_list_tuple_t(list_of_ints):
+    #? int()
+    c1[0]
+
+
+for c2, in list_t_to_list_tuple_t(list_of_ints):
+    #? int()
+    c2
 
 
 def foo(x: T) -> T:
