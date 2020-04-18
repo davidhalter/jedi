@@ -1,5 +1,5 @@
 """
-Module provides infering of Django model fields.
+Module is used to infer Django model fields.
 """
 from jedi.inference.base_value import LazyValueWrapper
 from jedi.inference.utils import safe_property
@@ -10,9 +10,8 @@ from jedi.inference.value.instance import TreeInstance
 
 def new_dict_filter(cls):
     filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    return [DictFilter({
-        f.string_name: _infer_field(cls, f) for f in filter_.values()
-    })]
+    res = {f.string_name: _infer_field(cls, f) for f in filter_.values()}
+    return [DictFilter({x: y for x, y in res.items() if y is not None})]
 
 
 class DjangoModelField(LazyValueWrapper):
@@ -29,6 +28,7 @@ class DjangoModelField(LazyValueWrapper):
     def _get_wrapped_value(self):
         obj, = self._cls.execute_with_values()
         return obj
+
 
 mapping = {
     'IntegerField': (None, 'int'),
@@ -48,38 +48,41 @@ mapping = {
     'DateTimeField': ('datetime', 'datetime'),
 }
 
+
+def _infer_scalar_field(cls, field, field_tree_instance):
+    if field_tree_instance.name.string_name not in mapping:
+        return None
+
+    module_name, attribute_name = mapping[field_tree_instance.name.string_name]
+    if module_name is None:
+        module = cls.inference_state.builtins_module
+    else:
+        module = cls.inference_state.import_module((module_name,))
+
+    attribute, = module.py__getattribute__(attribute_name)
+    return DjangoModelField(attribute, field).name
+
+
 def _infer_field(cls, field):
     field_tree_instance, = field.infer()
-
-    try:
-        module_name, attribute_name = mapping[field_tree_instance.name.string_name]
-    except KeyError:
-        pass
-    else:
-        if module_name is None:
-            module = cls.inference_state.builtins_module
-        else:
-            module = cls.inference_state.import_module((module_name,))
-        attribute, = module.py__getattribute__(attribute_name)
-        return DjangoModelField(attribute, field).name
+    scalar_field = _infer_scalar_field(cls, field, field_tree_instance)
+    if scalar_field:
+        return scalar_field
 
     if field_tree_instance.name.string_name == 'ForeignKey':
         if isinstance(field_tree_instance, TreeInstance):
              argument_iterator = field_tree_instance._arguments.unpack()
              key, lazy_values = next(argument_iterator, (None, None))
              if key is None and lazy_values is not None:
-                 # TODO: it has only one element in current state. Handle rest of elements.
                  for value in lazy_values.infer():
-                     string = value.get_safe_value(default=None)
                      if value.name.string_name == 'str':
-                         foreign_key_class_name = value._compiled_obj.get_safe_value()
-                         # TODO: it has only one element in current state. Handle rest of elements.
+                         foreign_key_class_name = value.get_safe_value()
                          for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
                              return DjangoModelField(v, field).name
                      else:
                          return DjangoModelField(value, field).name
 
-        raise Exception('Should be handled')
+    print('TODO: {}'.format(field))
 
 
 def get_metaclass_filters(func):
