@@ -57,7 +57,7 @@ if len(sys.argv) == 2 and sys.argv[1] == 'repl':
     # don't want to use __main__ only for repl yet, maybe we want to use it for
     # something else. So just use the keyword ``repl`` for now.
     print(join(dirname(abspath(__file__)), 'api', 'replstartup.py'))
-elif len(sys.argv) > 1 and sys.argv[1] == 'linter':
+elif len(sys.argv) > 1 and sys.argv[1] == '_linter':
     _start_linter()
 elif len(sys.argv) > 1 and sys.argv[1] == '_complete':
     _complete()
