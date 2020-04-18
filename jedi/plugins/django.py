@@ -1,5 +1,8 @@
 """
 Module is used to infer Django model fields.
+Bugs:
+    - Can't infer User model.
+    - Can't infer ManyToManyField.
 """
 from jedi.inference.base_value import LazyValueWrapper
 from jedi.inference.utils import safe_property

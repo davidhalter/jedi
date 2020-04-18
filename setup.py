@@ -43,6 +43,7 @@ setup(name='jedi',
               'docopt',
               # coloroma for colored debug output
               'colorama',
+              'Django',
           ],
           'qa': [
               'flake8==3.7.9',
