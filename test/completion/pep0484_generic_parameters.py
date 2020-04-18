@@ -80,11 +80,11 @@ for c2, in list_t_to_list_tuple_t(list_of_ints):
     c2
 
 
-def foo(x: T) -> T:
+def foo(x: int) -> int:
     return x
 
 
-list_of_funcs = [foo]  # type: List[Callable[[T], T]]
+list_of_funcs = [foo]  # type: List[Callable[[int], int]]
 
 def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Callable[[Type[T]], T]]:
     def adapt(func: Callable[[T], T]) -> Callable[[Type[T]], T]:
