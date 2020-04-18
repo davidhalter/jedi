@@ -85,7 +85,9 @@ def _infer_field(cls, field):
                      else:
                          return DjangoModelField(value, field).name
 
-    print('TODO: {}'.format(field))
+    print('django plugin: fail to infer `{}` from class `{}`'.format(
+        field.string_name, cls.name.string_name,
+    ))
 
 
 def get_metaclass_filters(func):
