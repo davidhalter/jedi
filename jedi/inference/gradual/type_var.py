@@ -107,5 +107,11 @@ class TypeVar(BaseTypingValue):
     def execute_annotation(self):
         return self._get_classes().execute_annotation()
 
+    def infer_type_vars(self, value_set, is_class_value=False):
+        annotation_name = self.py__name__()
+        if not is_class_value:
+            return {annotation_name: value_set.py__class__()}
+        return {annotation_name: value_set}
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.py__name__())

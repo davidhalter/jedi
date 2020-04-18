@@ -75,6 +75,14 @@ def try_except(x):
 #? float() str()
 try_except(1)
 
+def test_function():
+    a = int(input())
+    if a % 2 == 0:
+        return True
+    return "False"
+
+#? bool() str()
+test_function()
 
 # -----------------
 # elif
@@ -145,7 +153,7 @@ elif 1 == True:
 a
 if check != 1:
     a = ''
-#? str()
+#? int() str()
 a
 if check == check:
     a = list

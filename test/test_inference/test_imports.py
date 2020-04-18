@@ -6,15 +6,15 @@ Tests".
 import os
 
 import pytest
-from jedi.file_io import FileIO, KnownContentFileIO
 
+from jedi.file_io import FileIO
 from jedi._compatibility import find_module_py33, find_module
 from jedi.inference import compiled
 from jedi.inference import imports
 from jedi.api.project import Project
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
 from jedi.inference.references import get_module_contexts_containing_name
-from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
+from ..helpers import get_example_dir, test_dir, test_dir_project, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -44,7 +44,9 @@ pkg_zip_path = get_example_dir('zipped_imports', 'pkg.zip')
 
 def test_find_module_package_zipped(Script, inference_state, environment):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    script = Script('import pkg; pkg.mod', sys_path=sys_path)
+
+    project = Project('.', sys_path=sys_path)
+    script = Script('import pkg; pkg.mod', project=project)
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
@@ -86,7 +88,7 @@ def test_find_module_package_zipped(Script, inference_state, environment):
 def test_correct_zip_package_behavior(Script, inference_state, environment, code,
                                       file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    pkg, = Script(code, sys_path=sys_path).infer()
+    pkg, = Script(code, project=Project('.', sys_path=sys_path)).infer()
     value, = pkg._name.infer()
     assert value.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
     assert '.'.join(value.py__package__()) == package
@@ -98,7 +100,7 @@ def test_correct_zip_package_behavior(Script, inference_state, environment, code
 def test_find_module_not_package_zipped(Script, inference_state, environment):
     path = get_example_dir('zipped_imports', 'not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
-    script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
+    script = Script('import not_pkg; not_pkg.val', project=Project('.', sys_path=sys_path))
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
@@ -110,19 +112,24 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
     assert is_package is False
 
 
-@cwd_at('test/examples/not_in_sys_path/pkg')
-def test_import_not_in_sys_path(Script):
+def test_import_not_in_sys_path(Script, environment):
     """
     non-direct imports (not in sys.path)
 
     This is in the end just a fallback.
     """
-    a = Script(path='module.py').infer(line=5)
+    path = get_example_dir()
+    module_path = os.path.join(path, 'not_in_sys_path', 'pkg', 'module.py')
+    # This project tests the smart path option of Project. The sys_path is
+    # explicitly given to make sure that the path is just dumb and only
+    # includes non-folder dependencies.
+    project = Project(path, sys_path=environment.get_sys_path())
+    a = Script(path=module_path, project=project).infer(line=5)
     assert a[0].name == 'int'
 
-    a = Script(path='module.py').infer(line=6)
+    a = Script(path=module_path, project=project).infer(line=6)
     assert a[0].name == 'str'
-    a = Script(path='module.py').infer(line=7)
+    a = Script(path=module_path, project=project).infer(line=7)
     assert a[0].name == 'str'
 
 
@@ -144,14 +151,13 @@ def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     path = get_example_dir('flask-site-packages')
-    completions = Script(code, sys_path=[path]).complete()
+    completions = Script(code, project=Project('.', sys_path=[path])).complete()
     assert name in [c.name for c in completions]
 
 
-@cwd_at('test/test_inference/')
 def test_not_importable_file(Script):
     src = 'import not_importable_file as x; x.'
-    assert not Script(src, path='example.py').complete()
+    assert not Script(src, path='example.py', project=test_dir_project).complete()
 
 
 def test_import_unique(Script):
@@ -166,10 +172,14 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
     bar_path = tmpdir.join('bar')
     foo_path.join('module.py').write('foo = 123', ensure=True)
     bar_path.join('module.py').write('bar = 123', ensure=True)
-    foo_completions = Script('import module; module.',
-                             sys_path=[foo_path.strpath]).complete()
-    bar_completions = Script('import module; module.',
-                             sys_path=[bar_path.strpath]).complete()
+    foo_completions = Script(
+        'import module; module.',
+        project=Project('.', sys_path=[foo_path.strpath]),
+    ).complete()
+    bar_completions = Script(
+        'import module; module.',
+        project=Project('.', sys_path=[bar_path.strpath]),
+    ).complete()
     assert 'foo' in [c.name for c in foo_completions]
     assert 'bar' not in [c.name for c in foo_completions]
 
@@ -194,29 +204,29 @@ def test_goto_definition_on_import(Script):
     assert len(Script("import sys").infer(1, 8)) == 1
 
 
-@cwd_at('jedi')
-def test_complete_on_empty_import(Script):
-    assert Script("from datetime import").complete()[0].name == 'import'
+def test_complete_on_empty_import(ScriptWithProject):
+    path = os.path.join(test_dir, 'whatever.py')
+    assert ScriptWithProject("from datetime import").complete()[0].name == 'import'
     # should just list the files in the directory
-    assert 10 < len(Script("from .", path='whatever.py').complete()) < 30
+    assert 10 < len(ScriptWithProject("from .", path=path).complete()) < 30
 
     # Global import
-    assert len(Script("from . import", 'whatever.py').complete(1, 5)) > 30
+    assert len(ScriptWithProject("from . import", path=path).complete(1, 5)) > 30
     # relative import
-    assert 10 < len(Script("from . import", 'whatever.py').complete(1, 6)) < 30
+    assert 10 < len(ScriptWithProject("from . import", path=path).complete(1, 6)) < 30
 
     # Global import
-    assert len(Script("from . import classes", 'whatever.py').complete(1, 5)) > 30
+    assert len(ScriptWithProject("from . import classes", path=path).complete(1, 5)) > 30
     # relative import
-    assert 10 < len(Script("from . import classes", 'whatever.py').complete(1, 6)) < 30
+    assert 10 < len(ScriptWithProject("from . import classes", path=path).complete(1, 6)) < 30
 
     wanted = {'ImportError', 'import', 'ImportWarning'}
-    assert {c.name for c in Script("import").complete()} == wanted
-    assert len(Script("import import", path='').complete()) > 0
+    assert {c.name for c in ScriptWithProject("import").complete()} == wanted
+    assert len(ScriptWithProject("import import", path=path).complete()) > 0
 
     # 111
-    assert Script("from datetime import").complete()[0].name == 'import'
-    assert Script("from datetime import ").complete()
+    assert ScriptWithProject("from datetime import").complete()[0].name == 'import'
+    assert ScriptWithProject("from datetime import ").complete()
 
 
 def test_imports_on_global_namespace_without_path(Script):
@@ -249,7 +259,7 @@ def test_goto_following_on_imports(Script):
 
 
 def test_goto(Script):
-    sys, = Script("import sys", 1, 10).goto(follow_imports=True)
+    sys, = Script("import sys").goto(follow_imports=True)
     assert sys.type == 'module'
 
 
@@ -335,23 +345,6 @@ def test_get_modules_containing_name(inference_state, path, goal, is_package):
 
 
 @pytest.mark.parametrize(
-    ('path', 'base_names', 'is_package', 'names'), [
-        ('/foo/bar.py', ('foo',), False, ('foo', 'bar')),
-        ('/foo/bar.py', ('foo', 'baz'), False, ('foo', 'baz', 'bar')),
-        ('/foo/__init__.py', ('foo',), True, ('foo',)),
-        ('/__init__.py', ('foo',), True, ('foo',)),
-        ('/foo/bar/__init__.py', ('foo',), True, ('foo',)),
-        ('/foo/bar/__init__.py', ('foo', 'bar'), True, ('foo', 'bar')),
-    ]
-)
-def test_load_module_from_path(inference_state, path, base_names, is_package, names):
-    file_io = KnownContentFileIO(path, '')
-    m = imports.load_module_from_path(inference_state, file_io, base_names)
-    assert m.is_package() == is_package
-    assert m.string_names == names
-
-
-@pytest.mark.parametrize(
     'path', ('api/whatever/test_this.py', 'api/whatever/file'))
 @pytest.mark.parametrize('empty_sys_path', (False, True))
 def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
@@ -363,7 +356,7 @@ def test_relative_imports_with_multiple_similar_directories(Script, path, empty_
     script = Script(
         "from . ",
         path=os.path.join(dir, path),
-        _project=project,
+        project=project,
     )
     name, import_ = script.complete()
     assert import_.name == 'import'
@@ -376,28 +369,28 @@ def test_relative_imports_with_outside_paths(Script):
     script = Script(
         "from ...",
         path=os.path.join(dir, 'api/whatever/test_this.py'),
-        _project=project,
+        project=project,
     )
     assert [c.name for c in script.complete()] == ['api', 'whatever']
 
     script = Script(
         "from " + '.' * 100,
         path=os.path.join(dir, 'api/whatever/test_this.py'),
-        _project=project,
+        project=project,
     )
     assert not script.complete()
 
 
-@cwd_at('test/examples/issue1209/api/whatever/')
 def test_relative_imports_without_path(Script):
-    project = Project('.', sys_path=[], smart_sys_path=False)
-    script = Script("from . ", _project=project)
+    path = get_example_dir('issue1209', 'api', 'whatever')
+    project = Project(path, sys_path=[], smart_sys_path=False)
+    script = Script("from . ", project=project)
     assert [c.name for c in script.complete()] == ['api_test1', 'import']
 
-    script = Script("from .. ", _project=project)
+    script = Script("from .. ", project=project)
     assert [c.name for c in script.complete()] == ['import', 'whatever']
 
-    script = Script("from ... ", _project=project)
+    script = Script("from ... ", project=project)
     assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
 
 
@@ -460,7 +453,7 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
     script = Script(
         'import ' + name,
         path=tmpdir.join('something.py').strpath,
-        sys_path=[tmpdir.strpath] + environment.get_sys_path(),
+        project=Project('.', sys_path=[tmpdir.strpath] + environment.get_sys_path()),
     )
     module, = script.infer()
     assert module._inference_state.builtins_module.py__file__() != module_path
@@ -479,6 +472,6 @@ def test_relative_import_star(Script):
     from . import *
     furl.c
     """
-    script = Script(source, 'export.py')
+    script = Script(source, path='export.py')
 
     assert script.complete(3, len("furl.c"))

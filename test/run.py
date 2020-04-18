@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 """
-|jedi| is mostly being tested by what I would call "Blackbox Tests". These
-tests are just testing the interface and do input/output testing. This makes a
-lot of sense for |jedi|. Jedi supports so many different code structures, that
-it is just stupid to write 200'000 unittests in the manner of
-``regression.py``. Also, it is impossible to do doctests/unittests on most of
-the internal data structures. That's why |jedi| uses mostly these kind of
-tests.
+|jedi| is mostly being tested by what I would call "integration tests". These
+tests are testing type inference with the public API. This makes a
+lot of sense for |jedi|. Also, it is hard to write doctests/unittests for
+the internal data structures.
 
-There are different kind of tests:
+There are different kinds of tests:
 
 - completions / inference ``#?``
 - goto: ``#!``
@@ -18,29 +15,31 @@ How to run tests?
 +++++++++++++++++
 
 Jedi uses pytest_ to run unit and integration tests.  To run tests,
-simply run ``pytest``.  You can also use tox_ to run tests for
-multiple Python versions.
+simply run ``pytest``.
 
 .. _pytest: http://pytest.org
-.. _tox: http://testrun.org/tox
 
-Integration test cases are located in ``test/completion`` directory
-and each test case is indicated by either the comment ``#?`` (completions /
-inference), ``#!`` (goto), or ``#<`` (references).
+Most integration test cases are located in the ``test/completion`` directory
+and each test case starts with one of these comments:
+
+- ``#?`` (completions / inference)
+- ``#!`` (goto)
+- ``#<`` (references)
+
 There is also support for third party libraries. In a normal test run they are
 not being executed, you have to provide a ``--thirdparty`` option.
 
-In addition to standard `-k` and `-m` options in pytest, you can use the
-`-T` (`--test-files`) option to specify integration test cases to run.
+In addition to pytest's ``-k`` and ``-m`` options, you can use the
+``-T`` (``--test-files`) option to specify which test cases should run.
 It takes the format of ``FILE_NAME[:LINE[,LINE[,...]]]`` where
 ``FILE_NAME`` is a file in ``test/completion`` and ``LINE`` is a line
-number of the test comment.  Here is some recipes:
+number of the test comment.  Here are some examples:
 
-Run tests only in ``basic.py`` and ``imports.py``::
+Run tests only in ``completion/basic.py`` and ``completion/imports.py``::
 
     pytest test/test_integration.py -T basic.py -T imports.py
 
-Run test at line 4, 6, and 8 in ``basic.py``::
+Run test at line 4, 6, and 8 in ``completion/basic.py``::
 
     pytest test/test_integration.py -T basic.py:4,6,8
 
@@ -57,38 +56,30 @@ that you can start by running ``./run.py``. The above example could be run by::
     ./run.py basic 4 6 8 50-80
 
 The advantage of this runner is simplicity and more customized error reports.
-Using both runners will help you to have a quicker overview of what's
-happening.
 
+Auto-Completion Tests
++++++++++++++++++++++
 
-Auto-Completion
+Uses a comment to specify a test on the next line. The comment defines the
+expected completions. The comment always begins with `#?`. The last row
+symbolizes the cursor. For example::
+
+    #? ['upper']
+    a = 'foo'; a.upp
+
+Inference Tests
 +++++++++++++++
 
-Uses comments to specify a test in the next line. The comment says which
-results are expected. The comment always begins with `#?`. The last row
-symbolizes the cursor.
-
-For example::
-
-    #? ['real']
-    a = 3; a.rea
-
-Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
-property.
-
-Inference
-+++++++++
-
-Inference tests use the same symbols like completion tests. This is
-possible because the completion tests are defined with a list::
+Inference tests look very simliar. The difference is that inference tests don't
+use brackets::
 
     #? int()
     ab = 3; ab
 
-Goto
-++++
+Goto Tests
+++++++++++
 
-Tests look like this::
+Goto Tests look like this::
 
     abc = 1
     #! ['abc=1']
@@ -100,13 +91,13 @@ describes the position of the test (otherwise it's just the end of line)::
     #! 2 ['abc=1']
     abc
 
-References
-++++++++++
+Reference Tests
++++++++++++++++
 
 Tests look like this::
 
     abc = 1
-    #< abc@1,0 abc@3,0
+    #< (1,0), (3,0)
     abc
 """
 import os
@@ -124,7 +115,7 @@ import pytest
 import jedi
 from jedi import debug
 from jedi._compatibility import unicode, is_py3
-from jedi.api.classes import Definition
+from jedi.api.classes import Name
 from jedi.api.completion import get_user_context
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
@@ -227,7 +218,7 @@ class IntegrationTestCase(BaseTestCase):
 
         def comparison(definition):
             suffix = '()' if definition.type == 'instance' else ''
-            return definition.desc_with_module + suffix
+            return definition.full_name + suffix
 
         def definition(correct, correct_start, path):
             should_be = set()
@@ -244,7 +235,7 @@ class IntegrationTestCase(BaseTestCase):
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
 
-                should_be |= set(Definition(inference_state, r.name) for r in results)
+                should_be |= set(Name(inference_state, r.name) for r in results)
             debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.
@@ -411,7 +402,7 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
             path = os.path.join(base_dir, f_name)
 
             if is_py3:
-                with open(path, encoding='utf-8') as f:
+                with open(path, encoding='utf-8', newline='') as f:
                     source = f.read()
             else:
                 with open(path) as f:
@@ -440,7 +431,7 @@ Options:
     --pdb           Enable pdb debugging on fail.
     -d, --debug     Enable text output debugging (please install ``colorama``).
     --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
-    --env <dotted>  A Python version, like 2.7, 3.4, etc.
+    --env <dotted>  A Python version, like 2.7, 3.8, etc.
 """
 if __name__ == '__main__':
     import docopt

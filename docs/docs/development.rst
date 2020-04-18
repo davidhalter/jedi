@@ -22,16 +22,12 @@ couldn't get rid of complexity. I know that **simple is better than complex**,
 but unfortunately it sometimes requires complex solutions to understand complex
 systems.
 
-Since most of the Jedi internals have been written by me (David Halter), this
-introduction will be written mostly by me, because no one else understands to
-the same level how Jedi works. Actually this is also the reason for exactly this
-part of the documentation. To make multiple people able to edit the Jedi core.
-
-In five chapters I'm trying to describe the internals of |jedi|:
+In six chapters I'm trying to describe the internals of |jedi|:
 
 - :ref:`The Jedi Core <core>`
 - :ref:`Core Extensions <core-extensions>`
 - :ref:`Imports & Modules <imports-modules>`
+- :ref:`Stubs & Annotations <stubs>`
 - :ref:`Caching & Recursions <caching-recursions>`
 - :ref:`Helper modules <dev-helpers>`
 
@@ -59,17 +55,17 @@ because that's where all the magic happens. I need to introduce the :ref:`parser
 Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Jedi used to have it's internal parser, however this is now a separate project
+Jedi used to have its internal parser, however this is now a separate project
 and is called `parso <http://parso.readthedocs.io>`_.
 
 The parser creates a syntax tree that |jedi| analyses and tries to understand.
-The grammar that this parsers uses is very similar to the official Python
+The grammar that this parser uses is very similar to the official Python
 `grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
 .. _inference:
 
 Type inference of python code (inference/__init__.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.inference
 
@@ -80,7 +76,7 @@ Inference Values (inference/base_value.py)
 
 .. inheritance-diagram::
    jedi.inference.value.instance.TreeInstance
-   jedi.inference.value.klass.Classvalue
+   jedi.inference.value.klass.ClassValue
    jedi.inference.value.function.FunctionValue
    jedi.inference.value.function.FunctionExecutionContext
    :parts: 1
@@ -89,7 +85,7 @@ Inference Values (inference/base_value.py)
 .. _name_resolution:
 
 Name resolution (inference/finder.py)
-++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: jedi.inference.finder
 
@@ -114,7 +110,7 @@ Core Extensions
 Core Extensions is a summary of the following topics:
 
 - :ref:`Iterables & Dynamic Arrays <iterables>`
-- :ref:`Dynamic Parameters <dynamic>`
+- :ref:`Dynamic Parameters <dynamic_params>`
 - :ref:`Docstrings <docstrings>`
 - :ref:`Refactoring <refactoring>`
 
@@ -125,7 +121,7 @@ without some features.
 .. _iterables:
 
 Iterables & Dynamic Arrays (inference/value/iterable.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To understand Python on a deeper level, |jedi| needs to understand some of the
 dynamic features of Python like lists that are filled after creation:
@@ -133,33 +129,33 @@ dynamic features of Python like lists that are filled after creation:
 .. automodule:: jedi.inference.value.iterable
 
 
-.. _dynamic:
+.. _dynamic_params:
 
-Parameter completion (inference/dynamic.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameter completion (inference/dynamic_params.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.inference.dynamic
+.. automodule:: jedi.inference.dynamic_params
 
 
 .. _docstrings:
 
 Docstrings (inference/docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.inference.docstrings
 
 .. _refactoring:
 
-Refactoring (inference/refactoring.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Refactoring (inference/api/refactoring.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.refactoring
+.. automodule:: jedi.api.refactoring
 
 
 .. _imports-modules:
 
 Imports & Modules
--------------------
+-----------------
 
 
 - :ref:`Modules <modules>`
@@ -170,7 +166,7 @@ Imports & Modules
 .. _builtin:
 
 Compiled Modules (inference/compiled.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.inference.compiled
 
@@ -178,10 +174,16 @@ Compiled Modules (inference/compiled.py)
 .. _imports:
 
 Imports (inference/imports.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.inference.imports
 
+.. _stubs:
+
+Stubs & Annotations (inference/gradual)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: jedi.inference.gradual
 
 .. _caching-recursions:
 
@@ -210,13 +212,8 @@ Recursions (recursion.py)
 .. _dev-helpers:
 
 Helper Modules
----------------
+--------------
 
 Most other modules are not really central to how Jedi works. They all contain
 relevant code, but you if you understand the modules above, you pretty much
 understand Jedi.
-
-Python 2/3 compatibility (_compatibility.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: jedi._compatibility

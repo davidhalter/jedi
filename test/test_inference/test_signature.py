@@ -65,6 +65,19 @@ d = functools.partial()
 '''
 
 
+partialmethod_code = '''
+import functools
+
+class X:
+    def func(self, a, b, c):
+        pass
+    a = functools.partialmethod(func)
+    b = functools.partialmethod(func, 1)
+    c = functools.partialmethod(func, 1, c=2)
+    d = functools.partialmethod()
+'''
+
+
 @pytest.mark.parametrize(
     'code, expected', [
         ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
@@ -82,6 +95,13 @@ d = functools.partial()
         (partial_code + 'b(', 'func(b, c)'),
         (partial_code + 'c(', 'func(b)'),
         (partial_code + 'd(', None),
+
+        (partialmethod_code + 'X().a(', 'func(a, b, c)'),
+        (partialmethod_code + 'X().b(', 'func(b, c)'),
+        (partialmethod_code + 'X().c(', 'func(b)'),
+        (partialmethod_code + 'X().d(', None),
+        (partialmethod_code + 'X.c(', 'func(a, b)'),
+        (partialmethod_code + 'X.d(', None),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):

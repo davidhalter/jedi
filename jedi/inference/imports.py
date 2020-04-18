@@ -16,9 +16,10 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 
-from jedi._compatibility import ImplicitNSInfo, force_unicode
+from jedi._compatibility import ImplicitNSInfo, force_unicode, FileNotFoundError
 from jedi import debug
 from jedi import settings
+from jedi.file_io import FolderIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference import sys_path
 from jedi.inference import helpers
@@ -28,8 +29,8 @@ from jedi.inference.utils import unite
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.inference.gradual.typeshed import import_module_decorator
-from jedi.inference.value.module import iter_module_names
+from jedi.inference.gradual.typeshed import import_module_decorator, \
+    create_stub_module, parse_stub_module
 from jedi.plugins import plugin_manager
 
 
@@ -191,18 +192,19 @@ class Importer(object):
                 import_path = base + tuple(import_path)
             else:
                 path = module_context.py__file__()
+                project_path = self._inference_state.project._path
                 import_path = list(import_path)
                 if path is None:
                     # If no path is defined, our best guess is that the current
                     # file is edited by a user on the current working
                     # directory. We need to add an initial path, because it
                     # will get removed as the name of the current file.
-                    directory = os.getcwd()
+                    directory = project_path
                 else:
                     directory = os.path.dirname(path)
 
                 base_import_path, base_directory = _level_to_base_import_path(
-                    self._inference_state.project._path, directory, level,
+                    project_path, directory, level,
                 )
                 if base_directory is None:
                     # Everything is lost, the relative import does point
@@ -264,24 +266,15 @@ class Importer(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-        names = []
-        # add builtin module names
-        if search_path is None and in_module is None:
-            names += [
-                ImportName(self._module_context, name)
-                for name in self._inference_state.compiled_subprocess.get_builtin_module_names()
-            ]
-
         if search_path is None:
-            search_path = self._sys_path_with_modifications(is_completion=True)
-
-        for name in iter_module_names(self._inference_state, search_path):
-            if in_module is None:
-                n = ImportName(self._module_context, name)
-            else:
-                n = SubModuleName(in_module.as_context(), name)
-            names.append(n)
-        return names
+            sys_path = self._sys_path_with_modifications(is_completion=True)
+        else:
+            sys_path = search_path
+        return list(iter_module_names(
+            self._inference_state, self._module_context, sys_path,
+            module_cls=ImportName if in_module is None else SubModuleName,
+            add_builtin_modules=search_path is None and in_module is None,
+        ))
 
     def completion_names(self, inference_state, only_modules=False):
         """
@@ -440,7 +433,7 @@ def _load_python_module(inference_state, file_io,
         file_io=file_io,
         cache=True,
         diff_cache=settings.fast_parser,
-        cache_path=settings.cache_directory
+        cache_path=settings.cache_directory,
     )
 
     from jedi.inference.value import ModuleValue
@@ -454,8 +447,12 @@ def _load_python_module(inference_state, file_io,
 
 
 def _load_builtin_module(inference_state, import_names=None, sys_path=None):
+    project = inference_state.project
     if sys_path is None:
         sys_path = inference_state.get_sys_path()
+    if not project._load_unsafe_extensions:
+        safe_paths = project._get_base_sys_path(inference_state)
+        sys_path = [p for p in sys_path if p in safe_paths]
 
     dotted_name = '.'.join(import_names)
     assert dotted_name is not None
@@ -467,32 +464,59 @@ def _load_builtin_module(inference_state, import_names=None, sys_path=None):
     return module
 
 
-def load_module_from_path(inference_state, file_io, base_names=None):
+def load_module_from_path(inference_state, file_io, import_names=None, is_package=None):
     """
     This should pretty much only be used for get_modules_containing_name. It's
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
     path = file_io.path
-    if base_names:
-        module_name = os.path.basename(path)
-        module_name = sys_path.remove_python_path_suffix(module_name)
-        is_package = module_name == '__init__'
-        if is_package:
-            import_names = base_names
-        else:
-            import_names = base_names + (module_name,)
-    else:
+    if import_names is None:
         e_sys_path = inference_state.get_sys_path()
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
+    else:
+        assert isinstance(is_package, bool)
 
-    module = _load_python_module(
-        inference_state, file_io,
-        import_names=import_names,
-        is_package=is_package,
+    is_stub = file_io.path.endswith('.pyi')
+    if is_stub:
+        folder_io = file_io.get_parent_folder()
+        if folder_io.path.endswith('-stubs'):
+            folder_io = FolderIO(folder_io.path[:-6])
+        if file_io.path.endswith('__init__.pyi'):
+            python_file_io = folder_io.get_file_io('__init__.py')
+        else:
+            python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
+
+        try:
+            v = load_module_from_path(
+                inference_state, python_file_io,
+                import_names, is_package=is_package
+            )
+            values = ValueSet([v])
+        except FileNotFoundError:
+            values = NO_VALUES
+
+        return create_stub_module(
+            inference_state, values, parse_stub_module(inference_state, file_io),
+            file_io, import_names
+        )
+    else:
+        module = _load_python_module(
+            inference_state, file_io,
+            import_names=import_names,
+            is_package=is_package,
+        )
+        inference_state.module_cache.add(import_names, ValueSet([module]))
+        return module
+
+
+def load_namespace_from_path(inference_state, folder_io):
+    import_names, is_package = sys_path.transform_path_to_dotted(
+        inference_state.get_sys_path(),
+        folder_io.path
     )
-    inference_state.module_cache.add(import_names, ValueSet([module]))
-    return module
+    from jedi.inference.value.namespace import ImplicitNamespaceValue
+    return ImplicitNamespaceValue(inference_state, import_names, [folder_io.path])
 
 
 def follow_error_node_imports_if_possible(context, name):
@@ -522,3 +546,18 @@ def follow_error_node_imports_if_possible(context, name):
             return Importer(
                 context.inference_state, names, context.get_root_context(), level).follow()
     return None
+
+
+def iter_module_names(inference_state, module_context, search_path,
+                      module_cls=ImportName, add_builtin_modules=True):
+    """
+    Get the names of all modules in the search_path. This means file names
+    and not names defined in the files.
+    """
+    # add builtin module names
+    if add_builtin_modules:
+        for name in inference_state.compiled_subprocess.get_builtin_module_names():
+            yield module_cls(module_context, name)
+
+    for name in inference_state.compiled_subprocess.iter_module_names(search_path):
+        yield module_cls(module_context, name)

@@ -5,8 +5,11 @@ values.
 
 This file deals with all the typing.py cases.
 """
+import itertools
+
+from jedi._compatibility import unicode
 from jedi import debug
-from jedi.inference.compiled import builtin_from_name
+from jedi.inference.compiled import builtin_from_name, create_simple_object
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     LazyValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues
@@ -81,7 +84,8 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
-            pass
+            yield TypedDictBase.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -180,7 +184,48 @@ class _TypingClassMixin(ClassMixin):
 
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-    pass
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+
+        type_var_dict = {}
+        annotation_generics = self.get_generics()
+
+        if not annotation_generics:
+            return type_var_dict
+
+        annotation_name = self.py__name__()
+        if annotation_name == 'Type':
+            if is_class_value:
+                # This only applies if we are comparing something like
+                # List[Type[int]] with Iterable[Type[int]]. First, Jedi tries to
+                # match List/Iterable. After that we will land here, because
+                # is_class_value will be True at that point. Obviously we also
+                # compare below that both sides are `Type`.
+                for element in value_set:
+                    element_name = element.py__name__()
+                    if element_name == 'Type':
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            merge_pairwise_generics(self, element),
+                        )
+            else:
+                return annotation_generics[0].infer_type_vars(
+                    value_set,
+                    is_class_value=True,
+                )
+
+        elif annotation_name == 'Callable':
+            if len(annotation_generics) == 2:
+                return annotation_generics[1].infer_type_vars(
+                    value_set.execute_annotation(),
+                )
+
+        elif annotation_name == 'Tuple':
+            tuple_annotation, = self.execute_annotation()
+            return tuple_annotation.infer_type_vars(value_set, is_class_value)
+
+        return type_var_dict
 
 
 class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
@@ -241,12 +286,7 @@ class Callable(BaseTypingValueWithGenerics):
             return infer_return_for_callable(arguments, param_values, result_values)
 
 
-class Tuple(LazyValueWrapper):
-    def __init__(self, parent_context, name, generics_manager):
-        self.inference_state = parent_context.inference_state
-        self.parent_context = parent_context
-        self._generics_manager = generics_manager
-
+class Tuple(BaseTypingValueWithGenerics):
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
@@ -281,6 +321,38 @@ class Tuple(LazyValueWrapper):
         tuple_, = self.inference_state.builtins_module \
             .py__getattribute__('tuple').execute_annotation()
         return tuple_
+
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+        from jedi.inference.gradual.base import GenericClass
+
+        if self._is_homogenous():
+            # The parameter annotation is of the form `Tuple[T, ...]`,
+            # so we treat the incoming tuple like a iterable sequence
+            # rather than a positional container of elements.
+            return self.get_generics()[0].infer_type_vars(
+                value_set.merge_types_of_iterate(),
+            )
+
+        else:
+            # The parameter annotation has only explicit type parameters
+            # (e.g: `Tuple[T]`, `Tuple[T, U]`, `Tuple[T, U, V]`, etc.) so we
+            # treat the incoming values as needing to match the annotation
+            # exactly, just as we would for non-tuple annotations.
+
+            type_var_dict = {}
+            for element in value_set:
+                py_class = element.get_annotated_class_object()
+                if not isinstance(py_class, GenericClass):
+                    py_class = element
+
+                merge_type_var_dicts(
+                    type_var_dict,
+                    merge_pairwise_generics(self, py_class),
+                )
+
+            return type_var_dict
 
 
 class Generic(BaseTypingValueWithGenerics):
@@ -339,3 +411,47 @@ class CastFunction(BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()
+
+
+class TypedDictBase(BaseTypingValue):
+    """
+    This class has no responsibilities and is just here to make sure that typed
+    dicts can be identified.
+    """
+
+
+class TypedDict(LazyValueWrapper):
+    """Represents the instance version of ``TypedDictClass``."""
+    def __init__(self, definition_class):
+        self.inference_state = definition_class.inference_state
+        self.parent_context = definition_class.parent_context
+        self.tree_node = definition_class.tree_node
+        self._definition_class = definition_class
+
+    @property
+    def name(self):
+        return ValueName(self, self.tree_node.name)
+
+    def py__simple_getitem__(self, index):
+        if isinstance(index, unicode):
+            return ValueSet.from_sets(
+                name.infer()
+                for filter in self._definition_class.get_filters(is_instance=True)
+                for name in filter.get(index)
+            )
+        return NO_VALUES
+
+    def get_key_values(self):
+        filtered_values = itertools.chain.from_iterable((
+            f.values()
+            for f in self._definition_class.get_filters(is_instance=True)
+        ))
+        return ValueSet({
+            create_simple_object(self.inference_state, v.string_name)
+            for v in filtered_values
+        })
+
+    def _get_wrapped_value(self):
+        d, = self.inference_state.builtins_module.py__getattribute__('dict')
+        result, = d.execute_with_values()
+        return result

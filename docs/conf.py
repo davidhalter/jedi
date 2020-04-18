@@ -13,13 +13,11 @@
 
 import sys
 import os
-import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('_themes'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -29,7 +27,8 @@ sys.path.append(os.path.abspath('_themes'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.todo',
-              'sphinx.ext.intersphinx', 'sphinx.ext.inheritance_diagram']
+              'sphinx.ext.intersphinx', 'sphinx.ext.inheritance_diagram',
+              'sphinx_rtd_theme', 'sphinx.ext.autosummary']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -54,8 +53,8 @@ from jedi.utils import version_info
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# The short X.Y version.
-version = '.'.join(str(x) for x in version_info()[:2])
+# The short X.Y.Z version.
+version = '.'.join(str(x) for x in version_info()[:3])
 # The full version, including alpha/beta/rc tags.
 release = jedi.__version__
 
@@ -98,12 +97,15 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'flask'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+    'logo_only': True,
+    'style_nav_header_background': 'white',
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ['_themes']
@@ -117,7 +119,7 @@ html_theme_path = ['_themes']
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = '_static/logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -128,6 +130,8 @@ html_theme_path = ['_themes']
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_css_files = ['custom_style.css']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -145,7 +149,7 @@ html_sidebars = {
         #'relations.html',
         'ghbuttons.html',
         #'sourcelink.html',
-        #'searchbox.html'
+        'searchbox.html'
     ]
 }
 
@@ -163,13 +167,13 @@ html_sidebars = {
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = False
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -274,7 +278,8 @@ autodoc_default_flags = []
 # -- Options for intersphinx module --------------------------------------------
 
 intersphinx_mapping = {
-    'https://docs.python.org/': None,
+    'python': ('https://docs.python.org/', None),
+    'parso': ('https://parso.readthedocs.io/en/latest/', None),
 }
 
 

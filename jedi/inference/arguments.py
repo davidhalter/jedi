@@ -18,7 +18,7 @@ def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
     if depth > 10:
         # It's possible that a loop has references on itself (especially with
-        # CompiledObject). Therefore don't loop infinitely.
+        # CompiledValue). Therefore don't loop infinitely.
         return
 
     for typ in types:
@@ -131,15 +131,6 @@ def _parse_argument_clinic(string):
 
 
 class _AbstractArgumentsMixin(object):
-    def infer_all(self, funcdef=None):
-        """
-        Inferes all arguments as a support for static analysis
-        (normally Jedi).
-        """
-        for key, lazy_value in self.unpack():
-            types = lazy_value.infer()
-            try_iter_content(types)
-
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
@@ -170,7 +161,9 @@ def unpack_arglist(arglist):
         if child == ',':
             continue
         elif child in ('*', '**'):
-            yield len(child.value), next(iterator)
+            c = next(iterator, None)
+            assert c is not None
+            yield len(child.value), c
         elif child.type == 'argument' and \
                 child.children[0] in ('*', '**'):
             assert len(child.children) == 2

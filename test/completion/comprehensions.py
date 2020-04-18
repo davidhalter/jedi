@@ -91,13 +91,17 @@ b[0]
 #? str()
 [x for x in 'chr'][0]
 
-# jedi issue #26
+# From GitHub #26
 #? list()
 a = [[int(v) for v in line.strip().split() if v] for line in ["123", str(), "123"] if line]
 #? list()
 a[0]
 #? int()
 a[0][0]
+
+# From GitHub #1524
+#?
+[nothing for nothing, _ in [1]][0]
 
 # -----------------
 # generator comprehensions

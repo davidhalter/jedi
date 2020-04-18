@@ -359,7 +359,7 @@ class Test(metaclass=Meta):
 # Enum
 # -----------------
 
-# python >= 3.4
+# python > 2.7
 import enum
 
 class X(enum.Enum):
@@ -382,6 +382,61 @@ X.attr_y.value
 X().name
 #? float()
 X().attr_x.attr_y.value
+
+# -----------------
+# functools Python 3.5+
+# -----------------
+class X:
+    def function(self, a, b):
+        return a, b
+    a = functools.partialmethod(function, 0)
+    kw = functools.partialmethod(function, b=1.0)
+    just_partial = functools.partial(function, 1, 2.0)
+
+#? int()
+X().a('')[0]
+#? str()
+X().a('')[1]
+
+# The access of partialmethods on classes are not 100% correct. This doesn't
+# really matter, because nobody uses it like that anyway and would take quite a
+# bit of work to fix all of these cases.
+#? str()
+X.a('')[0]
+#?
+X.a('')[1]
+
+#? X()
+X.a(X(), '')[0]
+#? str()
+X.a(X(), '')[1]
+
+tup = X().kw(1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+tup = X.kw(1)
+#?
+tup[0]
+#? float()
+tup[1]
+
+tup = X.kw(X(), 1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+#? float()
+X.just_partial('')[0]
+#? str()
+X.just_partial('')[1]
+#? float()
+X().just_partial('')[0]
+#? str()
+X().just_partial('')[1]
 
 
 # -----------------

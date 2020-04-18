@@ -1,99 +1,103 @@
 #!/usr/bin/env python
 """
-Refactoring tests work a little bit similar to Black Box tests. But the idea is
-here to compare two versions of code. **Note: Refactoring is currently not in
-active development (and was never stable), the tests are therefore not really
-valuable - just ignore them.**
+Refactoring tests work a little bit similar to integration tests. But the idea
+is here to compare two versions of code. If you want to add a new test case,
+just look at the existing ones in the ``test/refactor`` folder and copy them.
 """
 from __future__ import with_statement
 import os
+import platform
 import re
+import sys
+
+from parso import split_lines
 
 from functools import reduce
 import jedi
-from jedi import refactoring
+from .helpers import test_dir
 
 
 class RefactoringCase(object):
 
-    def __init__(self, name, source, line_nr, index, path,
-                 new_name, start_line_test, desired):
+    def __init__(self, name, code, line_nr, index, path, kwargs, type_, desired_result):
         self.name = name
-        self.source = source
-        self.line_nr = line_nr
-        self.index = index
-        self.path = path
-        self.new_name = new_name
-        self.start_line_test = start_line_test
-        self.desired = desired
+        self._code = code
+        self._line_nr = line_nr
+        self._index = index
+        self._path = path
+        self._kwargs = kwargs
+        self.type = type_
+        self._desired_result = desired_result
 
-    def refactor(self):
-        script = jedi.Script(self.source, self.line_nr, self.index, self.path)
-        f_name = os.path.basename(self.path)
-        refactor_func = getattr(refactoring, f_name.replace('.py', ''))
-        args = (self.new_name,) if self.new_name else ()
-        return refactor_func(script, *args)
+    def get_desired_result(self):
 
-    def run(self):
-        refactor_object = self.refactor()
+        if platform.system().lower() == 'windows' and self.type == 'diff':
+            # Windows uses backslashes to separate paths.
+            lines = split_lines(self._desired_result, keepends=True)
+            for i, line in enumerate(lines):
+                if re.search(' import_tree/', line):
+                    lines[i] = line.replace('/', '\\')
+            return ''.join(lines)
+        return self._desired_result
 
-        # try to get the right excerpt of the newfile
-        f = refactor_object.new_files()[self.path]
-        lines = f.splitlines()[self.start_line_test:]
+    @property
+    def refactor_type(self):
+        f_name = os.path.basename(self._path)
+        return f_name.replace('.py', '')
 
-        end = self.start_line_test + len(lines)
-        pop_start = None
-        for i, l in enumerate(lines):
-            if l.startswith('# +++'):
-                end = i
-                break
-            elif '#? ' in l:
-                pop_start = i
-        lines.pop(pop_start)
-        self.result = '\n'.join(lines[:end - 1]).strip()
-        return self.result
-
-    def check(self):
-        return self.run() == self.desired
+    def refactor(self, environment):
+        project = jedi.Project(os.path.join(test_dir, 'refactor'))
+        script = jedi.Script(self._code, path=self._path, project=project, environment=environment)
+        refactor_func = getattr(script, self.refactor_type)
+        return refactor_func(self._line_nr, self._index, **self._kwargs)
 
     def __repr__(self):
         return '<%s: %s:%s>' % (self.__class__.__name__,
-                                self.name, self.line_nr - 1)
+                                self.name, self._line_nr - 1)
 
 
-def collect_file_tests(source, path, lines_to_execute):
-    r = r'^# --- ?([^\n]*)\n((?:(?!\n# \+\+\+).)*)' \
-        r'\n# \+\+\+((?:(?!\n# ---).)*)'
-    for match in re.finditer(r, source, re.DOTALL | re.MULTILINE):
+def _collect_file_tests(code, path, lines_to_execute):
+    r = r'^# -{5,} ?([^\n]*)\n((?:(?!\n# \+{5,}).)*\n)' \
+        r'# \+{5,}\n((?:(?!\n# -{5,}).)*\n)'
+    match = None
+    for match in re.finditer(r, code, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
-        first = match.group(2).strip()
-        second = match.group(3).strip()
-        start_line_test = source[:match.start()].count('\n') + 1
+        first = match.group(2)
+        second = match.group(3)
 
         # get the line with the position of the operation
-        p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ?([^\n]*)', first, re.DOTALL)
+        p = re.match(r'((?:(?!#\?).)*)#\? (\d*)( error| text|) ?([^\n]*)', first, re.DOTALL)
         if p is None:
-            print("Please add a test start.")
+            raise Exception("Please add a test start.")
             continue
         until = p.group(1)
         index = int(p.group(2))
-        new_name = p.group(3)
+        type_ = p.group(3).strip() or 'diff'
+        if p.group(4):
+            kwargs = eval(p.group(4))
+        else:
+            kwargs = {}
 
-        line_nr = start_line_test + until.count('\n') + 2
+        line_nr = until.count('\n') + 2
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        yield RefactoringCase(name, source, line_nr, index, path,
-                              new_name, start_line_test, second)
+        yield RefactoringCase(name, first, line_nr, index, path, kwargs, type_, second)
+    if match is None:
+        raise Exception("Didn't match any test")
+    if match.end() != len(code):
+        raise Exception("Didn't match until the end of the file in %s" % path)
 
 
 def collect_dir_tests(base_dir, test_files):
+    if sys.version_info[0] == 2:
+        return
     for f_name in os.listdir(base_dir):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
             path = os.path.join(base_dir, f_name)
-            with open(path) as f:
-                source = f.read()
-            for case in collect_file_tests(source, path, lines_to_execute):
+            with open(path, newline='') as f:
+                code = f.read()
+            for case in _collect_file_tests(code, path, lines_to_execute):
                 yield case

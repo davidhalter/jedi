@@ -2,8 +2,8 @@
 
 import sys
 sys.path[0:0] = [
-  '/usr/lib/python3.4/site-packages',
-  '/tmp/.buildout/eggs/important_package.egg'
+    '/usr/lib/python3.8/site-packages',
+    '/tmp/.buildout/eggs/important_package.egg'
 ]
 
 import important_package

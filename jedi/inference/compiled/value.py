@@ -7,7 +7,7 @@ from functools import partial
 from jedi import debug
 from jedi.inference.utils import to_list
 from jedi._compatibility import force_unicode, Parameter, cast_path
-from jedi.cache import underscore_memoization, memoize_method
+from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
     ParamNameInterface
@@ -21,7 +21,7 @@ from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
 class CheckAttribute(object):
-    """Raises an AttributeError if the attribute X isn't available."""
+    """Raises :exc:`AttributeError` if the attribute X is not available."""
     def __init__(self, check_name=None):
         # Remove the py in front of e.g. py__call__.
         self.check_name = check_name
@@ -41,9 +41,9 @@ class CheckAttribute(object):
         return partial(self.func, instance)
 
 
-class CompiledObject(Value):
+class CompiledValue(Value):
     def __init__(self, inference_state, access_handle, parent_context=None):
-        super(CompiledObject, self).__init__(inference_state, parent_context)
+        super(CompiledValue, self).__init__(inference_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
@@ -58,7 +58,7 @@ class CompiledObject(Value):
         try:
             self.access_handle.getattr_paths(u'__call__')
         except AttributeError:
-            return super(CompiledObject, self).py__call__(arguments)
+            return super(CompiledValue, self).py__call__(arguments)
         else:
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
@@ -86,34 +86,17 @@ class CompiledObject(Value):
             for access in self.access_handle.py__bases__()
         )
 
-    def py__path__(self):
-        paths = self.access_handle.py__path__()
-        if paths is None:
-            return None
-        return map(cast_path, paths)
-
-    def is_package(self):
-        return self.py__path__() is not None
-
-    @property
-    def string_names(self):
-        # For modules
-        name = self.py__name__()
-        if name is None:
-            return ()
-        return tuple(name.split('.'))
-
     def get_qualified_names(self):
         return self.access_handle.get_qualified_names()
 
     def py__bool__(self):
         return self.access_handle.py__bool__()
 
-    def py__file__(self):
-        return cast_path(self.access_handle.py__file__())
-
     def is_class(self):
         return self.access_handle.is_class()
+
+    def is_function(self):
+        return self.access_handle.is_function()
 
     def is_module(self):
         return self.access_handle.is_module()
@@ -156,7 +139,7 @@ class CompiledObject(Value):
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
 
-    @underscore_memoization
+    @memoize_method
     def _parse_function_doc(self):
         doc = self.py__doc__()
         if doc is None:
@@ -168,28 +151,19 @@ class CompiledObject(Value):
     def api_type(self):
         return self.access_handle.get_api_type()
 
-    @underscore_memoization
-    def _cls(self):
-        """
-        We used to limit the lookups for instantiated objects like list(), but
-        this is not the case anymore. Python itself
-        """
-        # Ensures that a CompiledObject is returned that is not an instance (like list)
-        return self
-
     def get_filters(self, is_instance=False, origin_scope=None):
         yield self._ensure_one_filter(is_instance)
 
     @memoize_method
     def _ensure_one_filter(self, is_instance):
-        return CompiledObjectFilter(self.inference_state, self, is_instance)
+        return CompiledValueFilter(self.inference_state, self, is_instance)
 
     def py__simple_getitem__(self, index):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
             try:
                 access = self.access_handle.py__simple_getitem__(index)
             except AttributeError:
-                return super(CompiledObject, self).py__simple_getitem__(index)
+                return super(CompiledValue, self).py__simple_getitem__(index)
         if access is None:
             return NO_VALUES
 
@@ -200,7 +174,7 @@ class CompiledObject(Value):
         if all_access_paths is None:
             # This means basically that no __getitem__ has been defined on this
             # object.
-            return super(CompiledObject, self).py__getitem__(index_value_set, contextualized_node)
+            return super(CompiledValue, self).py__getitem__(index_value_set, contextualized_node)
         return ValueSet(
             create_from_access_path(self.inference_state, access)
             for access in all_access_paths
@@ -212,7 +186,7 @@ class CompiledObject(Value):
         # just start with __getitem__(0). This is especially true for
         # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
-            for x in super(CompiledObject, self).py__iter__(contextualized_node):
+            for x in super(CompiledValue, self).py__iter__(contextualized_node):
                 yield x
 
         access_path_list = self.access_handle.py__iter__list()
@@ -290,7 +264,7 @@ class CompiledObject(Value):
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
             ]).execute_annotation()
-        return super(CompiledObject, self).execute_annotation()
+        return super(CompiledValue, self).execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
@@ -298,11 +272,7 @@ class CompiledObject(Value):
     def get_metaclasses(self):
         return NO_VALUES
 
-    file_io = None  # For modules
-
     def _as_context(self):
-        if self.parent_context is None:
-            return CompiledModuleContext(self)
         return CompiledContext(self)
 
     @property
@@ -314,6 +284,38 @@ class CompiledObject(Value):
             create_from_access_path(self.inference_state, k)
             for k in self.access_handle.get_key_paths()
         ]
+
+    def get_type_hint(self, add_class_info=True):
+        if self.access_handle.get_repr() in ('None', "<class 'NoneType'>"):
+            return 'None'
+        return None
+
+
+class CompiledModule(CompiledValue):
+    file_io = None  # For modules
+
+    def _as_context(self):
+        return CompiledModuleContext(self)
+
+    def py__path__(self):
+        paths = self.access_handle.py__path__()
+        if paths is None:
+            return None
+        return map(cast_path, paths)
+
+    def is_package(self):
+        return self.py__path__() is not None
+
+    @property
+    def string_names(self):
+        # For modules
+        name = self.py__name__()
+        if name is None:
+            return ()
+        return tuple(name.split('.'))
+
+    def py__file__(self):
+        return cast_path(self.access_handle.py__file__())
 
 
 class CompiledName(AbstractNameDefinition):
@@ -355,16 +357,17 @@ class CompiledName(AbstractNameDefinition):
             return "instance"
         return next(iter(api)).api_type
 
-    @underscore_memoization
+    @memoize_method
     def infer(self):
-        return ValueSet([_create_from_name(
-            self._inference_state, self._parent_value, self.string_name
-        )])
+        return ValueSet([self.infer_compiled_value()])
+
+    def infer_compiled_value(self):
+        return create_from_name(self._inference_state, self._parent_value, self.string_name)
 
 
 class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
-    def __init__(self, compiled_obj, signature_param):
-        self.parent_context = compiled_obj.parent_context
+    def __init__(self, compiled_value, signature_param):
+        self.parent_context = compiled_value.parent_context
         self._signature_param = signature_param
 
     @property
@@ -395,8 +398,8 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
 
 
 class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
-    def __init__(self, compiled_obj, name, default):
-        self.parent_context = compiled_obj.parent_context
+    def __init__(self, compiled_value, name, default):
+        self.parent_context = compiled_value.parent_context
         self.string_name = name
         self._default = default
 
@@ -434,16 +437,14 @@ class EmptyCompiledName(AbstractNameDefinition):
         return NO_VALUES
 
 
-class CompiledObjectFilter(AbstractFilter):
-    name_class = CompiledName
-
-    def __init__(self, inference_state, compiled_object, is_instance=False):
+class CompiledValueFilter(AbstractFilter):
+    def __init__(self, inference_state, compiled_value, is_instance=False):
         self._inference_state = inference_state
-        self.compiled_object = compiled_object
+        self.compiled_value = compiled_value
         self.is_instance = is_instance
 
     def get(self, name):
-        access_handle = self.compiled_object.access_handle
+        access_handle = self.compiled_value.access_handle
         return self._get(
             name,
             lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
@@ -486,7 +487,7 @@ class CompiledObjectFilter(AbstractFilter):
     def values(self):
         from jedi.inference.compiled import builtin_from_name
         names = []
-        needs_type_completions, dir_infos = self.compiled_object.access_handle.get_dir_infos()
+        needs_type_completions, dir_infos = self.compiled_value.access_handle.get_dir_infos()
         # We could use `unsafe` here as well, especially as a parameter to
         # get_dir_infos. But this would lead to a lot of property executions
         # that are probably not wanted. The drawback for this is that we
@@ -506,14 +507,14 @@ class CompiledObjectFilter(AbstractFilter):
         return names
 
     def _create_name(self, name):
-        return self.name_class(
+        return CompiledName(
             self._inference_state,
-            self.compiled_object,
+            self.compiled_value,
             name
         )
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.compiled_object)
+        return "<%s: %s>" % (self.__class__.__name__, self.compiled_value)
 
 
 docstr_defaults = {
@@ -586,15 +587,12 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(inference_state, compiled_object, name):
-    access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
-    parent_context = compiled_object
-    if parent_context.is_class():
-        parent_context = parent_context.parent_context
+def create_from_name(inference_state, compiled_value, name):
+    access_paths = compiled_value.access_handle.getattr_paths(name, default=None)
 
     value = None
     for access_path in access_paths:
-        value = create_cached_compiled_object(
+        value = create_cached_compiled_value(
             inference_state,
             access_path,
             parent_context=None if value is None else value.as_context(),
@@ -612,7 +610,7 @@ def _normalize_create_args(func):
 def create_from_access_path(inference_state, access_path):
     value = None
     for name, access in access_path.accesses:
-        value = create_cached_compiled_object(
+        value = create_cached_compiled_value(
             inference_state,
             access,
             parent_context=None if value is None else value.as_context()
@@ -622,6 +620,10 @@ def create_from_access_path(inference_state, access_path):
 
 @_normalize_create_args
 @inference_state_function_cache()
-def create_cached_compiled_object(inference_state, access_handle, parent_context):
-    assert not isinstance(parent_context, CompiledObject)
-    return CompiledObject(inference_state, access_handle, parent_context)
+def create_cached_compiled_value(inference_state, access_handle, parent_context):
+    assert not isinstance(parent_context, CompiledValue)
+    if parent_context is None:
+        cls = CompiledModule
+    else:
+        cls = CompiledValue
+    return cls(inference_state, access_handle, parent_context)

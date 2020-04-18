@@ -2,6 +2,7 @@ import os
 import re
 from functools import wraps
 
+from jedi import settings
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
@@ -102,9 +103,6 @@ def import_module_decorator(func):
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                python_parent = next(iter(parent_module_values))
-                if python_parent is None:
-                    python_parent, = inference_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, (n,), None, sys_path,)
                     for n in [u'posixpath', u'ntpath', u'macpath', u'os2emxpath']
@@ -119,8 +117,8 @@ def import_module_decorator(func):
         if not prefer_stubs:
             return python_value_set
 
-        stub = _try_to_load_stub_cached(inference_state, import_names, python_value_set,
-                                        parent_module_value, sys_path)
+        stub = try_to_load_stub_cached(inference_state, import_names, python_value_set,
+                                       parent_module_value, sys_path)
         if stub is not None:
             return ValueSet([stub])
         return python_value_set
@@ -128,7 +126,10 @@ def import_module_decorator(func):
     return wrapper
 
 
-def _try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
+def try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
+    if import_names is None:
+        return None
+
     try:
         return inference_state.stub_module_cache[import_names]
     except KeyError:
@@ -152,7 +153,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     """
     if parent_module_value is None and len(import_names) > 1:
         try:
-            parent_module_value = _try_to_load_stub_cached(
+            parent_module_value = try_to_load_stub_cached(
                 inference_state, import_names[:-1], NO_VALUES,
                 parent_module_value=None, sys_path=sys_path)
         except KeyError:
@@ -255,11 +256,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
 
 def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, import_names):
     try:
-        stub_module_node = inference_state.parse(
-            file_io=file_io,
-            cache=True,
-            use_latest_grammar=True
-        )
+        stub_module_node = parse_stub_module(inference_state, file_io)
     except (OSError, IOError):  # IOError is Python 2 only
         # The file that you're looking for doesn't exist (anymore).
         return None
@@ -268,6 +265,16 @@ def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, impo
             inference_state, python_value_set, stub_module_node, file_io,
             import_names
         )
+
+
+def parse_stub_module(inference_state, file_io):
+    return inference_state.parse(
+        file_io=file_io,
+        cache=True,
+        diff_cache=settings.fast_parser,
+        cache_path=settings.cache_directory,
+        use_latest_grammar=True
+    )
 
 
 def create_stub_module(inference_state, python_value_set, stub_module_node, file_io, import_names):

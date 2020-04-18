@@ -19,8 +19,8 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance, ModuleValue
-from jedi.inference.names import ParamNameWrapper
-from jedi.inference.gradual.conversion import convert_values
+from jedi.inference.names import ParamNameWrapper, SubModuleName
+from jedi.inference.gradual.conversion import convert_values, convert_names
 from jedi.parser_utils import cut_value_at_position
 from jedi.plugins import plugin_manager
 
@@ -30,29 +30,52 @@ class ParamNameWithEquals(ParamNameWrapper):
         return self.string_name + '='
 
 
-def get_signature_param_names(signatures):
-    # add named params
+def _get_signature_param_names(signatures, positional_count, used_kwargs):
+    # Add named params
     for call_sig in signatures:
-        for p in call_sig.params:
+        for i, p in enumerate(call_sig.params):
             # Allow protected access, because it's a public API.
-            if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
-                                      Parameter.KEYWORD_ONLY):
+            # TODO reconsider with Python 2 drop
+            kind = p._name.get_kind()
+            if i < positional_count and kind == Parameter.POSITIONAL_OR_KEYWORD:
+                continue
+            if kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY) \
+                    and p.name not in used_kwargs:
                 yield ParamNameWithEquals(p._name)
 
 
+def _must_be_kwarg(signatures, positional_count, used_kwargs):
+    if used_kwargs:
+        return True
+
+    must_be_kwarg = True
+    for signature in signatures:
+        for i, p in enumerate(signature.params):
+            # TODO reconsider with Python 2 drop
+            kind = p._name.get_kind()
+            if kind is Parameter.VAR_POSITIONAL:
+                # In case there were not already kwargs, the next param can
+                # always be a normal argument.
+                return False
+
+            if i >= positional_count and kind in (Parameter.POSITIONAL_OR_KEYWORD,
+                                                  Parameter.POSITIONAL_ONLY):
+                must_be_kwarg = False
+                break
+        if not must_be_kwarg:
+            break
+    return must_be_kwarg
+
+
 def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cached_name):
-    comp_dct = {}
+    comp_dct = set()
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
     for name in completion_names:
         string = name.string_name
         if settings.case_insensitive_completion:
             string = string.lower()
-        if fuzzy:
-            match = helpers.fuzzy_match(string, like_name)
-        else:
-            match = helpers.start_match(string, like_name)
-        if match:
+        if helpers.match(string, like_name, fuzzy=fuzzy):
             new = classes.Completion(
                 inference_state,
                 name,
@@ -62,10 +85,13 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cac
                 cached_name=cached_name,
             )
             k = (new.name, new.complete)  # key
-            if k in comp_dct and settings.no_completion_duplicates:
-                comp_dct[k]._same_name_completions.append(new)
-            else:
-                comp_dct[k] = new
+            if k not in comp_dct:
+                comp_dct.add(k)
+                tree_name = name.tree_name
+                if tree_name is not None:
+                    definition = tree_name.get_definition()
+                    if definition is not None and definition.type == 'del_stmt':
+                        continue
                 yield new
 
 
@@ -132,7 +158,7 @@ class Completion:
 
         if string is not None and not prefixed_completions:
             prefixed_completions = list(complete_file_name(
-                self._inference_state, self._module_context, start_leaf, string,
+                self._inference_state, self._module_context, start_leaf, quote, string,
                 self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
                 self._fuzzy
@@ -232,12 +258,7 @@ class Completion:
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
 
-        completion_names += self._complete_keywords(
-            allowed_transitions,
-            only_values=not (not current_line or current_line[-1] in ' \t.;'
-                             and current_line[-3:] != '...')
-        )
-
+        kwargs_only = False
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
@@ -265,20 +286,40 @@ class Completion:
             elif self._is_parameter_completion():
                 completion_names += self._complete_params(leaf)
             else:
-                completion_names += self._complete_global_scope()
-                completion_names += self._complete_inherited(is_function=False)
+                # Apparently this looks like it's good enough to filter most cases
+                # so that signature completions don't randomly appear.
+                # To understand why this works, three things are important:
+                # 1. trailer with a `,` in it is either a subscript or an arglist.
+                # 2. If there's no `,`, it's at the start and only signatures start
+                #    with `(`. Other trailers could start with `.` or `[`.
+                # 3. Decorators are very primitive and have an optional `(` with
+                #    optional arglist in them.
+                if nodes[-1] in ['(', ','] \
+                        and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
+                    signatures = self._signatures_callback(*self._position)
+                    if signatures:
+                        call_details = signatures[0]._call_details
+                        used_kwargs = list(call_details.iter_used_keyword_arguments())
+                        positional_count = call_details.count_positional_arguments()
 
-            # Apparently this looks like it's good enough to filter most cases
-            # so that signature completions don't randomly appear.
-            # To understand why this works, three things are important:
-            # 1. trailer with a `,` in it is either a subscript or an arglist.
-            # 2. If there's no `,`, it's at the start and only signatures start
-            #    with `(`. Other trailers could start with `.` or `[`.
-            # 3. Decorators are very primitive and have an optional `(` with
-            #    optional arglist in them.
-            if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
-                signatures = self._signatures_callback(*self._position)
-                completion_names += get_signature_param_names(signatures)
+                        completion_names += _get_signature_param_names(
+                            signatures,
+                            positional_count,
+                            used_kwargs,
+                        )
+
+                        kwargs_only = _must_be_kwarg(signatures, positional_count, used_kwargs)
+
+                if not kwargs_only:
+                    completion_names += self._complete_global_scope()
+                    completion_names += self._complete_inherited(is_function=False)
+
+        if not kwargs_only:
+            completion_names += self._complete_keywords(
+                allowed_transitions,
+                only_values=not (not current_line or current_line[-1] in ' \t.;'
+                                 and current_line[-3:] != '...')
+            )
 
         return cached_name, completion_names
 
@@ -358,80 +399,7 @@ class Completion:
     def _complete_trailer_for_values(self, values):
         user_context = get_user_context(self._module_context, self._position)
 
-        completion_names = []
-        for value in values:
-            for filter in value.get_filters(origin_scope=user_context.tree_node):
-                completion_names += filter.values()
-
-            if not value.is_stub() and isinstance(value, TreeInstance):
-                completion_names += self._complete_getattr(value)
-
-        python_values = convert_values(values)
-        for c in python_values:
-            if c not in values:
-                for filter in c.get_filters(origin_scope=user_context.tree_node):
-                    completion_names += filter.values()
-        return completion_names
-
-    def _complete_getattr(self, instance):
-        """
-        A heuristic to make completion for proxy objects work. This is not
-        intended to work in all cases. It works exactly in this case:
-
-            def __getattr__(self, name):
-                ...
-                return getattr(any_object, name)
-
-        It is important that the return contains getattr directly, otherwise it
-        won't work anymore. It's really just a stupid heuristic. It will not
-        work if you write e.g. `return (getatr(o, name))`, because of the
-        additional parentheses. It will also not work if you move the getattr
-        to some other place that is not the return statement itself.
-
-        It is intentional that it doesn't work in all cases. Generally it's
-        really hard to do even this case (as you can see below). Most people
-        will write it like this anyway and the other ones, well they are just
-        out of luck I guess :) ~dave.
-        """
-        names = (instance.get_function_slot_names(u'__getattr__')
-                 or instance.get_function_slot_names(u'__getattribute__'))
-        functions = ValueSet.from_sets(
-            name.infer()
-            for name in names
-        )
-        for func in functions:
-            tree_node = func.tree_node
-            for return_stmt in tree_node.iter_return_stmts():
-                # Basically until the next comment we just try to find out if a
-                # return statement looks exactly like `return getattr(x, name)`.
-                if return_stmt.type != 'return_stmt':
-                    continue
-                atom_expr = return_stmt.children[1]
-                if atom_expr.type != 'atom_expr':
-                    continue
-                atom = atom_expr.children[0]
-                trailer = atom_expr.children[1]
-                if len(atom_expr.children) != 2 or atom.type != 'name' \
-                        or atom.value != 'getattr':
-                    continue
-                arglist = trailer.children[1]
-                if arglist.type != 'arglist' or len(arglist.children) < 3:
-                    continue
-                context = func.as_context()
-                object_node = arglist.children[0]
-
-                # Make sure it's a param: foo in __getattr__(self, foo)
-                name_node = arglist.children[2]
-                name_list = context.goto(name_node, name_node.start_pos)
-                if not any(n.api_type == 'param' for n in name_list):
-                    continue
-
-                # Now that we know that these are most probably completion
-                # objects, we just infer the object and return them as
-                # completions.
-                objects = context.infer_node(object_node)
-                return self._complete_trailer_for_values(objects)
-        return []
+        return complete_trailer(user_context, values)
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
@@ -531,6 +499,8 @@ def _extract_string_while_in_string(leaf, position):
         if leaf.line == position[0]:
             kwargs['endpos'] = position[1] - leaf.column
         match = _string_start.match(leaf.value, **kwargs)
+        if not match:
+            return None, None, None
         start = match.group(0)
         if leaf.line == position[0] and position[1] < leaf.column + match.end():
             return None, None, None
@@ -569,3 +539,123 @@ def _extract_string_while_in_string(leaf, position):
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
     return None, None, None
+
+
+def complete_trailer(user_context, values):
+    completion_names = []
+    for value in values:
+        for filter in value.get_filters(origin_scope=user_context.tree_node):
+            completion_names += filter.values()
+
+        if not value.is_stub() and isinstance(value, TreeInstance):
+            completion_names += _complete_getattr(user_context, value)
+
+    python_values = convert_values(values)
+    for c in python_values:
+        if c not in values:
+            for filter in c.get_filters(origin_scope=user_context.tree_node):
+                completion_names += filter.values()
+    return completion_names
+
+
+def _complete_getattr(user_context, instance):
+    """
+    A heuristic to make completion for proxy objects work. This is not
+    intended to work in all cases. It works exactly in this case:
+
+        def __getattr__(self, name):
+            ...
+            return getattr(any_object, name)
+
+    It is important that the return contains getattr directly, otherwise it
+    won't work anymore. It's really just a stupid heuristic. It will not
+    work if you write e.g. `return (getatr(o, name))`, because of the
+    additional parentheses. It will also not work if you move the getattr
+    to some other place that is not the return statement itself.
+
+    It is intentional that it doesn't work in all cases. Generally it's
+    really hard to do even this case (as you can see below). Most people
+    will write it like this anyway and the other ones, well they are just
+    out of luck I guess :) ~dave.
+    """
+    names = (instance.get_function_slot_names(u'__getattr__')
+             or instance.get_function_slot_names(u'__getattribute__'))
+    functions = ValueSet.from_sets(
+        name.infer()
+        for name in names
+    )
+    for func in functions:
+        tree_node = func.tree_node
+        for return_stmt in tree_node.iter_return_stmts():
+            # Basically until the next comment we just try to find out if a
+            # return statement looks exactly like `return getattr(x, name)`.
+            if return_stmt.type != 'return_stmt':
+                continue
+            atom_expr = return_stmt.children[1]
+            if atom_expr.type != 'atom_expr':
+                continue
+            atom = atom_expr.children[0]
+            trailer = atom_expr.children[1]
+            if len(atom_expr.children) != 2 or atom.type != 'name' \
+                    or atom.value != 'getattr':
+                continue
+            arglist = trailer.children[1]
+            if arglist.type != 'arglist' or len(arglist.children) < 3:
+                continue
+            context = func.as_context()
+            object_node = arglist.children[0]
+
+            # Make sure it's a param: foo in __getattr__(self, foo)
+            name_node = arglist.children[2]
+            name_list = context.goto(name_node, name_node.start_pos)
+            if not any(n.api_type == 'param' for n in name_list):
+                continue
+
+            # Now that we know that these are most probably completion
+            # objects, we just infer the object and return them as
+            # completions.
+            objects = context.infer_node(object_node)
+            return complete_trailer(user_context, objects)
+    return []
+
+
+def search_in_module(inference_state, module_context, names, wanted_names,
+                     wanted_type, complete=False, fuzzy=False,
+                     ignore_imports=False, convert=False):
+    for s in wanted_names[:-1]:
+        new_names = []
+        for n in names:
+            if s == n.string_name:
+                if n.tree_name is not None and n.api_type == 'module' \
+                        and ignore_imports:
+                    continue
+                new_names += complete_trailer(
+                    module_context,
+                    n.infer()
+                )
+        debug.dbg('dot lookup on search %s from %s', new_names, names[:10])
+        names = new_names
+
+    last_name = wanted_names[-1].lower()
+    for n in names:
+        string = n.string_name.lower()
+        if complete and helpers.match(string, last_name, fuzzy=fuzzy) \
+                or not complete and string == last_name:
+            if isinstance(n, SubModuleName):
+                names = [v.name for v in n.infer()]
+            else:
+                names = [n]
+            if convert:
+                names = convert_names(names)
+            for n2 in names:
+                if complete:
+                    def_ = classes.Completion(
+                        inference_state, n2,
+                        stack=None,
+                        like_name_length=len(last_name),
+                        is_fuzzy=fuzzy,
+                    )
+                else:
+                    def_ = classes.Name(inference_state, n2)
+                if not wanted_type or wanted_type == def_.type:
+                    yield def_

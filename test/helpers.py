@@ -16,8 +16,10 @@ import os
 import pytest
 from os.path import abspath, dirname, join
 from functools import partial, wraps
+from jedi import Project
 
 test_dir = dirname(abspath(__file__))
+test_dir_project = Project(test_dir)
 root_dir = dirname(test_dir)
 example_dir = join(test_dir, 'examples')
 

@@ -4,6 +4,8 @@ Tests for `api.names`.
 
 from textwrap import dedent
 
+import pytest
+
 
 def _assert_definition_names(definitions, names):
     assert [d.name for d in definitions] == names
@@ -167,3 +169,23 @@ def test_no_error(get_names):
     assert b.name == 'b'
     assert a20.name == 'a'
     assert a20.goto() == [a20]
+
+
+@pytest.mark.parametrize(
+    'code, index, is_side_effect', [
+        ('x', 0, False),
+        ('x.x', 0, False),
+        ('x.x', 1, False),
+        ('x.x = 3', 0, False),
+        ('x.x = 3', 1, True),
+        ('def x(x): x.x = 3', 1, False),
+        ('def x(x): x.x = 3', 3, True),
+        ('import sys; sys.path', 0, False),
+        ('import sys; sys.path', 1, False),
+        ('import sys; sys.path', 2, False),
+        ('import sys; sys.path = []', 2, True),
+    ]
+)
+def test_is_side_effect(get_names, code, index, is_side_effect):
+    names = get_names(code, references=True, all_scopes=True)
+    assert names[index].is_side_effect() == is_side_effect

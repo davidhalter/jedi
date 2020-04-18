@@ -1,7 +1,5 @@
-import re
 import os
 
-from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
@@ -37,32 +35,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
         return compiled.get_string_value_set(self.parent_context.inference_state)
 
 
-def iter_module_names(inference_state, paths):
-    # Python modules/packages
-    for n in inference_state.compiled_subprocess.list_module_names(paths):
-        yield n
-
-    for path in paths:
-        try:
-            dirs = os.listdir(path)
-        except OSError:
-            # The file might not exist or reading it might lead to an error.
-            debug.warning("Not possible to list directory: %s", path)
-            continue
-        for name in dirs:
-            # Namespaces
-            if os.path.isdir(os.path.join(path, name)):
-                # pycache is obviously not an interestin namespace. Also the
-                # name must be a valid identifier.
-                # TODO use str.isidentifier, once Python 2 is removed
-                if name != '__pycache__' and not re.search(r'\W|^\d', name):
-                    yield name
-            # Stub files
-            if name.endswith('.pyi'):
-                if name != '__init__.pyi':
-                    yield name[:-4]
-
-
 class SubModuleDictMixin(object):
     @inference_state_method_cache()
     def sub_modules_dict(self):
@@ -72,7 +44,9 @@ class SubModuleDictMixin(object):
         """
         names = {}
         if self.is_package():
-            mods = iter_module_names(self.inference_state, self.py__path__())
+            mods = self.inference_state.compiled_subprocess.iter_module_names(
+                self.py__path__()
+            )
             for name in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self.as_context(), name)
@@ -111,20 +85,7 @@ class ModuleMixin(SubModuleDictMixin):
     @property
     @inference_state_method_cache()
     def name(self):
-        return self._module_name_class(self, self._string_name)
-
-    @property
-    def _string_name(self):
-        """ This is used for the goto functions. """
-        # TODO It's ugly that we even use this, the name is usually well known
-        # ahead so just pass it when create a ModuleValue.
-        if self._path is None:
-            return ''  # no path -> empty name
-        else:
-            sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
-            # Remove PEP 3149 names
-            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+        return self._module_name_class(self, self.string_names[-1])
 
     @inference_state_method_cache()
     def _module_attributes_dict(self):
@@ -138,7 +99,9 @@ class ModuleMixin(SubModuleDictMixin):
 
     def iter_star_filters(self):
         for star_module in self.star_imports():
-            yield next(star_module.get_filters())
+            f = next(star_module.get_filters(), None)
+            assert f is not None
+            yield f
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
@@ -260,7 +223,7 @@ class ModuleValue(ModuleMixin, TreeValue):
 
     def __repr__(self):
         return "<%s: %s@%s-%s is_stub=%s>" % (
-            self.__class__.__name__, self._string_name,
+            self.__class__.__name__, self.py__name__(),
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
             self.is_stub()
         )

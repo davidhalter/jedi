@@ -35,6 +35,9 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     def get_filters(self, origin_scope=None):
         yield DictFilter(self.sub_modules_dict())
 
+    def get_qualified_names(self):
+        return ()
+
     @property
     @inference_state_method_cache()
     def name(self):

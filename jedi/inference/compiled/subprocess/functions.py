@@ -1,10 +1,13 @@
 from __future__ import print_function
 import sys
 import os
+import re
+import inspect
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    iter_modules, all_suffixes
+    all_suffixes, scandir
 from jedi.inference.compiled import access
+from jedi import debug
 from jedi import parser_utils
 
 
@@ -38,13 +41,6 @@ def get_module_info(inference_state, sys_path=None, full_name=None, **kwargs):
     finally:
         if sys_path is not None:
             sys.path = temp
-
-
-def list_module_names(inference_state, search_path):
-    return [
-        force_unicode(name)
-        for module_loader, name, is_pkg in iter_modules(search_path)
-    ]
 
 
 def get_builtin_module_names(inference_state):
@@ -84,3 +80,36 @@ def _get_init_path(directory_path):
 
 def safe_literal_eval(inference_state, value):
     return parser_utils.safe_literal_eval(value)
+
+
+def iter_module_names(*args, **kwargs):
+    return list(_iter_module_names(*args, **kwargs))
+
+
+def _iter_module_names(inference_state, paths):
+    # Python modules/packages
+    for path in paths:
+        try:
+            dirs = scandir(path)
+        except OSError:
+            # The file might not exist or reading it might lead to an error.
+            debug.warning("Not possible to list directory: %s", path)
+            continue
+        for dir_entry in dirs:
+            name = dir_entry.name
+            # First Namespaces then modules/stubs
+            if dir_entry.is_dir():
+                # pycache is obviously not an interestin namespace. Also the
+                # name must be a valid identifier.
+                # TODO use str.isidentifier, once Python 2 is removed
+                if name != '__pycache__' and not re.search(r'\W|^\d', name):
+                    yield name
+            else:
+                if name.endswith('.pyi'):  # Stub files
+                    modname = name[:-4]
+                else:
+                    modname = inspect.getmodulename(name)
+
+                if modname and '.' not in modname:
+                    if modname != '__init__':
+                        yield modname

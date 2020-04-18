@@ -1,4 +1,5 @@
 import os
+import re
 
 from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import inference_state_method_cache
@@ -9,6 +10,8 @@ from jedi.parser_utils import get_cached_code_lines
 from jedi.file_io import FileIO
 from jedi import settings
 from jedi import debug
+
+_BUILDOUT_PATH_INSERTION_LIMIT = 10
 
 
 def _abs_path(module_context, path):
@@ -138,6 +141,8 @@ def discover_buildout_paths(inference_state, script_path):
     for buildout_script_path in _get_buildout_script_paths(script_path):
         for path in _get_paths_from_buildout_script(inference_state, buildout_script_path):
             buildout_script_paths.add(path)
+            if len(buildout_script_paths) >= _BUILDOUT_PATH_INSERTION_LIMIT:
+                break
 
     return buildout_script_paths
 
@@ -203,7 +208,7 @@ def _get_buildout_script_paths(search_path):
 
 
 def remove_python_path_suffix(path):
-    for suffix in all_suffixes():
+    for suffix in all_suffixes() + ['.pyi']:
         if path.endswith(suffix):
             path = path[:-len(suffix)]
             break
@@ -250,7 +255,9 @@ def transform_path_to_dotted(sys_path, module_path):
                         # is very strange and is probably a file that is called
                         # `.py`.
                         return
-                    yield tuple(split)
+                    # Stub folders for foo can end with foo-stubs. Just remove
+                    # it.
+                    yield tuple(re.sub(r'-stubs$', '', s) for s in split)
 
     potential_solutions = tuple(iter_potential_solutions())
     if not potential_solutions:

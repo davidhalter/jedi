@@ -1,20 +1,18 @@
 dist: xenial
 language: python
 python:
-  - 2.7
-  - 3.4
-  - 3.5
-  - 3.6
-  - 3.7
   - 3.8
+  - 3.7
+  - 3.6
+  - 3.5
+  - 2.7
 
 env:
-  - JEDI_TEST_ENVIRONMENT=27
-  - JEDI_TEST_ENVIRONMENT=34
-  - JEDI_TEST_ENVIRONMENT=35
-  - JEDI_TEST_ENVIRONMENT=36
-  - JEDI_TEST_ENVIRONMENT=37
   - JEDI_TEST_ENVIRONMENT=38
+  - JEDI_TEST_ENVIRONMENT=37
+  - JEDI_TEST_ENVIRONMENT=36
+  - JEDI_TEST_ENVIRONMENT=35
+  - JEDI_TEST_ENVIRONMENT=27
   - JEDI_TEST_ENVIRONMENT=interpreter
 
 matrix:
@@ -42,7 +40,8 @@ script:
         python_bin=python$test_env_version
         python_path="$(which $python_bin || true)"
         if [ -z "$python_path" ]; then
-          # Only required for JEDI_TEST_ENVIRONMENT=34.
+          # Only required for JEDI_TEST_ENVIRONMENT=38, because it's not always
+          # available.
           download_name=python-$test_env_version
           wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
           sudo tar xjf $download_name.tar.bz2 --directory / opt/python

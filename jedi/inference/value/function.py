@@ -80,8 +80,38 @@ class FunctionMixin(object):
             return LambdaName(self)
         return ValueName(self, self.tree_node.name)
 
+    def is_function(self):
+        return True
+
     def py__name__(self):
         return self.name.string_name
+
+    def get_type_hint(self, add_class_info=True):
+        return_annotation = self.tree_node.annotation
+        if return_annotation is None:
+            def param_name_to_str(n):
+                s = n.string_name
+                annotation = n.infer().get_type_hint()
+                if annotation is not None:
+                    s += ': ' + annotation
+                if n.default_node is not None:
+                    s += '=' + n.default_node.get_code(include_prefix=False)
+                return s
+
+            function_execution = self.as_context()
+            result = function_execution.infer()
+            return_hint = result.get_type_hint()
+            body = self.py__name__() + '(%s)' % ', '.join([
+                param_name_to_str(n)
+                for n in function_execution.get_param_names()
+            ])
+            if return_hint is None:
+                return body
+        else:
+            return_hint = return_annotation.get_code(include_prefix=False)
+            body = self.py__name__() + self.tree_node.children[2].get_code(include_prefix=False)
+
+        return body + ' -> ' + return_hint
 
     def py__call__(self, arguments):
         function_execution = self.as_context(arguments)
@@ -172,9 +202,6 @@ class MethodValue(FunctionValue):
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
-    def is_function_execution(self):
-        return True
-
     def _infer_annotations(self):
         raise NotImplementedError
 
@@ -198,15 +225,15 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             returns = funcdef.iter_return_stmts()
 
         for r in returns:
-            check = flow_analysis.reachability_check(self, funcdef, r)
-            if check is flow_analysis.UNREACHABLE:
-                debug.dbg('Return unreachable: %s', r)
+            if check_yields:
+                value_set |= ValueSet.from_sets(
+                    lazy_value.infer()
+                    for lazy_value in self._get_yield_lazy_value(r)
+                )
             else:
-                if check_yields:
-                    value_set |= ValueSet.from_sets(
-                        lazy_value.infer()
-                        for lazy_value in self._get_yield_lazy_value(r)
-                    )
+                check = flow_analysis.reachability_check(self, funcdef, r)
+                if check is flow_analysis.UNREACHABLE:
+                    debug.dbg('Return unreachable: %s', r)
                 else:
                     try:
                         children = r.children
@@ -215,9 +242,9 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                         value_set |= ValueSet([ctx])
                     else:
                         value_set |= self.infer_node(children[1])
-            if check is flow_analysis.REACHABLE:
-                debug.dbg('Return reachable: %s', r)
-                break
+                if check is flow_analysis.REACHABLE:
+                    debug.dbg('Return reachable: %s', r)
+                    break
         return value_set
 
     def _get_yield_lazy_value(self, yield_expr):
@@ -262,7 +289,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             else:
                 types = self.get_return_values(check_yields=True)
                 if types:
-                    yield LazyKnownValues(types)
+                    yield LazyKnownValues(types, min=0, max=float('inf'))
                 return
             last_for_stmt = for_stmt
 
@@ -395,6 +422,9 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
 
     def get_signature_functions(self):
         return self._overloaded_functions
+
+    def get_type_hint(self, add_class_info=True):
+        return 'Union[%s]' % ', '.join(f.get_type_hint() for f in self._overloaded_functions)
 
 
 def _find_overload_functions(context, tree_node):

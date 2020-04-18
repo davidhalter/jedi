@@ -1,15 +1,12 @@
 .. include:: ../global.rst
 
-End User Usage
-==============
+Using Jedi
+==========
 
-If you are a not an IDE Developer, the odds are that you just want to use
-|jedi| as a browser plugin or in the shell. Yes that's :ref:`also possible
-<repl-completion>`!
+|jedi| is can be used with a variety of plugins and software. It is also possible
+to use |jedi| in the :ref:`Python shell or with IPython <repl-completion>`.
 
-|jedi| is relatively young and can be used in a variety of Plugins and
-Software. If your Editor/IDE is not among them, recommend |jedi| to your IDE
-developers.
+Below you can also find a list of :ref:`recipes for type hinting <recipes>`.
 
 
 .. _editor-plugins:
@@ -17,60 +14,72 @@ developers.
 Editor Plugins
 --------------
 
-Vim:
+Vim
+~~~
 
 - jedi-vim_
 - YouCompleteMe_
 - deoplete-jedi_
 
-Emacs:
+Visual Studio Code
+~~~~~~~~~~~~~~~~~~
+
+- `Python Extension`_
+
+Emacs
+~~~~~
 
 - Jedi.el_
 - elpy_
 - anaconda-mode_
 
-Sublime Text 2/3:
+Sublime Text 2/3
+~~~~~~~~~~~~~~~~
 
 - SublimeJEDI_ (ST2 & ST3)
 - anaconda_ (only ST3)
 
-SynWrite:
+SynWrite
+~~~~~~~~
 
 - SynJedi_
 
-TextMate:
+TextMate
+~~~~~~~~
 
 - Textmate_ (Not sure if it's actually working)
 
-Kate:
+Kate
+~~~~
 
 - Kate_ version 4.13+ `supports it natively
   <https://projects.kde.org/projects/kde/applications/kate/repository/entry/addons/kate/pate/src/plugins/python_autocomplete_jedi.py?rev=KDE%2F4.13>`__,
   you have to enable it, though.
 
-Visual Studio Code:
-
-- `Python Extension`_
-
-Atom:
+Atom
+~~~~
 
 - autocomplete-python-jedi_
 
-GNOME Builder:
+GNOME Builder
+~~~~~~~~~~~~~
 
 - `GNOME Builder`_ `supports it natively
   <https://git.gnome.org/browse/gnome-builder/tree/plugins/jedi>`__,
   and is enabled by default.
 
-Gedit:
+Gedit
+~~~~~
 
 - gedi_
 
-Eric IDE:
+Eric IDE
+~~~~~~~~
 
 - `Eric IDE`_ (Available as a plugin)
 
-Web Debugger:
+Web Debugger
+~~~~~~~~~~~~
 
 - wdb_
 
@@ -81,11 +90,14 @@ and many more!
 Tab Completion in the Python Shell
 ----------------------------------
 
-Starting with Ipython `6.0.0` Jedi is a dependency of IPython. Autocompletion
-in IPython is therefore possible without additional configuration.
+Jedi is a dependency of IPython. Autocompletion in IPython is therefore
+possible without additional configuration.
+
+Here is an `example video <https://vimeo.com/122332037>`_ how REPL completion
+can look like in a different shell.
 
 There are two different options how you can use Jedi autocompletion in
-your Python interpreter. One with your custom ``$HOME/.pythonrc.py`` file
+your ``python`` interpreter. One with your custom ``$HOME/.pythonrc.py`` file
 and one that uses ``PYTHONSTARTUP``.
 
 Using ``PYTHONSTARTUP``
@@ -93,10 +105,136 @@ Using ``PYTHONSTARTUP``
 
 .. automodule:: jedi.api.replstartup
 
-Using a custom ``$HOME/.pythonrc.py``
+Using a Custom ``$HOME/.pythonrc.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: jedi.utils.setup_readline
+
+.. _recipes:
+
+Recipes
+-------
+
+Here are some tips on how to use |jedi| efficiently.
+
+
+.. _type-hinting:
+
+Type Hinting
+~~~~~~~~~~~~
+
+If |jedi| cannot detect the type of a function argument correctly (due to the
+dynamic nature of Python), you can help it by hinting the type using
+one of the docstring/annotation styles below. **Only gradual typing will
+always work**, all the docstring solutions are glorified hacks and more
+complicated cases will probably not work.
+
+Official Gradual Typing (Recommended)
++++++++++++++++++++++++++++++++++++++
+
+You can read a lot about Python's gradual typing system in the corresponding
+PEPs like:
+
+- `PEP 484 <https://www.python.org/dev/peps/pep-0484/>`_ as an introduction
+- `PEP 526 <https://www.python.org/dev/peps/pep-0526/>`_ for variable annotations
+- `PEP 589 <https://www.python.org/dev/peps/pep-0589/>`_ for ``TypeDict``
+- There are probably more :)
+
+Below you can find a few examples how you can use this feature.
+
+Function annotations::
+
+    def myfunction(node: ProgramNode, foo: str) -> None:
+        """Do something with a ``node``.
+
+        """
+        node.| # complete here
+
+
+Assignment, for-loop and with-statement type hints::
+
+    import typing
+    x: int = foo()
+    y: typing.Optional[int] = 3
+
+    key: str
+    value: Employee
+    for key, value in foo.items():
+        pass
+
+    f: Union[int, float]
+    with foo() as f:
+        print(f + 3)
+
+PEP-0484 should be supported in its entirety. Feel free to open issues if that
+is not the case. You can also use stub files.
+
+
+Sphinx style
+++++++++++++
+
+http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
+
+::
+
+    def myfunction(node, foo):
+        """
+        Do something with a ``node``.
+
+        :type node: ProgramNode
+        :param str foo: foo parameter description
+        """
+        node.| # complete here
+
+Epydoc
+++++++
+
+http://epydoc.sourceforge.net/manual-fields.html
+
+::
+
+    def myfunction(node):
+        """
+        Do something with a ``node``.
+
+        @type node: ProgramNode
+        """
+        node.| # complete here
+
+Numpydoc
+++++++++
+
+https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+
+In order to support the numpydoc format, you need to install the `numpydoc
+<https://pypi.python.org/pypi/numpydoc>`__ package.
+
+::
+
+    def foo(var1, var2, long_var_name='hi'):
+        r"""
+        A one-line summary that does not use variable names or the
+        function name.
+
+        ...
+
+        Parameters
+        ----------
+        var1 : array_like
+            Array_like means all those objects -- lists, nested lists,
+            etc. -- that can be converted to an array. We can also
+            refer to variables like `var1`.
+        var2 : int
+            The type above can either refer to an actual Python type
+            (e.g. ``int``), or describe the type of the variable in more
+            detail, e.g. ``(N,) ndarray`` or ``array_like``.
+        long_variable_name : {'hi', 'ho'}, optional
+            Choices in brackets, default first when optional.
+
+        ...
+
+        """
+        var2.| # complete here
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: https://valloric.github.io/YouCompleteMe/
@@ -114,4 +252,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
 .. _Eric IDE: https://eric-ide.python-projects.org
-.. _Python Extension: https://marketplace.visualstudio.com/items?itemName=donjayamanne.python
+.. _Python Extension: https://marketplace.visualstudio.com/items?itemName=ms-python.python

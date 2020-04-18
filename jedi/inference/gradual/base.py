@@ -165,6 +165,18 @@ class GenericClass(ClassMixin, DefineGenericBase):
     def _get_wrapped_value(self):
         return self._class_value
 
+    def get_type_hint(self, add_class_info=True):
+        n = self.py__name__()
+        # Not sure if this is the best way to do this, but all of these types
+        # are a bit special in that they have type aliases and other ways to
+        # become lower case. It's probably better to make them upper case,
+        # because that's what you can use in annotations.
+        n = dict(list="List", dict="Dict", set="Set", tuple="Tuple").get(n, n)
+        s = n + self._generics_manager.get_type_hint()
+        if add_class_info:
+            return 'Type[%s]' % s
+        return s
+
     def get_type_var_filter(self):
         return _TypeVarFilter(self.get_generics(), self.list_type_vars())
 
@@ -187,6 +199,47 @@ class GenericClass(ClassMixin, DefineGenericBase):
         if super(GenericClass, self).is_sub_class_of(class_value):
             return True
         return self._class_value.is_sub_class_of(class_value)
+
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
+
+        annotation_name = self.py__name__()
+        type_var_dict = {}
+        if annotation_name == 'Iterable' and not is_class_value:
+            annotation_generics = self.get_generics()
+            if annotation_generics:
+                return annotation_generics[0].infer_type_vars(
+                    value_set.merge_types_of_iterate(),
+                )
+
+        else:
+            # Note: we need to handle the MRO _in order_, so we need to extract
+            # the elements from the set first, then handle them, even if we put
+            # them back in a set afterwards.
+            for py_class in value_set:
+                if not is_class_value:
+                    if py_class.is_instance() and not py_class.is_compiled():
+                        py_class = py_class.get_annotated_class_object()
+                    else:
+                        continue
+
+                if py_class.api_type != u'class':
+                    # Functions & modules don't have an MRO and we're not
+                    # expecting a Callable (those are handled separately within
+                    # TypingClassValueWithIndex).
+                    continue
+
+                for parent_class in py_class.py__mro__():
+                    class_name = parent_class.py__name__()
+                    if annotation_name == class_name:
+                        merge_type_var_dicts(
+                            type_var_dict,
+                            merge_pairwise_generics(self, parent_class),
+                        )
+                        break
+
+        return type_var_dict
 
 
 class _LazyGenericBaseClass(object):
@@ -239,6 +292,9 @@ class _GenericInstanceWrapper(ValueWrapper):
                 return ValueSet([builtin_from_name(self.inference_state, u'None')])
         return self._wrapped_value.py__stop_iteration_returns()
 
+    def get_type_hint(self, add_class_info=True):
+        return self._wrapped_value.class_value.get_type_hint(add_class_info=False)
+
 
 class _PseudoTreeNameClass(Value):
     """
@@ -284,6 +340,9 @@ class _PseudoTreeNameClass(Value):
     @property
     def name(self):
         return ValueName(self, self._tree_name)
+
+    def get_qualified_names(self):
+        return (self._tree_name.value,)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)

@@ -8,11 +8,12 @@ import pytest
 from . import helpers
 from . import run
 from . import refactor
-from jedi.api.environment import InterpreterEnvironment, get_system_environment
+from jedi import InterpreterEnvironment, get_system_environment
 from jedi.inference.compiled.value import create_from_access_path
 from jedi.inference.imports import _load_python_module
 from jedi.file_io import KnownContentFileIO
 from jedi.inference.base_value import ValueSet
+from jedi.api.interpreter import MixedModuleContext
 
 # For interpreter tests sometimes the path of this directory is in the sys
 # path, which we definitely don't want. So just remove it globally.
@@ -75,9 +76,11 @@ def pytest_generate_tests(metafunc):
 
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir
+        cases = list(refactor.collect_dir_tests(base_dir, test_files))
         metafunc.parametrize(
-            'refactor_case',
-            refactor.collect_dir_tests(base_dir, test_files))
+            'refactor_case', cases,
+            ids=[c.refactor_type + '-' + c.name for c in cases]
+        )
 
     if 'static_analysis_case' in metafunc.fixturenames:
         base_dir = os.path.join(os.path.dirname(__file__), 'static_analysis')
@@ -173,3 +176,14 @@ def module_injector():
         inference_state.module_cache.add(names, ValueSet([v]))
 
     return module_injector
+
+
+@pytest.fixture(params=[False, True])
+def class_findable(monkeypatch, request):
+    if not request.param:
+        monkeypatch.setattr(
+            MixedModuleContext,
+            '_get_mixed_object',
+            lambda self, compiled_object: compiled_object.as_context()
+        )
+    return request.param

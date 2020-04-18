@@ -23,7 +23,7 @@ def test_basedefinition_type(Script, get_names):
         """
         Return a list of definitions for parametrized tests.
 
-        :rtype: [jedi.api_classes.BaseDefinition]
+        :rtype: [jedi.api_classes.BaseName]
         """
         source = dedent("""
         import sys
@@ -129,10 +129,11 @@ def test_completion_docstring(Script, jedi_path):
     Jedi should follow imports in certain conditions
     """
     def docstr(src, result):
-        c = Script(src, sys_path=[jedi_path]).complete()[0]
+        c = Script(src, project=project).complete()[0]
         assert c.docstring(raw=True, fast=False) == cleandoc(result)
 
-    c = Script('import jedi\njed', sys_path=[jedi_path]).complete()[0]
+    project = jedi.Project('.', sys_path=[jedi_path])
+    c = Script('import jedi\njed', project=project).complete()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
     docstr('import jedi\njedi.Scr', cleandoc(jedi.Script.__doc__))
@@ -192,7 +193,7 @@ def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()
 
-    script = Script(source='from hashlib import sha256')
+    script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
     assert [p.name for p in sig.params] == ['arg']
@@ -277,7 +278,7 @@ def test_parent_on_function(Script):
     code = 'def spam():\n pass'
     def_, = Script(code).goto(line=1, column=len('def spam'))
     parent = def_.parent()
-    assert parent.name == ''
+    assert parent.name == '__main__'
     assert parent.type == 'module'
 
 
@@ -327,7 +328,7 @@ def test_parent_on_closure(Script):
     assert foo.parent().name == 'inner'
     assert foo.parent().parent().name == 'bar'
     assert foo.parent().parent().parent().name == 'Foo'
-    assert foo.parent().parent().parent().parent().name == ''
+    assert foo.parent().parent().parent().parent().name == '__main__'
 
     assert inner_func.parent().name == 'bar'
     assert inner_func.parent().parent().name == 'Foo'
@@ -343,7 +344,7 @@ def test_parent_on_comprehension(Script):
 
     assert [name.name for name in ns] == ['spam', 'i']
 
-    assert ns[0].parent().name == ''
+    assert ns[0].parent().name == '__main__'
     assert ns[0].parent().type == 'module'
     assert ns[1].parent().name == 'spam'
     assert ns[1].parent().type == 'function'
@@ -374,7 +375,7 @@ def test_type_II(Script):
 
 
 """
-This tests the BaseDefinition.goto function, not the jedi
+This tests the BaseName.goto function, not the jedi
 function. They are not really different in functionality, but really
 different as an implementation.
 """
@@ -544,3 +545,57 @@ def test_inheritance_module_path(Script, goto, code, name, file_name):
     assert func.type == 'function'
     assert func.name == name
     assert func.module_path == os.path.join(base_path, file_name)
+
+
+def test_definition_goto_follow_imports(Script):
+    dumps = Script('from json import dumps\ndumps').get_names(references=True)[-1]
+    assert dumps.description == 'dumps'
+    no_follow, = dumps.goto()
+    assert no_follow.description == 'def dumps'
+    assert no_follow.line == 1
+    assert no_follow.column == 17
+    assert no_follow.module_name == '__main__'
+    follow, = dumps.goto(follow_imports=True)
+    assert follow.description == 'def dumps'
+    assert follow.line != 1
+    assert follow.module_name == 'json'
+
+
+@pytest.mark.parametrize(
+    'code, expected', [
+        ('1', 'int'),
+        ('x = None; x', 'None'),
+        ('n: Optional[str]; n', 'Optional[str]'),
+        ('n = None if xxxxx else ""; n', 'Optional[str]'),
+        ('n = None if xxxxx else str(); n', 'Optional[str]'),
+        ('n = None if xxxxx else str; n', 'Optional[Type[str]]'),
+        ('class Foo: pass\nFoo', 'Type[Foo]'),
+        ('class Foo: pass\nFoo()', 'Foo'),
+
+        ('n: Type[List[int]]; n', 'Type[List[int]]'),
+        ('n: Type[List]; n', 'Type[list]'),
+        ('n: List; n', 'list'),
+        ('n: List[int]; n', 'List[int]'),
+        ('n: Iterable[int]; n', 'Iterable[int]'),
+
+        ('n = [1]; n', 'List[int]'),
+        ('n = [1, ""]; n', 'List[Union[int, str]]'),
+        ('n = [1, str(), None]; n', 'List[Optional[Union[int, str]]]'),
+        ('n = {1, str()}; n', 'Set[Union[int, str]]'),
+        ('n = (1,); n', 'Tuple[int]'),
+        ('n = {1: ""}; n', 'Dict[int, str]'),
+        ('n = {1: "", 1.0: b""}; n', 'Dict[Union[float, int], Union[bytes, str]]'),
+
+        ('n = next; n', 'Union[next(__i: Iterator[_T]) -> _T, '
+         'next(__i: Iterator[_T], default: _VT) -> Union[_T, _VT]]'),
+        ('abs', 'abs(__n: SupportsAbs[_T]) -> _T'),
+        ('def foo(x, y): return x if xxxx else y\nfoo(str(), 1)\nfoo',
+         'foo(x: str, y: int) -> Union[int, str]'),
+        ('def foo(x, y = None): return x if xxxx else y\nfoo(str(), 1)\nfoo',
+         'foo(x: str, y: int=None) -> Union[int, str]'),
+    ]
+)
+def test_get_type_hint(Script, code, expected, skip_pre_python36):
+    code = 'from typing import *\n' + code
+    d, = Script(code).goto()
+    assert d.get_type_hint() == expected

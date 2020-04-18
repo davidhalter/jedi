@@ -3,12 +3,18 @@ from jedi.inference.base_value import ValueSet, \
     NO_VALUES
 from jedi.inference.utils import to_list
 from jedi.inference.gradual.stub_value import StubModuleValue
+from jedi.inference.gradual.typeshed import try_to_load_stub_cached
+from jedi.inference.value.decorator import Decoratee
 
 
 def _stub_to_python_value_set(stub_value, ignore_compiled=False):
     stub_module_context = stub_value.get_root_context()
     if not stub_module_context.is_stub():
         return ValueSet([stub_value])
+
+    decorates = None
+    if isinstance(stub_value, Decoratee):
+        decorates = stub_value._original_value
 
     was_instance = stub_value.is_instance()
     if was_instance:
@@ -36,6 +42,8 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
         # Now that the instance has been properly created, we can simply get
         # the method.
         values = values.py__getattribute__(method_name)
+    if decorates is not None:
+        values = ValueSet(Decoratee(v, decorates) for v in values)
     return values
 
 
@@ -73,7 +81,13 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
                     converted_names = converted.goto(name.get_public_name())
                     if converted_names:
                         for n in converted_names:
-                            yield n
+                            if n.get_root_context().is_stub():
+                                # If it's a stub again, it means we're going in
+                                # a circle. Probably some imports make it a
+                                # stub again.
+                                yield name
+                            else:
+                                yield n
                         continue
         yield name
 
@@ -81,8 +95,7 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
 def _load_stub_module(module):
     if module.is_stub():
         return module
-    from jedi.inference.gradual.typeshed import _try_to_load_stub_cached
-    return _try_to_load_stub_cached(
+    return try_to_load_stub_cached(
         module.inference_state,
         import_names=module.string_names,
         python_value_set=ValueSet([module]),
@@ -130,7 +143,9 @@ def _python_to_stub_names(names, fallback_to_python=False):
 
 
 def convert_names(names, only_stubs=False, prefer_stubs=False, prefer_stub_to_compiled=True):
-    assert not (only_stubs and prefer_stubs)
+    if only_stubs and prefer_stubs:
+        raise ValueError("You cannot use both of only_stubs and prefer_stubs.")
+
     with debug.increase_indent_cm('convert names'):
         if only_stubs or prefer_stubs:
             return _python_to_stub_names(names, fallback_to_python=prefer_stubs)

@@ -43,6 +43,9 @@ else:
 
 def addition(a, b):
     if type(a) == type(b):
+        # Might still be a type error, we might want to change this in the
+        # future.
+        #! 9 type-error-operation
         return a + b
     else:
         #! 9 type-error-operation

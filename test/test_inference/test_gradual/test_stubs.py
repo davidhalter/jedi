@@ -45,7 +45,7 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
                         kwargs, type_, options, environment):
     if environment.version_info < (3, 5):
         # We just don't care about much of the detailed Python 2 failures
-        # anymore, because its end-of-life soon. (same for 3.4)
+        # anymore, because its end-of-life soon.
         pytest.skip()
 
     if type_ == 'infer' and full_name == 'typing.Sequence' and environment.version_info >= (3, 7):
@@ -54,7 +54,7 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
         has_python = False
 
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
-    s = Script(code, _project=project)
+    s = Script(code, project=project)
     prefer_stubs = kwargs['prefer_stubs']
     only_stubs = kwargs['only_stubs']
 

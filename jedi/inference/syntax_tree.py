@@ -356,6 +356,12 @@ def infer_atom(context, atom):
 def infer_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.inference_state, stmt) as allowed:
         if allowed:
+            if seek_name is not None:
+                pep0484_values = \
+                    annotation.find_type_from_comment_hint_assign(context, stmt, seek_name)
+                if pep0484_values:
+                    return pep0484_values
+
             return _infer_expr_stmt(context, stmt, seek_name)
     return NO_VALUES
 
@@ -388,6 +394,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
 
     debug.dbg('infer_expr_stmt %s (%s)', stmt, seek_name)
     rhs = stmt.get_rhs()
+
     value_set = context.infer_node(rhs)
 
     if seek_name:
@@ -596,7 +603,11 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
-                return ValueSet([_bool_to_value(inference_state, bool_)])
+                # Only if == returns True or != returns False, we can continue.
+                # There's no guarantee that they are not equal. This can help
+                # in some cases, but does not cover everything.
+                if (str_operator in ('is', '==')) == bool_:
+                    return ValueSet([_bool_to_value(inference_state, bool_)])
 
             if isinstance(left, VersionInfo):
                 version_info = _get_tuple_ints(right)
@@ -631,23 +642,6 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     return result
 
 
-def _remove_statements(context, stmt, name):
-    """
-    This is the part where statements are being stripped.
-
-    Due to lazy type inference, statements like a = func; b = a; b() have to be
-    inferred.
-
-    TODO merge with infer_expr_stmt?
-    """
-    pep0484_values = \
-        annotation.find_type_from_comment_hint_assign(context, stmt, name)
-    if pep0484_values:
-        return pep0484_values
-
-    return infer_expr_stmt(context, stmt, seek_name=name)
-
-
 @plugin_manager.decorate()
 def tree_name_to_values(inference_state, context, tree_name):
     value_set = NO_VALUES
@@ -655,16 +649,18 @@ def tree_name_to_values(inference_state, context, tree_name):
     # First check for annotations, like: `foo: int = 3`
     if module_node is not None:
         names = module_node.get_used_names().get(tree_name.value, [])
+        found_annotation = False
         for name in names:
             expr_stmt = name.parent
 
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 if correct_scope:
+                    found_annotation = True
                     value_set |= annotation.infer_annotation(
                         context, expr_stmt.children[1].children[1]
                     ).execute_annotation()
-        if value_set:
+        if found_annotation:
             return value_set
 
     types = []
@@ -710,7 +706,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             n = TreeNameDefinition(context, tree_name)
             types = check_tuple_assignments(n, for_types)
     elif typ == 'expr_stmt':
-        types = _remove_statements(context, node, tree_name)
+        types = infer_expr_stmt(context, node, tree_name)
     elif typ == 'with_stmt':
         value_managers = context.infer_node(node.get_test_node_from_name(tree_name))
         enter_methods = value_managers.py__getattribute__(u'__enter__')
@@ -725,7 +721,9 @@ def tree_name_to_values(inference_state, context, tree_name):
         # the static analysis report.
         exceptions = context.infer_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_with_values()
-    elif node.type == 'param':
+    elif typ == 'param':
+        types = NO_VALUES
+    elif typ == 'del_stmt':
         types = NO_VALUES
     else:
         raise ValueError("Should not happen. type: %s" % typ)
@@ -795,7 +793,8 @@ def check_tuple_assignments(name, value_set):
         if isinstance(index, slice):
             # For no star unpacking is not possible.
             return NO_VALUES
-        for _ in range(index + 1):
+        i = 0
+        while i <= index:
             try:
                 lazy_value = next(iterated)
             except StopIteration:
@@ -804,6 +803,8 @@ def check_tuple_assignments(name, value_set):
                 # index number is high. Therefore break if the loop is
                 # finished.
                 return NO_VALUES
+            else:
+                i += lazy_value.max
         value_set = lazy_value.infer()
     return value_set
 

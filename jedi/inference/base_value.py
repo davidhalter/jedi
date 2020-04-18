@@ -70,8 +70,6 @@ class HelperValueMixin(object):
                     yield f
 
     def goto(self, name_or_str, name_context=None, analysis_errors=True):
-        if name_context is None:
-            name_context = self
         from jedi.inference import finder
         filters = self._get_value_filters(name_or_str)
         names = finder.filter_name(filters, name_or_str)
@@ -218,7 +216,6 @@ class Value(HelperValueMixin, BaseValue):
             return ''
         else:
             return clean_scope_docstring(self.tree_node)
-        return None
 
     def get_safe_value(self, default=sentinel):
         if default is sentinel:
@@ -258,11 +255,15 @@ class Value(HelperValueMixin, BaseValue):
     def _as_context(self):
         raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
 
+    @property
     def name(self):
         raise NotImplementedError
 
     def py__name__(self):
         return self.name.string_name
+
+    def get_type_hint(self, add_class_info=True):
+        return None
 
 
 def iterate_values(values, contextualized_node=None, is_async=False):
@@ -413,6 +414,38 @@ class ValueSet(BaseValueSet):
 
     def get_signatures(self):
         return [sig for c in self._set for sig in c.get_signatures()]
+
+    def get_type_hint(self, add_class_info=True):
+        t = [v.get_type_hint(add_class_info=add_class_info) for v in self._set]
+        type_hints = sorted(filter(None, t))
+        if len(type_hints) == 1:
+            return type_hints[0]
+
+        optional = 'None' in type_hints
+        if optional:
+            type_hints.remove('None')
+
+        if len(type_hints) == 0:
+            return None
+        elif len(type_hints) == 1:
+            s = type_hints[0]
+        else:
+            s = 'Union[%s]' % ', '.join(type_hints)
+        if optional:
+            s = 'Optional[%s]' % s
+        return s
+
+    def infer_type_vars(self, value_set, is_class_value=False):
+        # Circular
+        from jedi.inference.gradual.annotation import merge_type_var_dicts
+
+        type_var_dict = {}
+        for value in self._set:
+            merge_type_var_dicts(
+                type_var_dict,
+                value.infer_type_vars(value_set, is_class_value),
+            )
+        return type_var_dict
 
 
 NO_VALUES = ValueSet([])

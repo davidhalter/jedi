@@ -3,56 +3,74 @@
 API Overview
 ============
 
-.. currentmodule:: jedi
-
-Note: This documentation is for Plugin developers, who want to improve their
-editors/IDE autocompletion 
-
-If you want to use |jedi|, you first need to ``import jedi``.  You then have
-direct access to the :class:`.Script`. You can then call the functions
-documented here. These functions return :ref:`API classes
-<api-classes>`.
-
-
-Deprecations
-------------
-
-The deprecation process is as follows:
-
-1. A deprecation is announced in the next major/minor release.
-2. We wait either at least a year & at least two minor releases until we remove
-   the deprecated functionality.
-
-
-API Documentation
------------------
-
-The API consists of a few different parts:
-
-- The main starting points for complete/goto: :class:`.Script` and :class:`.Interpreter`
-- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
-- :ref:`API Result Classes <api-classes>`
-- :ref:`Python Versions/Virtualenv Support <environments>` with functions like
-  :func:`.find_system_environments` and :func:`.find_virtualenvs`
+.. note:: This documentation is mostly for Plugin developers, who want to
+   improve their editors/IDE with Jedi.
 
 .. _api:
 
-Static Analysis Interface
-~~~~~~~~~~~~~~~~~~~~~~~~~
+The API consists of a few different parts:
 
-.. automodule:: jedi
+- The main starting points for complete/goto: :class:`.Script` and
+  :class:`.Interpreter`. If you work with Jedi you want to understand these
+  classes first.
+- :ref:`API Result Classes <api-classes>`
+- :ref:`Python Versions/Virtualenv Support <environments>` with functions like
+  :func:`.find_system_environments` and :func:`.find_virtualenvs`
+- A way to work with different :ref:`Folders / Projects <projects>`
+- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
+
+The methods that you are most likely going to use to work with Jedi are the
+following ones:
+
+.. currentmodule:: jedi
+
+.. autosummary::
+   :nosignatures:
+
+    Script.complete
+    Script.goto
+    Script.infer
+    Script.help
+    Script.get_signatures
+    Script.get_references
+    Script.get_context
+    Script.get_names
+    Script.get_syntax_errors
+    Script.rename
+    Script.inline
+    Script.extract_variable
+    Script.extract_function
+    Script.search
+    Script.complete_search
+    Project.search
+    Project.complete_search
+
+Script
+------
 
 .. autoclass:: jedi.Script
     :members:
+
+Interpreter
+-----------
 .. autoclass:: jedi.Interpreter
     :members:
-.. autofunction:: jedi.preload_module
-.. autofunction:: jedi.set_debug_function
+
+.. _projects:
+
+Projects
+--------
+
+.. automodule:: jedi.api.project
+
+.. autofunction:: jedi.get_default_project
+.. autoclass:: jedi.Project
+    :members:
 
 .. _environments:
 
 Environments
-~~~~~~~~~~~~
+------------
 
 .. automodule:: jedi.api.environment
 
@@ -65,18 +83,31 @@ Environments
 .. autoclass:: jedi.api.environment.Environment
     :members:
 
+Helper Functions
+----------------
+
+.. autofunction:: jedi.preload_module
+.. autofunction:: jedi.set_debug_function
+
+Errors
+------
+
+.. autoexception:: jedi.InternalError
+.. autoexception:: jedi.RefactoringError
+
 Examples
 --------
 
-Completions:
+Completions
+~~~~~~~~~~~
 
 .. sourcecode:: python
 
    >>> import jedi
-   >>> source = '''import json; json.l'''
-   >>> script = jedi.Script(source, path='')
+   >>> code = '''import json; json.l'''
+   >>> script = jedi.Script(code, path='example.py')
    >>> script
-   <jedi.api.Script object at 0x2121b10>
+   <Script: 'example.py' <SameEnvironment: 3.5.2 in /usr>>
    >>> completions = script.complete(1, 19)
    >>> completions
    [<Completion: load>, <Completion: loads>]
@@ -87,12 +118,14 @@ Completions:
    >>> completions[1].name
    'loads'
 
-Definitions / Goto:
+Type Inference / Goto
+~~~~~~~~~~~~~~~~~~~~~
 
 .. sourcecode:: python
 
     >>> import jedi
-    >>> source = '''def my_func():
+    >>> code = '''\
+    ... def my_func():
     ...     print 'called'
     ... 
     ... alias = my_func
@@ -100,30 +133,42 @@ Definitions / Goto:
     ... inception = my_list[2]
     ... 
     ... inception()'''
-    >>> script = jedi.Script(source, path='')
+    >>> script = jedi.Script(code)
     >>>
     >>> script.goto(8, 1)
-    [<Definition inception=my_list[2]>]
+    [<Name full_name='__main__.inception', description='inception = my_list[2]'>]
     >>>
     >>> script.infer(8, 1)
-    [<Definition def my_func>]
+    [<Name full_name='__main__.my_func', description='def my_func'>]
 
-References:
+References
+~~~~~~~~~~
 
 .. sourcecode:: python
 
     >>> import jedi
-    >>> source = '''x = 3
+    >>> code = '''\
+    ... x = 3
     ... if 1 == 2:
     ...     x = 4
     ... else:
     ...     del x'''
-    >>> script = jedi.Script(source, '')
+    >>> script = jedi.Script(code)
     >>> rns = script.get_references(5, 8)
     >>> rns
-    [<Definition full_name='__main__.x', description='x = 3'>,
-     <Definition full_name='__main__.x', description='x'>]
+    [<Name full_name='__main__.x', description='x = 3'>,
+     <Name full_name='__main__.x', description='x = 4'>,
+     <Name full_name='__main__.x', description='del x'>]
     >>> rns[1].line
-    5
-    >>> rns[0].column
-    8
+    3
+    >>> rns[1].column
+    4
+
+Deprecations
+------------
+
+The deprecation process is as follows:
+
+1. A deprecation is announced in the next major/minor release.
+2. We wait either at least a year and at least two minor releases until we
+   remove the deprecated functionality.

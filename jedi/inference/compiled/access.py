@@ -113,34 +113,6 @@ def shorten_repr(func):
     return wrapper
 
 
-def compiled_objects_cache(attribute_name):
-    def decorator(func):
-        """
-        This decorator caches just the ids, oopposed to caching the object itself.
-        Caching the id has the advantage that an object doesn't need to be
-        hashable.
-        """
-        def wrapper(inference_state, obj, parent_context=None):
-            cache = getattr(inference_state, attribute_name)
-            # Do a very cheap form of caching here.
-            key = id(obj)
-            try:
-                cache[key]
-                return cache[key][0]
-            except KeyError:
-                # TODO wuaaaarrghhhhhhhh
-                if attribute_name == 'mixed_cache':
-                    result = func(inference_state, obj, parent_context)
-                else:
-                    result = func(inference_state, obj)
-                # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context
-                return result
-        return wrapper
-
-    return decorator
-
-
 def create_access(inference_state, obj):
     return inference_state.compiled_subprocess.get_or_create_access_handle(obj)
 
@@ -314,6 +286,9 @@ class DirectObjectAccess(object):
 
     def is_class(self):
         return inspect.isclass(self._obj)
+
+    def is_function(self):
+        return inspect.isfunction(self._obj) or inspect.ismethod(self._obj)
 
     def is_module(self):
         return inspect.ismodule(self._obj)
@@ -509,6 +484,11 @@ class DirectObjectAccess(object):
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
 
+    def _annotation_to_str(self, annotation):
+        if isinstance(annotation, type):
+            return str(annotation.__name__)
+        return str(annotation)
+
     def get_signature_params(self):
         return [
             SignatureParam(
@@ -518,7 +498,7 @@ class DirectObjectAccess(object):
                 default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
-                annotation_string=str(p.annotation),
+                annotation_string=self._annotation_to_str(p.annotation),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
@@ -527,22 +507,6 @@ class DirectObjectAccess(object):
         obj = self._obj
         if py_version < 33:
             raise ValueError("inspect.signature was introduced in 3.3")
-        if py_version == 34:
-            # In 3.4 inspect.signature are wrong for str and int. This has
-            # been fixed in 3.5. The signature of object is returned,
-            # because no signature was found for str. Here we imitate 3.5
-            # logic and just ignore the signature if the magic methods
-            # don't match object.
-            # 3.3 doesn't even have the logic and returns nothing for str
-            # and classes that inherit from object.
-            user_def = inspect._signature_get_user_defined_method
-            if (inspect.isclass(obj)
-                    and not user_def(type(obj), '__init__')
-                    and not user_def(type(obj), '__new__')
-                    and (obj.__init__ != object.__init__
-                         or obj.__new__ != object.__new__)):
-                raise ValueError
-
         try:
             return inspect.signature(obj)
         except (RuntimeError, TypeError):
@@ -595,4 +559,6 @@ def _is_class_instance(obj):
     except AttributeError:
         return False
     else:
-        return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
+        # The isinstance check for cls is just there so issubclass doesn't
+        # raise an exception.
+        return cls != type and isinstance(cls, type) and not issubclass(cls, NOT_CLASS_TYPES)

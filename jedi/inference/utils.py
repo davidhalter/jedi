@@ -107,19 +107,9 @@ class PushBackIterator(object):
 def ignored(*exceptions):
     """
     Value manager that ignores all of the specified exceptions. This will
-    be in the standard library starting with Python 3.4.
+    be in the standard library starting with Python 3.5.
     """
     try:
         yield
     except exceptions:
         pass
-
-
-def indent_block(text, indention='    '):
-    """This function indents a text block with a default of four spaces."""
-    temp = ''
-    while text and text[-1] == '\n':
-        temp += text[-1]
-        text = text[:-1]
-    lines = text.split('\n')
-    return '\n'.join(map(lambda s: indention + s, lines)) + temp

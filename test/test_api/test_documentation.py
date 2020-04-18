@@ -75,3 +75,43 @@ def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):
 
     d, = goto_or_help(code + to_execute)
     assert d.docstring() == expected_doc
+
+
+def test_version_info(Script):
+    """
+    Version info is a bit special, because it needs to be fast for some ifs, so
+    it's a special object that we have to check.
+    """
+    s = Script(dedent("""\
+        import sys
+
+        sys.version_info"""))
+
+    c, = s.complete()
+    assert c.docstring() == 'sys.version_info\n\nVersion information as a named tuple.'
+
+
+def test_builtin_docstring(goto_or_help_or_infer, skip_python2):
+    d, = goto_or_help_or_infer('open')
+
+    doc = d.docstring()
+    assert doc.startswith('open(file: Union[')
+    assert 'Open file' in doc
+
+
+def test_docstring_decorator(goto_or_help_or_infer, skip_python2):
+    code = dedent('''
+        import types
+
+        def dec(func):
+            return types.FunctionType()
+
+        @dec
+        def func(a, b):
+            "hello"
+            return
+        func''')
+    d, = goto_or_help_or_infer(code)
+
+    doc = d.docstring()
+    assert doc == 'FunctionType(*args: Any, **kwargs: Any) -> Any\n\nhello'

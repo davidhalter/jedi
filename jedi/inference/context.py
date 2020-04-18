@@ -129,6 +129,9 @@ class AbstractContext(object):
     def is_compiled(self):
         return False
 
+    def is_bound_method(self):
+        return False
+
     @abstractmethod
     def py__name__(self):
         raise NotImplementedError
@@ -189,6 +192,9 @@ class ValueContext(AbstractContext):
 
     def is_compiled(self):
         return self._value.is_compiled()
+
+    def is_bound_method(self):
+        return self._value.is_bound_method()
 
     def py__name__(self):
         return self._value.py__name__()
@@ -308,7 +314,7 @@ class ModuleContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
         # Skip the first filter and replace it.
-        next(filters)
+        next(filters, None)
         yield MergedFilter(
             ParserTreeFilter(
                 parent_context=self,
@@ -346,6 +352,10 @@ class NamespaceContext(TreeContextMixin, ValueContext):
 
     def get_value(self):
         return self._value
+
+    @property
+    def string_names(self):
+        return self._value.string_names
 
     def py__file__(self):
         return self._value.py__file__()
@@ -484,5 +494,7 @@ def get_global_filters(context, until_position, origin_scope):
 
         context = context.parent_context
 
+    b = next(base_context.inference_state.builtins_module.get_filters(), None)
+    assert b is not None
     # Add builtins to the global scope.
-    yield next(base_context.inference_state.builtins_module.get_filters())
+    yield b

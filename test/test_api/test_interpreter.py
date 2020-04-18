@@ -18,7 +18,7 @@ else:
     eval(compile("""def exec_(source, global_map):
                         exec source in global_map """, 'blub', 'exec'))
 
-if py_version > 34:
+if py_version > 35:
     import typing
 else:
     typing = None
@@ -123,23 +123,17 @@ def _assert_interpreter_complete(source, namespace, completions,
 
 def test_complete_raw_function():
     from os.path import join
-    _assert_interpreter_complete('join("").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('join("").up', locals(), ['upper'])
 
 
 def test_complete_raw_function_different_name():
     from os.path import join as pjoin
-    _assert_interpreter_complete('pjoin("").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('pjoin("").up', locals(), ['upper'])
 
 
 def test_complete_raw_module():
     import os
-    _assert_interpreter_complete('os.path.join("a").up',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('os.path.join("a").up', locals(), ['upper'])
 
 
 def test_complete_raw_instance():
@@ -148,31 +142,19 @@ def test_complete_raw_instance():
     completions = ['time', 'timetz', 'timetuple']
     if is_py3:
         completions += ['timestamp']
-    _assert_interpreter_complete('(dt - dt).ti',
-                                 locals(),
-                                 completions)
+    _assert_interpreter_complete('(dt - dt).ti', locals(), completions)
 
 
 def test_list():
     array = ['haha', 1]
-    _assert_interpreter_complete('array[0].uppe',
-                                 locals(),
-                                 ['upper'])
-    _assert_interpreter_complete('array[0].real',
-                                 locals(),
-                                 [])
+    _assert_interpreter_complete('array[0].uppe', locals(), ['upper'])
+    _assert_interpreter_complete('array[0].real', locals(), [])
 
     # something different, no index given, still just return the right
-    _assert_interpreter_complete('array[int].real',
-                                 locals(),
-                                 ['real'])
-    _assert_interpreter_complete('array[int()].real',
-                                 locals(),
-                                 ['real'])
+    _assert_interpreter_complete('array[int].real', locals(), ['real'])
+    _assert_interpreter_complete('array[int()].real', locals(), ['real'])
     # inexistent index
-    _assert_interpreter_complete('array[2].upper',
-                                 locals(),
-                                 ['upper'])
+    _assert_interpreter_complete('array[2].upper', locals(), ['upper'])
 
 
 def test_getattr():
@@ -186,9 +168,7 @@ def test_slice():
     class Foo1:
         bar = []
     baz = 'xbarx'
-    _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append',
-                                 locals(),
-                                 ['append'])
+    _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append', locals(), ['append'])
 
 
 def test_getitem_side_effects():
@@ -342,7 +322,7 @@ def test_completion_params():
 
 @pytest.mark.skipif('py_version < 33', reason='inspect.signature was created in 3.3.')
 def test_completion_param_annotations():
-    # Need to define this function not directly in Python. Otherwise Jedi is to
+    # Need to define this function not directly in Python. Otherwise Jedi is too
     # clever and uses the Python code instead of the signature object.
     code = 'def foo(a: 1, b: str, c: int = 1.0) -> bytes: pass'
     exec_(code, locals())
@@ -353,6 +333,10 @@ def test_completion_param_annotations():
     assert a.infer() == []
     assert [d.name for d in b.infer()] == ['str']
     assert {d.name for d in c.infer()} == {'int', 'float'}
+
+    assert a.description == 'param a: 1'
+    assert b.description == 'param b: str'
+    assert c.description == 'param c: int=1.0'
 
     d, = jedi.Interpreter('foo()', [locals()]).infer()
     assert d.name == 'bytes'
@@ -531,6 +515,16 @@ def test__wrapped__():
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_illegal_class_instance():
+    class X:
+        __class__ = 1
+    X.__name__ = 'asdf'
+    d, = jedi.Interpreter('foo', [{'foo': X()}]).infer()
+    v, = d._name.infer()
+    assert not v.is_instance()
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('module_name', ['sys', 'time', 'unittest.mock'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)
@@ -684,5 +678,5 @@ def bar():
 def test_string_annotation(annotations, result, code):
     x = lambda foo: 1
     x.__annotations__ = annotations
-    defs = jedi.Interpreter(code or 'x()', [locals()]).goto_definitions()
+    defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result

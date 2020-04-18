@@ -3,18 +3,14 @@
 Jedi Testing
 ============
 
-The test suite depends on ``tox`` and ``pytest``::
+The test suite depends on ``pytest``::
 
-    pip install tox pytest
+    pip install pytest
 
-To run the tests for all supported Python versions::
-
-    tox
-
-If you want to test only a specific Python version (e.g. Python 2.7), it's as
+If you want to test only a specific Python version (e.g. Python 3.8), it is as
 easy as::
 
-    tox -e py27
+    python3.8 -m pytest
 
 Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
@@ -28,8 +24,8 @@ simple and readable testing structure.
 
 .. _blackbox:
 
-Blackbox Tests (run.py)
-~~~~~~~~~~~~~~~~~~~~~~~
+Integration Tests (run.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: test.run
 

@@ -12,6 +12,8 @@ def from_names_goto():
 def builtin_test():
     #? ['math']
     import math
+    #? ['mmap']
+    import mmap
 
 # -----------------
 # completions within imports

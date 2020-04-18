@@ -14,7 +14,6 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBase, GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
-from jedi.inference.gradual.typing import TypingClassValueWithIndex
 from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
@@ -111,7 +110,7 @@ def _split_comment_param_declaration(decl_text):
 @inference_state_method_cache()
 def infer_param(function_value, param, ignore_stars=False):
     values = _infer_param(function_value, param)
-    if ignore_stars:
+    if ignore_stars or not values:
         return values
     inference_state = function_value.inference_state
     if param.star_count == 1:
@@ -119,7 +118,7 @@ def infer_param(function_value, param, ignore_stars=False):
         return ValueSet([GenericClass(
             tuple_,
             TupleGenericManager((values,)),
-        ) for c in values])
+        )])
     elif param.star_count == 2:
         dct = builtin_from_name(inference_state, 'dict')
         generics = (
@@ -129,8 +128,7 @@ def infer_param(function_value, param, ignore_stars=False):
         return ValueSet([GenericClass(
             dct,
             TupleGenericManager(generics),
-        ) for c in values])
-        pass
+        )])
     return values
 
 
@@ -220,8 +218,6 @@ def infer_return_types(function, arguments):
             function.get_default_param_context(),
             match.group(1).strip()
         ).execute_annotation()
-        if annotation is None:
-            return NO_VALUES
 
     context = function.get_default_param_context()
     unknown_type_vars = find_unknown_type_vars(context, annotation)
@@ -269,26 +265,25 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
             elif kind is Parameter.VAR_KEYWORD:
                 # TODO _dict_values is not public.
                 actual_value_set = actual_value_set.try_merge('_dict_values')
-            for ann in annotation_value_set:
-                _merge_type_var_dicts(
-                    annotation_variable_results,
-                    _infer_type_vars(ann, actual_value_set),
-                )
+            merge_type_var_dicts(
+                annotation_variable_results,
+                annotation_value_set.infer_type_vars(actual_value_set),
+            )
     return annotation_variable_results
 
 
 def infer_return_for_callable(arguments, param_values, result_values):
-    result = NO_VALUES
+    all_type_vars = {}
     for pv in param_values:
         if pv.array_type == 'list':
             type_var_dict = infer_type_vars_for_callable(arguments, pv.py__iter__())
+            all_type_vars.update(type_var_dict)
 
-            result |= ValueSet.from_sets(
-                v.define_generics(type_var_dict)
-                if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
-                for v in result_values
-            ).execute_annotation()
-    return result
+    return ValueSet.from_sets(
+        v.define_generics(all_type_vars)
+        if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
+        for v in result_values
+    ).execute_annotation()
 
 
 def infer_type_vars_for_callable(arguments, lazy_params):
@@ -302,15 +297,14 @@ def infer_type_vars_for_callable(arguments, lazy_params):
         callable_param_values = lazy_callable_param.infer()
         # Infer unknown type var
         actual_value_set = lazy_value.infer()
-        for v in callable_param_values:
-            _merge_type_var_dicts(
-                annotation_variable_results,
-                _infer_type_vars(v, actual_value_set),
-            )
+        merge_type_var_dicts(
+            annotation_variable_results,
+            callable_param_values.infer_type_vars(actual_value_set),
+        )
     return annotation_variable_results
 
 
-def _merge_type_var_dicts(base_dict, new_dict):
+def merge_type_var_dicts(base_dict, new_dict):
     for type_var_name, values in new_dict.items():
         if values:
             try:
@@ -319,88 +313,60 @@ def _merge_type_var_dicts(base_dict, new_dict):
                 base_dict[type_var_name] = values
 
 
-def _infer_type_vars(annotation_value, value_set, is_class_value=False):
+def merge_pairwise_generics(annotation_value, annotated_argument_class):
     """
-    This function tries to find information about undefined type vars and
-    returns a dict from type var name to value set.
+    Match up the generic parameters from the given argument class to the
+    target annotation.
 
-    This is for example important to understand what `iter([1])` returns.
-    According to typeshed, `iter` returns an `Iterator[_T]`:
+    This walks the generic parameters immediately within the annotation and
+    argument's type, in order to determine the concrete values of the
+    annotation's parameters for the current case.
 
-        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+    For example, given the following code:
 
-    This functions would generate `int` for `_T` in this case, because it
-    unpacks the `Iterable`.
+        def values(mapping: Mapping[K, V]) -> List[V]: ...
+
+        for val in values({1: 'a'}):
+            val
+
+    Then this function should be given representations of `Mapping[K, V]`
+    and `Mapping[int, str]`, so that it can determine that `K` is `int and
+    `V` is `str`.
+
+    Note that it is responsibility of the caller to traverse the MRO of the
+    argument type as needed in order to find the type matching the
+    annotation (in this case finding `Mapping[int, str]` as a parent of
+    `Dict[int, str]`).
+
+    Parameters
+    ----------
+
+    `annotation_value`: represents the annotation to infer the concrete
+        parameter types of.
+
+    `annotated_argument_class`: represents the annotated class of the
+        argument being passed to the object annotated by `annotation_value`.
     """
+
     type_var_dict = {}
-    if isinstance(annotation_value, TypeVar):
-        if not is_class_value:
-            return {annotation_value.py__name__(): value_set.py__class__()}
-        return {annotation_value.py__name__(): value_set}
-    elif isinstance(annotation_value, TypingClassValueWithIndex):
-        name = annotation_value.py__name__()
-        if name == 'Type':
-            given = annotation_value.get_generics()
-            if given:
-                for nested_annotation_value in given[0]:
-                    _merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set,
-                            is_class_value=True,
-                        )
-                    )
-        elif name == 'Callable':
-            given = annotation_value.get_generics()
-            if len(given) == 2:
-                for nested_annotation_value in given[1]:
-                    _merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set.execute_annotation(),
-                        )
-                    )
-    elif isinstance(annotation_value, GenericClass):
-        name = annotation_value.py__name__()
-        if name == 'Iterable':
-            given = annotation_value.get_generics()
-            if given:
-                for nested_annotation_value in given[0]:
-                    _merge_type_var_dicts(
-                        type_var_dict,
-                        _infer_type_vars(
-                            nested_annotation_value,
-                            value_set.merge_types_of_iterate()
-                        )
-                    )
-        elif name == 'Mapping':
-            given = annotation_value.get_generics()
-            if len(given) == 2:
-                for value in value_set:
-                    try:
-                        method = value.get_mapping_item_values
-                    except AttributeError:
-                        continue
-                    key_values, value_values = method()
 
-                    for nested_annotation_value in given[0]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                key_values,
-                            )
-                        )
-                    for nested_annotation_value in given[1]:
-                        _merge_type_var_dicts(
-                            type_var_dict,
-                            _infer_type_vars(
-                                nested_annotation_value,
-                                value_values,
-                            )
-                        )
+    if not isinstance(annotated_argument_class, DefineGenericBase):
+        return type_var_dict
+
+    annotation_generics = annotation_value.get_generics()
+    actual_generics = annotated_argument_class.get_generics()
+
+    for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
+        merge_type_var_dicts(
+            type_var_dict,
+            annotation_generics_set.infer_type_vars(
+                actual_generic_set,
+                # This is a note to ourselves that we have already
+                # converted the instance representation to its class.
+                is_class_value=True,
+            ),
+        )
+
     return type_var_dict
 
 

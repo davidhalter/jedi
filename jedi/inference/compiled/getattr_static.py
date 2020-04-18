@@ -6,6 +6,7 @@ information returned to enable Jedi to make decisions.
 
 import types
 
+from jedi import debug
 from jedi._compatibility import py_version
 
 _sentinel = object()
@@ -54,7 +55,14 @@ def _shadowed_dict_newstyle(klass):
 
 
 def _static_getmro_newstyle(klass):
-    return type.__dict__['__mro__'].__get__(klass)
+    mro = type.__dict__['__mro__'].__get__(klass)
+    if not isinstance(mro, (tuple, list)):
+        # There are unfortunately no tests for this, I was not able to
+        # reproduce this in pure Python. However should still solve the issue
+        # raised in GH #1517.
+        debug.warning('mro of %s returned %s, should be a tuple' % (klass, mro))
+        return ()
+    return mro
 
 
 if py_version >= 30:

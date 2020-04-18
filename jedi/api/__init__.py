@@ -6,12 +6,11 @@ Additionally you can add a debug function with :func:`set_debug_function`.
 Alternatively, if you don't need a custom function and are happy with printing
 debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
-
-.. warning:: Please, note that Jedi is **not thread safe**.
 """
 import os
 import sys
 import warnings
+from functools import wraps
 
 import parso
 from parso.python import tree
@@ -26,15 +25,18 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.helpers import validate_line_column
-from jedi.api.completion import Completion
+from jedi.api.completion import Completion, search_in_module
 from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
+from jedi.api.errors import parso_to_jedi_errors
+from jedi.api import refactoring
+from jedi.api.refactoring.extract import extract_function, extract_variable
 from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference.references import find_references
 from jedi.inference.arguments import try_iter_content
-from jedi.inference.helpers import get_module_names, infer_call_of_leaf
+from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
 from jedi.inference.syntax_tree import tree_name_to_values
 from jedi.inference.value import ModuleValue
@@ -42,82 +44,149 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.value.iterable import unpack_tuple_to_dict
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.gradual.utils import load_proper_stub_module
+from jedi.inference.utils import to_list
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
 sys.setrecursionlimit(3000)
 
 
+def _no_python2_support(func):
+    # TODO remove when removing Python 2/3.5
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
+            raise NotImplementedError(
+                "No support for refactorings/search on Python 2/3.5"
+            )
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class Script(object):
     """
     A Script is the base for completions, goto or whatever you want to do with
-    |jedi|.
+    Jedi. The counter part of this class is :class:`Interpreter`, which works
+    with actual dictionaries and can work with a REPL. This class
+    should be used when a user edits code in an editor.
 
-    You can either use the ``source`` parameter or ``path`` to read a file.
+    You can either use the ``code`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
-    The script might be analyzed in a different ``sys.path`` than |jedi|:
+    The Script's ``sys.path`` is very customizable:
 
-    - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
-      for the script;
+    - If `project` is provided with a ``sys_path``, that is going to be used.
+    - If `environment` is provided, its ``sys.path`` will be used
+      (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
+    - Otherwise ``sys.path`` will match that of the default environment of
+      Jedi, which typically matches the sys path that was used at the time
+      when Jedi was imported.
 
-    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
-      variable is defined, ``sys.path`` for the specified environment will be
-      guessed (see :func:`jedi.inference.sys_path.get_venv_path`) and used for
-      the script;
+    Most methods have a ``line`` and a ``column`` parameter. Lines in Jedi are
+    always 1-based and columns are always zero based. To avoid repetition they
+    are not always documented. You can omit both line and column. Jedi will
+    then just do whatever action you are calling at the end of the file. If you
+    provide only the line, just will complete at the end of that line.
 
-    - otherwise ``sys.path`` will match that of |jedi|.
+    .. warning:: By default :attr:`jedi.settings.fast_parser` is enabled, which means
+        that parso reuses modules (i.e. they are not immutable). With this setting
+        Jedi is **not thread safe** and it is also not safe to use multiple
+        :class:`.Script` instances and its definitions at the same time.
 
-    :param source: The source code of the current file, separated by newlines.
-    :type source: str
-    :param line: Deprecated, please use it directly on e.g. `.complete`
+        If you are a normal plugin developer this should not be an issue. It is
+        an issue for people that do more complex stuff with Jedi.
+
+        This is purely a performance optimization and works pretty well for all
+        typical usages, however consider to turn the setting of if it causes
+        you problems. See also
+        `this discussion <https://github.com/davidhalter/jedi/issues/1240>`_.
+
+    :param code: The source code of the current file, separated by newlines.
+    :type code: str
+    :param line: Deprecated, please use it directly on e.g. ``.complete``
     :type line: int
-    :param column: Deprecated, please use it directly on e.g. `.complete`
+    :param column: Deprecated, please use it directly on e.g. ``.complete``
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or None
-    :param encoding: The encoding of ``source``, if it is not a
-        ``unicode`` object (default ``'utf-8'``).
+    :param encoding: Deprecated, cast to unicode yourself. The encoding of
+        ``code``, if it is not a ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
-    :param sys_path: ``sys.path`` to use during analysis of the script
-    :type sys_path: list
-    :param environment: TODO
-    :type environment: Environment
+    :param sys_path: Deprecated, use the project parameter.
+    :type sys_path: typing.List[str]
+    :param Environment environment: Provide a predefined :ref:`Environment <environments>`
+        to work with a specific Python version or virtualenv.
+    :param Project project: Provide a :class:`.Project` to make sure finding
+        references works well, because the right folder is searched. There are
+        also ways to modify the sys path and other things.
     """
-    def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None, environment=None,
-                 _project=None):
+    def __init__(self, code=None, line=None, column=None, path=None,
+                 encoding=None, sys_path=None, environment=None,
+                 project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
 
-        if source is None:
+        if encoding is None:
+            encoding = 'utf-8'
+        else:
+            warnings.warn(
+                "Deprecated since version 0.17.0. You should cast to valid "
+                "unicode yourself, especially if you are not using utf-8.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if line is not None:
+            warnings.warn(
+                "Providing the line is now done in the functions themselves "
+                "like `Script(...).complete(line, column)`",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if column is not None:
+            warnings.warn(
+                "Providing the column is now done in the functions themselves "
+                "like `Script(...).complete(line, column)`",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if source is not None:
+            code = source
+            warnings.warn(
+                "Use the code keyword argument instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        if code is None:
             # TODO add a better warning than the traceback!
             with open(path, 'rb') as f:
-                source = f.read()
-
-        # Load the Python grammar of the current interpreter.
-        self._grammar = parso.load_grammar()
+                code = f.read()
 
         if sys_path is not None and not is_py3:
             sys_path = list(map(force_unicode, sys_path))
 
-        project = _project
         if project is None:
             # Load the Python grammar of the current interpreter.
             project = get_default_project(
-                os.path.dirname(self.path)if path else os.getcwd()
+                os.path.dirname(self.path) if path else None
             )
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
+            warnings.warn(
+                "Deprecated since version 0.17.0. Use the project API instead, "
+                "which means Script(project=Project(dir, sys_path=sys_path)) instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+
         self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
         debug.speed('init')
-        self._module_node, source = self._inference_state.parse_and_get_code(
-            code=source,
+        self._module_node, code = self._inference_state.parse_and_get_code(
+            code=code,
             path=self.path,
             encoding=encoding,
             use_latest_grammar=path and path.endswith('.pyi'),
@@ -126,8 +195,8 @@ class Script(object):
             cache_path=settings.cache_directory,
         )
         debug.speed('parsed')
-        self._code_lines = parso.split_lines(source, keepends=True)
-        self._code = source
+        self._code_lines = parso.split_lines(code, keepends=True)
+        self._code = code
         self._pos = line, column
 
         cache.clear_time_caches()
@@ -191,13 +260,17 @@ class Script(object):
     @validate_line_column
     def complete(self, line=None, column=None, **kwargs):
         """
-        Return :class:`classes.Completion` objects. Those objects contain
-        information about the completions, more than just names.
+        Completes objects under the cursor.
+
+        Those objects contain information about the completions, more than just
+        names.
 
         :param fuzzy: Default False. Will return fuzzy completions, which means
             that e.g. ``ooa`` will match ``foobar``.
-        :return: Completion objects, sorted by name and ``__`` comes last.
-        :rtype: list of :class:`classes.Completion`
+        :return: Completion objects, sorted by name. Normal names appear
+            before "private" names that start with ``_`` and those appear
+            before magic methods and name mangled names that start with ``__``.
+        :rtype: list of :class:`.Completion`
         """
         return self._complete(line, column, **kwargs)
 
@@ -210,30 +283,39 @@ class Script(object):
             return completion.complete()
 
     def completions(self, fuzzy=False):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).complete instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.complete(*self._pos, fuzzy=fuzzy)
 
     @validate_line_column
     def infer(self, line=None, column=None, **kwargs):
         """
-        Return the definitions of a the path under the cursor.  goto function!
-        This follows complicated paths and returns the end, not the first
-        definition. The big difference between :meth:`goto` and
+        Return the definitions of under the cursor. It is basically a wrapper
+        around Jedi's type inference.
+
+        This method follows complicated paths and returns the end, not the
+        first definition. The big difference between :meth:`goto` and
         :meth:`infer` is that :meth:`goto` doesn't
         follow imports and statements. Multiple objects may be returned,
-        because Python itself is a dynamic language, which means depending on
-        an option you can have two different versions of a function.
+        because depending on an option you can have two different versions of a
+        function.
 
-        :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python objects for this type
-            inference call.
-        :rtype: list of :class:`classes.Definition`
+        :param only_stubs: Only return stubs for this method.
+        :param prefer_stubs: Prefer stubs to Python objects for this method.
+        :rtype: list of :class:`.Name`
         """
         with debug.increase_indent_cm('infer'):
             return self._infer(line, column, **kwargs)
 
     def goto_definitions(self, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.infer(*self._pos, **kwargs)
 
     def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
@@ -253,14 +335,18 @@ class Script(object):
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._inference_state, c.name) for c in values]
+        defs = [classes.Name(self._inference_state, c.name) for c in values]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).goto instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.goto(*self._pos,
                          follow_imports=follow_imports,
                          follow_builtin_imports=follow_builtin_imports,
@@ -269,41 +355,23 @@ class Script(object):
     @validate_line_column
     def goto(self, line=None, column=None, **kwargs):
         """
-        Return the first definition found, while optionally following imports.
-        Multiple objects may be returned, because Python itself is a
-        dynamic language, which means depending on an option you can have two
+        Goes to the name that defined the object under the cursor. Optionally
+        you can follow imports.
+        Multiple objects may be returned, depending on an if you can have two
         different versions of a function.
 
-        :param follow_imports: The goto call will follow imports.
-        :param follow_builtin_imports: If follow_imports is True will decide if
-            it follow builtin imports.
-        :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python objects for this goto call.
-        :rtype: list of :class:`classes.Definition`
+        :param follow_imports: The method will follow imports.
+        :param follow_builtin_imports: If ``follow_imports`` is True will try
+            to look up names in builtins (i.e. compiled or extension modules).
+        :param only_stubs: Only return stubs for this method.
+        :param prefer_stubs: Prefer stubs to Python objects for this method.
+        :rtype: list of :class:`.Name`
         """
         with debug.increase_indent_cm('goto'):
             return self._goto(line, column, **kwargs)
 
     def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
               only_stubs=False, prefer_stubs=False):
-        def filter_follow_imports(names):
-            for name in names:
-                if name.is_import():
-                    new_names = list(filter_follow_imports(name.goto()))
-                    found_builtin = False
-                    if follow_builtin_imports:
-                        for new_name in new_names:
-                            if new_name.start_pos is None:
-                                found_builtin = True
-
-                    if found_builtin:
-                        yield name
-                    else:
-                        for new_name in new_names:
-                            yield new_name
-                else:
-                    yield name
-
         tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
@@ -328,54 +396,107 @@ class Script(object):
             names = list(name.goto())
 
         if follow_imports:
-            names = filter_follow_imports(names)
+            names = helpers.filter_follow_imports(names, follow_builtin_imports)
         names = convert_names(
             names,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._inference_state, d) for d in set(names)]
-        return helpers.sorted_definitions(defs)
+        defs = [classes.Name(self._inference_state, d) for d in set(names)]
+        # Avoid duplicates
+        return list(set(helpers.sorted_definitions(defs)))
+
+    @_no_python2_support
+    def search(self, string, **kwargs):
+        """
+        Searches a name in the current file. For a description of how the
+        search string should look like, please have a look at
+        :meth:`.Project.search`.
+
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :yields: :class:`.Name`
+        """
+        return self._search(string, **kwargs)  # Python 2 ...
+
+    def _search(self, string, all_scopes=False):
+        return self._search_func(string, all_scopes=all_scopes)
+
+    @to_list
+    def _search_func(self, string, all_scopes=False, complete=False, fuzzy=False):
+        names = self._names(all_scopes=all_scopes)
+        wanted_type, wanted_names = helpers.split_search_string(string)
+        return search_in_module(
+            self._inference_state,
+            self._get_module_context(),
+            names=names,
+            wanted_type=wanted_type,
+            wanted_names=wanted_names,
+            complete=complete,
+            fuzzy=fuzzy,
+        )
+
+    def complete_search(self, string, **kwargs):
+        """
+        Like :meth:`.Script.search`, but completes that string. If you want to
+        have all possible definitions in a file you can also provide an empty
+        string.
+
+        :param bool all_scopes: Default False; searches not only for
+            definitions on the top level of a module level, but also in
+            functions and classes.
+        :param fuzzy: Default False. Will return fuzzy completions, which means
+            that e.g. ``ooa`` will match ``foobar``.
+        :yields: :class:`.Completion`
+        """
+        return self._search_func(string, complete=True, **kwargs)
 
     @validate_line_column
     def help(self, line=None, column=None):
         """
-        Works like goto and returns a list of Definition objects. Returns
-        additional definitions for keywords and operators.
+        Used to display a help window to users.  Uses :meth:`.Script.goto` and
+        returns additional definitions for keywords and operators.
 
-        The additional definitions are of ``Definition(...).type == 'keyword'``.
+        Typically you will want to display :meth:`.BaseName.docstring` to the
+        user for all the returned definitions.
+
+        The additional definitions are ``Name(...).type == 'keyword'``.
         These definitions do not have a lot of value apart from their docstring
-        attribute, which contains the output of Python's ``help()`` function.
+        attribute, which contains the output of Python's :func:`help` function.
 
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Name`
         """
         definitions = self.goto(line, column, follow_imports=True)
         if definitions:
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))
         if leaf.type in ('keyword', 'operator', 'error_leaf'):
-            reserved = self._grammar._pgen_grammar.reserved_syntax_strings.keys()
+            reserved = self._inference_state.grammar._pgen_grammar.reserved_syntax_strings.keys()
             if leaf.value in reserved:
                 name = KeywordName(self._inference_state, leaf.value)
-                return [classes.Definition(self._inference_state, name)]
+                return [classes.Name(self._inference_state, name)]
         return []
 
     def usages(self, **kwargs):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).get_references instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.get_references(*self._pos, **kwargs)
 
     @validate_line_column
     def get_references(self, line=None, column=None, **kwargs):
         """
-        Return :class:`classes.Definition` objects, which contain all
-        names that point to the definition of the name under the cursor. This
-        is very useful for refactoring (renaming), or to show all references of
-        a variable.
+        Lists all references of a variable in a project. Since this can be
+        quite hard to do for Jedi, if it is too complicated, Jedi will stop
+        searching.
 
         :param include_builtins: Default True, checks if a reference is a
             builtin (e.g. ``sys``) and in that case does not return it.
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Name`
         """
 
         def _references(include_builtins=True):
@@ -386,20 +507,24 @@ class Script(object):
 
             names = find_references(self._get_module_context(), tree_name)
 
-            definitions = [classes.Definition(self._inference_state, n) for n in names]
+            definitions = [classes.Name(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
         return _references(**kwargs)
 
     def call_signatures(self):
-        # Deprecated, will be removed.
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).get_signatures instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return self.get_signatures(*self._pos)
 
     @validate_line_column
     def get_signatures(self, line=None, column=None):
         """
-        Return the function object of the call you're currently in.
+        Return the function object of the call under the cursor.
 
         E.g. if the cursor is here::
 
@@ -411,7 +536,7 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`classes.Signature`
+        :rtype: list of :class:`.Signature`
         """
         pos = line, column
         call_details = helpers.get_signature_details(self._module_node, pos)
@@ -435,6 +560,12 @@ class Script(object):
 
     @validate_line_column
     def get_context(self, line=None, column=None):
+        """
+        Returns the scope context under the cursor. This basically means the
+        function, class or module where the cursor is at.
+
+        :rtype: :class:`.Name`
+        """
         pos = (line, column)
         leaf = self._module_node.get_leaf_for_position(pos, include_prefixes=True)
         if leaf.start_pos > pos or leaf.type == 'endmarker':
@@ -457,7 +588,7 @@ class Script(object):
         while context.name is None:
             context = context.parent_context  # comprehensions
 
-        definition = classes.Definition(self._inference_state, context.name)
+        definition = classes.Name(self._inference_state, context.name)
         while definition.type != 'module':
             name = definition._name  # TODO private access
             tree_name = name.tree_name
@@ -504,66 +635,198 @@ class Script(object):
 
     def get_names(self, **kwargs):
         """
-        Returns a list of `Definition` objects, containing name parts.
-        This means you can call ``Definition.goto()`` and get the
-        reference of a name.
+        Returns names defined in the current file.
 
-        :param all_scopes: If True lists the names of all scopes instead of only
-            the module namespace.
+        :param all_scopes: If True lists the names of all scopes instead of
+            only the module namespace.
         :param definitions: If True lists the names that have been defined by a
             class, function or a statement (``a = b`` returns ``a``).
         :param references: If True lists all the names that are not listed by
             ``definitions=True``. E.g. ``a = b`` returns ``b``.
+        :rtype: list of :class:`.Name`
         """
-        return self._names(**kwargs)  # Python 2...
+        names = self._names(**kwargs)
+        return [classes.Name(self._inference_state, n) for n in names]
+
+    def get_syntax_errors(self):
+        """
+        Lists all syntax errors in the current file.
+
+        :rtype: list of :class:`.SyntaxError`
+        """
+        return parso_to_jedi_errors(self._inference_state.grammar, self._module_node)
 
     def _names(self, all_scopes=False, definitions=True, references=False):
-        def def_ref_filter(_def):
-            is_def = _def._name.tree_name.is_definition()
-            return definitions and is_def or references and not is_def
-
         # Set line/column to a random position, because they don't matter.
         module_context = self._get_module_context()
         defs = [
-            classes.Definition(
-                self._inference_state,
-                module_context.create_name(name)
-            ) for name in get_module_names(self._module_node, all_scopes)
+            module_context.create_name(name)
+            for name in helpers.get_module_names(
+                self._module_node,
+                all_scopes=all_scopes,
+                definitions=definitions,
+                references=references,
+            )
         ]
-        return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
+        return sorted(defs, key=lambda x: x.start_pos)
+
+    @_no_python2_support
+    def rename(self, line=None, column=None, **kwargs):
+        """
+        Renames all references of the variable under the cursor.
+
+        :param new_name: The variable under the cursor will be renamed to this
+            string.
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
+        """
+        return self._rename(line, column, **kwargs)
+
+    def _rename(self, line, column, new_name):  # Python 2...
+        definitions = self.get_references(line, column, include_builtins=False)
+        return refactoring.rename(self._inference_state, definitions, new_name)
+
+    @_no_python2_support
+    def extract_variable(self, line, column, **kwargs):
+        """
+        Moves an expression to a new statemenet.
+
+        For example if you have the cursor on ``foo`` and provide a
+        ``new_name`` called ``bar``::
+
+            foo = 3.1
+            x = int(foo + 1)
+
+        the code above will become::
+
+            foo = 3.1
+            bar = foo + 1
+            x = int(bar)
+
+        :param new_name: The expression under the cursor will be renamed to
+            this string.
+        :param int until_line: The the selection range ends at this line, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :param int until_column: The the selection range ends at this column, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
+        """
+        return self._extract_variable(line, column, **kwargs)  # Python 2...
+
+    @validate_line_column
+    def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
+        if until_line is None and until_column is None:
+            until_pos = None
+        else:
+            if until_line is None:
+                until_line = line
+            if until_column is None:
+                until_column = len(self._code_lines[until_line - 1])
+            until_pos = until_line, until_column
+        return extract_variable(
+            self._inference_state, self.path, self._module_node,
+            new_name, (line, column), until_pos
+        )
+
+    @_no_python2_support
+    def extract_function(self, line, column, **kwargs):
+        """
+        Moves an expression to a new function.
+
+        For example if you have the cursor on ``foo`` and provide a
+        ``new_name`` called ``bar``::
+
+            global_var = 3
+
+            def x():
+                foo = 3.1
+                x = int(foo + 1 + global_var)
+
+        the code above will become::
+
+            global_var = 3
+
+            def bar(foo):
+                return foo + 1 + global_var
+
+            def x(foo):
+                x = int(bar(foo))
+
+        :param new_name: The expression under the cursor will be replaced with
+            a function with this name.
+        :param int until_line: The the selection range ends at this line, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :param int until_column: The the selection range ends at this column, when
+            omitted, Jedi will be clever and try to define the range itself.
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
+        """
+        return self._extract_function(line, column, **kwargs)  # Python 2...
+
+    @validate_line_column
+    def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
+        if until_line is None and until_column is None:
+            until_pos = None
+        else:
+            if until_line is None:
+                until_line = line
+            if until_column is None:
+                until_column = len(self._code_lines[until_line - 1])
+            until_pos = until_line, until_column
+        return extract_function(
+            self._inference_state, self.path, self._get_module_context(),
+            new_name, (line, column), until_pos
+        )
+
+    @_no_python2_support
+    def inline(self, line=None, column=None):
+        """
+        Inlines a variable under the cursor. This is basically the opposite of
+        extracting a variable. For example with the cursor on bar::
+
+            foo = 3.1
+            bar = foo + 1
+            x = int(bar)
+
+        the code above will become::
+
+            foo = 3.1
+            x = int(foo + 1)
+
+        :raises: :exc:`.RefactoringError`
+        :rtype: :class:`.Refactoring`
+        """
+        names = [d._name for d in self.get_references(line, column, include_builtins=True)]
+        return refactoring.inline(self._inference_state, names)
 
 
 class Interpreter(Script):
     """
-    Jedi API for Python REPLs.
+    Jedi's API for Python REPLs.
 
-    In addition to completion of simple attribute access, Jedi
-    supports code completion based on static code analysis.
-    Jedi can complete attributes of object which is not initialized
-    yet.
+    Implements all of the methods that are present in :class:`.Script` as well.
+
+    In addition to completions that normal REPL completion does like
+    ``str.upper``, Jedi also supports code completion based on static code
+    analysis. For example Jedi will complete ``str().upper``.
 
     >>> from os.path import join
     >>> namespace = locals()
     >>> script = Interpreter('join("").up', [namespace])
     >>> print(script.complete()[0].name)
     upper
+
+    All keyword arguments are same as the arguments for :class:`.Script`.
+
+    :param str code: Code to parse.
+    :type namespaces: typing.List[dict]
+    :param namespaces: A list of namespace dictionaries such as the one
+        returned by :func:`globals` and :func:`locals`.
     """
     _allow_descriptor_getattr_default = True
 
-    def __init__(self, source, namespaces, **kwds):
-        """
-        Parse `source` and mixin interpreted Python objects from `namespaces`.
-
-        :type source: str
-        :arg  source: Code to parse.
-        :type namespaces: list of dict
-        :arg  namespaces: a list of namespace dictionaries such as the one
-                          returned by :func:`locals`.
-
-        Other optional arguments are same as the ones for :class:`Script`.
-        If `line` and `column` are None, they are assumed be at the end of
-        `source`.
-        """
+    def __init__(self, code, namespaces, **kwds):
         try:
             namespaces = [dict(n) for n in namespaces]
         except Exception:
@@ -576,8 +839,8 @@ class Interpreter(Script):
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
-        super(Interpreter, self).__init__(source, environment=environment,
-                                          _project=Project(os.getcwd()), **kwds)
+        super(Interpreter, self).__init__(code, environment=environment,
+                                          project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
@@ -613,7 +876,8 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
 def preload_module(*modules):
     """
     Preloading modules tells Jedi to load a module now, instead of lazy parsing
-    of modules. Usful for IDEs, to control which modules to load on startup.
+    of modules. This can be useful for IDEs, to control which modules to load
+    on startup.
 
     :param modules: different module names, list of string.
     """
@@ -629,7 +893,7 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
 
     If you don't specify any arguments, debug messages will be printed to stdout.
 
-    :param func_cb: The callback function for debug messages, with n params.
+    :param func_cb: The callback function for debug messages.
     """
     debug.debug_function = func_cb
     debug.enable_warning = warnings

@@ -24,9 +24,6 @@ def test_get_typeshed_directories():
     dirs = get_dirs(PythonVersionInfo(2, 7))
     assert dirs == transform({'stdlib/2and3', 'stdlib/2', 'third_party/2and3', 'third_party/2'})
 
-    dirs = get_dirs(PythonVersionInfo(3, 4))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'third_party/2and3', 'third_party/3'})
-
     dirs = get_dirs(PythonVersionInfo(3, 5))
     assert dirs == transform({'stdlib/2and3', 'stdlib/3',
                               'third_party/2and3', 'third_party/3'})
@@ -139,10 +136,10 @@ def test_math(Script):
     assert value
 
 
-def test_type_var(Script):
+def test_type_var(Script, skip_python2):
     def_, = Script('import typing; T = typing.TypeVar("T1")').infer()
     assert def_.name == 'TypeVar'
-    assert def_.description == 'TypeVar = object()'
+    assert def_.description == 'class TypeVar'
 
 
 @pytest.mark.parametrize(

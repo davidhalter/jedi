@@ -17,14 +17,12 @@ Completion output
 
 .. autodata:: case_insensitive_completion
 .. autodata:: add_bracket_after_function
-.. autodata:: no_completion_duplicates
 
 
 Filesystem cache
 ~~~~~~~~~~~~~~~~
 
 .. autodata:: cache_directory
-.. autodata:: use_filesystem_cache
 
 
 Parser
@@ -39,7 +37,6 @@ Dynamic stuff
 .. autodata:: dynamic_array_additions
 .. autodata:: dynamic_params
 .. autodata:: dynamic_params_for_other_modules
-.. autodata:: additional_dynamic_modules
 .. autodata:: auto_import_modules
 
 
@@ -54,34 +51,22 @@ import os
 import platform
 
 # ----------------
-# completion output settings
+# Completion Output Settings
 # ----------------
 
 case_insensitive_completion = True
 """
-The completion is by default case insensitive.
+Completions are by default case insensitive.
 """
 
 add_bracket_after_function = False
 """
-Adds an opening bracket after a function, because that's normal behaviour.
-Removed it again, because in VIM that is not very practical.
-"""
-
-no_completion_duplicates = True
-"""
-If set, completions with the same name don't appear in the output anymore,
-but are in the `same_name_completions` attribute.
+Adds an opening bracket after a function for completions.
 """
 
 # ----------------
-# Filesystem cache
+# Filesystem Cache
 # ----------------
-
-use_filesystem_cache = True
-"""
-Use filesystem cache to save once parsed files with pickle.
-"""
 
 if platform.system().lower() == 'windows':
     _cache_directory = os.path.join(os.getenv('APPDATA') or '~', 'Jedi',
@@ -97,31 +82,32 @@ The path where the cache is stored.
 
 On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
 ``~/Library/Caches/Jedi/`` and on Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
-On Linux, if environment variable ``$XDG_CACHE_HOME`` is set,
+On Linux, if the environment variable ``$XDG_CACHE_HOME`` is set,
 ``$XDG_CACHE_HOME/jedi`` is used instead of the default one.
 """
 
 # ----------------
-# parser
+# Parser
 # ----------------
 
 fast_parser = True
 """
-Use the fast parser. This means that reparsing is only being done if
-something has been changed e.g. to a function. If this happens, only the
-function is being reparsed.
+Uses Parso's diff parser. If it is enabled, this might cause issues, please
+read the warning on :class:`.Script`. This feature makes it possible to only
+parse the parts again that have changed, while reusing the rest of the syntax
+tree.
 """
 
 _cropped_file_size = 10e6  # 1 Megabyte
 """
 Jedi gets extremely slow if the file size exceed a few thousand lines.
-To avoid getting stuck completely Jedi crops the file this point.
+To avoid getting stuck completely Jedi crops the file at some point.
 
 One megabyte of typical Python code equals about 20'000 lines of code.
 """
 
 # ----------------
-# dynamic stuff
+# Dynamic Stuff
 # ----------------
 
 dynamic_array_additions = True
@@ -140,12 +126,6 @@ dynamic_params_for_other_modules = True
 Do the same for other modules.
 """
 
-additional_dynamic_modules = []
-"""
-Additional modules in which |jedi| checks if statements are to be found. This
-is practical for IDEs, that want to administrate their modules themselves.
-"""
-
 dynamic_flow_information = True
 """
 Check for `isinstance` and other information to infer a type.
@@ -155,13 +135,13 @@ auto_import_modules = [
     'gi',  # This third-party repository (GTK stuff) doesn't really work with jedi
 ]
 """
-Modules that are not analyzed but imported, although they contain Python code.
+Modules that will not be analyzed but imported, if they contain Python code.
 This improves autocompletion for libraries that use ``setattr`` or
 ``globals()`` modifications a lot.
 """
 
 # ----------------
-# caching validity (time)
+# Caching Validity
 # ----------------
 
 call_signatures_validity = 3.0

@@ -141,7 +141,7 @@ def test_infer_on_generator(Script):
 
 def test_goto_definition_not_multiple(Script):
     """
-    There should be only one Definition result if it leads back to the same
+    There should be only one result if it leads back to the same
     origin (e.g. instance method)
     """
 
@@ -340,8 +340,14 @@ def test_math_fuzzy_completion(Script, environment):
 def test_file_fuzzy_completion(Script):
     path = os.path.join(test_dir, 'completion')
     script = Script('"{}/ep08_i'.format(path))
-    assert ['pep0484_basic.py"', 'pep0484_typing.py"'] \
-        == [comp.name for comp in script.complete(fuzzy=True)]
+    expected = [
+        'pep0484_basic.py"',
+        'pep0484_generic_mismatches.py"',
+        'pep0484_generic_parameters.py"',
+        'pep0484_generic_passthroughs.py"',
+        'pep0484_typing.py"',
+    ]
+    assert expected == [comp.name for comp in script.complete(fuzzy=True)]
 
 
 @pytest.mark.parametrize(

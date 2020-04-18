@@ -267,7 +267,6 @@ def get_parent_scope(node, include_flows=False):
                         continue
             return scope
         scope = scope.parent
-    return scope
 
 
 get_cached_parent_scope = _get_parent_scope_cache(get_parent_scope)
@@ -291,6 +290,25 @@ def cut_value_at_position(leaf, position):
         column -= leaf.column
     lines[-1] = lines[-1][:column]
     return ''.join(lines)
+
+
+def expr_is_dotted(node):
+    """
+    Checks if a path looks like `name` or `name.foo.bar` and not `name()`.
+    """
+    if node.type == 'atom':
+        if len(node.children) == 3 and node.children[0] == '(':
+            return expr_is_dotted(node.children[1])
+        return False
+    if node.type == 'atom_expr':
+        children = node.children
+        if children[0] == 'await':
+            return False
+        if not expr_is_dotted(children[0]):
+            return False
+        # Check trailers
+        return all(c.children[0] == '.' for c in children[1:])
+    return node.type == 'name'
 
 
 def _function_is_x_method(method_name):

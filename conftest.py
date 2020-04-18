@@ -1,6 +1,7 @@
 import tempfile
 import shutil
 import os
+import sys
 from functools import partial
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 import jedi
 from jedi.api.environment import get_system_environment, InterpreterEnvironment
 from jedi._compatibility import py_version
+from test.helpers import test_dir
 
 collect_ignore = [
     'setup.py',
@@ -16,6 +18,9 @@ collect_ignore = [
     'build/',
     'test/examples',
 ]
+if sys.version_info < (3, 6):
+    # Python 2 not supported syntax
+    collect_ignore.append('test/test_inference/test_mixed.py')
 
 
 # The following hooks (pytest_configure, pytest_unconfigure) are used
@@ -106,6 +111,12 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
+def ScriptWithProject(Script):
+    project = jedi.Project(test_dir)
+    return partial(jedi.Script, project=project)
+
+
+@pytest.fixture(scope='session')
 def get_names(Script):
     return lambda code, **kwargs: Script(code).get_names(**kwargs)
 
@@ -117,6 +128,11 @@ def goto_or_infer(request, Script):
 
 @pytest.fixture(scope='session', params=['goto', 'help'])
 def goto_or_help(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
+
+
+@pytest.fixture(scope='session', params=['goto', 'help', 'infer'])
+def goto_or_help_or_infer(request, Script):
     return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
 
 

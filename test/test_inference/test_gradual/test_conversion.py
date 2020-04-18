@@ -28,10 +28,10 @@ def test_sqlite3_conversion(Script):
 def test_conversion_of_stub_only(Script):
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
     code = 'import stub_only; stub_only.in_stub_only'
-    d1, = Script(code, _project=project).goto()
+    d1, = Script(code, project=project).goto()
     assert d1.is_stub()
 
-    script = Script(path=d1.module_path, _project=project)
+    script = Script(path=d1.module_path, project=project)
     d2, = script.goto(line=d1.line, column=d1.column)
     assert d2.is_stub()
     assert d2.module_path == d1.module_path
@@ -42,7 +42,7 @@ def test_conversion_of_stub_only(Script):
 
 def test_goto_on_file(Script):
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
-    script = Script('import stub_only; stub_only.Foo', _project=project)
+    script = Script('import stub_only; stub_only.Foo', project=project)
     d1, = script.goto()
     v, = d1._name.infer()
     foo, bar, obj = v.py__mro__()
@@ -51,7 +51,7 @@ def test_goto_on_file(Script):
     assert obj.py__name__() == 'object'
 
     # Make sure we go to Bar, because Foo is a bit before: `class Foo(Bar):`
-    script = Script(path=d1.module_path, _project=project)
+    script = Script(path=d1.module_path, project=project)
     d2, = script.goto(line=d1.line, column=d1.column + 4)
     assert d2.name == 'Bar'
 
@@ -62,3 +62,11 @@ def test_goto_import(Script, skip_pre_python35):
     assert d.is_stub()
     d, = Script(code).goto()
     assert not d.is_stub()
+
+
+def test_os_stat_result(Script):
+    d, = Script('import os; os.stat_result').goto()
+    assert d.is_stub()
+    n = d._name
+    # This should not be a different stub name
+    assert convert_names([n]) == [n]
