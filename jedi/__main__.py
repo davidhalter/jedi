@@ -61,3 +61,5 @@ elif len(sys.argv) > 1 and sys.argv[1] == 'linter':
     _start_linter()
 elif len(sys.argv) > 1 and sys.argv[1] == '_complete':
     _complete()
+else:
+    print('Command not implemented: %s' % sys.argv[1])
