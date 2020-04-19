@@ -80,6 +80,7 @@ for c2, in list_t_to_list_tuple_t(list_of_ints):
     c2
 
 
+# Test handling of nested callables
 def foo(x: int) -> int:
     return x
 
@@ -97,6 +98,21 @@ def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Ca
 for b in list_func_t_to_list_func_type_t(list_of_funcs):
     #? int()
     b(int)
+
+
+def bar(*a, **k) -> int:
+    return len(a) + len(k)
+
+
+list_of_funcs_2 = [bar]  # type: List[Callable[..., int]]
+
+def list_func_t_passthrough(the_list: List[Callable[..., T]]) -> List[Callable[..., T]]:
+    return the_list
+
+
+for b in list_func_t_passthrough(list_of_funcs_2):
+    #? int()
+    b(None, x="x")
 
 
 mapping_int_str = {42: 'a'}  # type: Dict[int, str]
