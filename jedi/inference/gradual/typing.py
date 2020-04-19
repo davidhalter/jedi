@@ -352,7 +352,6 @@ class Tuple(BaseTypingValueWithGenerics):
 
                 if not is_class_value:
                     py_class = element.get_annotated_class_object()
-
                     if not isinstance(py_class, GenericClass):
                         py_class = element
                 else:
