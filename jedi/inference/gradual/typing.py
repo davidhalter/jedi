@@ -346,6 +346,10 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
+                element_name = element.py__name__()
+                if element_name != 'tuple':
+                    continue
+
                 if not is_class_value:
                     py_class = element.get_annotated_class_object()
 
