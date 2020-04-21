@@ -1,4 +1,3 @@
-import pytest
 import datetime
 import decimal
 
@@ -68,6 +67,5 @@ model_instance.date_time_field
 model_instance.category_fk
 #? str()
 model_instance.category_fk.category_name
-# TODO: implement many to many field support
+#? models.ManyToManyField()
 model_instance.tags_m2m
-

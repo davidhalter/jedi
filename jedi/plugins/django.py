@@ -12,16 +12,10 @@ from jedi.inference.names import ValueName
 from jedi.inference.value.instance import TreeInstance
 
 
-def new_dict_filter(cls):
-    filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    res = {f.string_name: _infer_field(cls, f) for f in filter_.values()}
-    return [DictFilter({x: y for x, y in res.items() if y is not None})]
-
-
 class DjangoModelField(LazyValueWrapper):
     def __init__(self, cls, name):
         self.inference_state = cls.inference_state
-        self._cls = cls  # Corresponds to super().__self__
+        self._cls = cls
         self._name = name
         self.tree_node = self._name.tree_name
 
@@ -88,6 +82,13 @@ def _infer_field(cls, field):
 
     debug.dbg('django plugin: fail to infer `%s` from class `%s`',
               field.string_name, cls.name.string_name)
+    return None
+
+
+def _new_dict_filter(cls):
+    filter_ = ParserTreeFilter(parent_context=cls.as_context())
+    res = {f.string_name: _infer_field(cls, f) for f in filter_.values()}
+    return DictFilter({x: y for x, y in res.items() if y is not None})
 
 
 def get_metaclass_filters(func):
@@ -95,9 +96,7 @@ def get_metaclass_filters(func):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'ModelBase' \
                     and metaclass.get_root_context().py__name__() == 'django.db.models.base':
-                django_dict_filter = new_dict_filter(cls)
-                if django_dict_filter is not None:
-                    return django_dict_filter
+                return [_new_dict_filter(cls)]
 
         return func(cls, metaclasses)
     return wrapper
