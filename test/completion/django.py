@@ -5,6 +5,10 @@ import decimal
 from django.db import models
 
 
+class Tag(models.Model):
+    tag_name = models.CharField()
+
+
 class Category(models.Model):
     category_name = models.CharField()
 
@@ -26,6 +30,7 @@ class BusinessModel(models.Model):
     duration_field = models.DurationField()
     date_field = models.DateField()
     date_time_field = models.DateTimeField()
+    tags_m2m = models.ManyToManyField(Tag)
 
 
 model_instance = BusinessModel()
@@ -63,3 +68,6 @@ model_instance.date_time_field
 model_instance.category_fk
 #? str()
 model_instance.category_fk.category_name
+# TODO: implement many to many field support
+model_instance.tags_m2m
+
