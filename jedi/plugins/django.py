@@ -58,7 +58,7 @@ def _infer_scalar_field(cls, field, field_tree_instance):
         module = cls.inference_state.import_module((module_name,))
 
     attribute, = module.py__getattribute__(attribute_name)
-    return DjangoModelField(attribute, field).name
+    return DjangoModelField(attribute, field)
 
 
 def _infer_field(cls, field):
@@ -76,9 +76,9 @@ def _infer_field(cls, field):
                     if value.name.string_name == 'str':
                         foreign_key_class_name = value.get_safe_value()
                         for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
-                            return DjangoModelField(v, field).name
+                            return DjangoModelField(v, field)
                     else:
-                        return DjangoModelField(value, field).name
+                        return DjangoModelField(value, field)
 
     debug.dbg('django plugin: fail to infer `%s` from class `%s`',
               field.string_name, cls.name.string_name)
@@ -86,9 +86,13 @@ def _infer_field(cls, field):
 
 
 def _new_dict_filter(cls):
-    filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    res = {f.string_name: _infer_field(cls, f) for f in filter_.values()}
-    return DictFilter({x: y for x, y in res.items() if y is not None})
+    def iterate():
+        filter_ = ParserTreeFilter(parent_context=cls.as_context())
+        for f in filter_.values():
+            django_field = _infer_field(cls, f)
+            if django_field is not None:
+                yield f.string_name, django_field.name
+    return DictFilter(dict(iterate()))
 
 
 def get_metaclass_filters(func):
