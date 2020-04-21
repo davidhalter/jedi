@@ -17,6 +17,7 @@ class BusinessModel(models.Model):
     category_fk2 = models.ForeignKey('Category')
     category_fk3 = models.ForeignKey(1)
     category_fk4 = models.ForeignKey('models')
+    category_fk5 = models.ForeignKey()
     integer_field = models.IntegerField()
     big_integer_field = models.BigIntegerField()
     positive_integer_field = models.PositiveIntegerField()
@@ -33,6 +34,8 @@ class BusinessModel(models.Model):
     date_field = models.DateField()
     date_time_field = models.DateTimeField()
     tags_m2m = models.ManyToManyField(Tag)
+
+    unidentifiable = NOT_FOUND
 
 
 model_instance = BusinessModel()
@@ -79,6 +82,13 @@ model_instance.category_fk2.category_name
 model_instance.category_fk3
 #? models.ForeignKey()
 model_instance.category_fk4
+#? models.ForeignKey()
+model_instance.category_fk5
 
 #? models.ManyToManyField()
 model_instance.tags_m2m
+
+#?
+model_instance.unidentifiable
+#! ['unidentifiable = NOT_FOUND']
+model_instance.unidentifiable

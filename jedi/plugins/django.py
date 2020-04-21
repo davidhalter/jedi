@@ -58,31 +58,32 @@ def _infer_scalar_field(inference_state, field_name, field_tree_instance):
     else:
         module = inference_state.import_module((module_name,))
 
-    attribute, = module.py__getattribute__(attribute_name)
-    return DjangoModelField(attribute, field_name)
+    for attribute in module.py__getattribute__(attribute_name):
+        return DjangoModelField(attribute, field_name)
 
 
 def _infer_field(cls, field_name):
     inference_state = cls.inference_state
-    field_tree_instance, = field_name.infer()
-    scalar_field = _infer_scalar_field(inference_state, field_name, field_tree_instance)
-    if scalar_field:
-        return scalar_field
+    for field_tree_instance in field_name.infer():
+        scalar_field = _infer_scalar_field(inference_state, field_name, field_tree_instance)
+        if scalar_field:
+            return scalar_field
 
-    if field_tree_instance.py__name__() == 'ForeignKey':
-        if isinstance(field_tree_instance, TreeInstance):
-            # TODO private access..
-            argument_iterator = field_tree_instance._arguments.unpack()
-            key, lazy_values = next(argument_iterator, (None, None))
-            if key is None and lazy_values is not None:
-                for value in lazy_values.infer():
-                    if value.py__name__() == 'str':
-                        foreign_key_class_name = value.get_safe_value()
-                        for v in cls.get_root_context().py__getattribute__(foreign_key_class_name):
-                            if v.is_class():
-                                return DjangoModelField(v, field_name)
-                    elif value.is_class():
-                        return DjangoModelField(value, field_name)
+        if field_tree_instance.py__name__() == 'ForeignKey':
+            if isinstance(field_tree_instance, TreeInstance):
+                # TODO private access..
+                argument_iterator = field_tree_instance._arguments.unpack()
+                key, lazy_values = next(argument_iterator, (None, None))
+                if key is None and lazy_values is not None:
+                    for value in lazy_values.infer():
+                        if value.py__name__() == 'str':
+                            foreign_key_class_name = value.get_safe_value()
+                            module = cls.get_root_context()
+                            for v in module.py__getattribute__(foreign_key_class_name):
+                                if v.is_class():
+                                    return DjangoModelField(v, field_name)
+                        elif value.is_class():
+                            return DjangoModelField(value, field_name)
 
     debug.dbg('django plugin: fail to infer `%s` from class `%s`',
               field_name.string_name, cls.py__name__())
