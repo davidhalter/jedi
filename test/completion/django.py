@@ -14,6 +14,8 @@ class Category(models.Model):
 
 class BusinessModel(models.Model):
     category_fk = models.ForeignKey(Category)
+    category_fk2 = models.ForeignKey('Category')
+    category_fk3 = models.ForeignKey(1)
     integer_field = models.IntegerField()
     big_integer_field = models.BigIntegerField()
     positive_integer_field = models.PositiveIntegerField()
@@ -63,9 +65,17 @@ model_instance.duration_field
 model_instance.date_field
 #? datetime.datetime()
 model_instance.date_time_field
+
 #? Category()
 model_instance.category_fk
 #? str()
 model_instance.category_fk.category_name
+#? Category()
+model_instance.category_fk2
+#? str()
+model_instance.category_fk2.category_name
+#? models.ForeignKey()
+model_instance.category_fk3
+
 #? models.ManyToManyField()
 model_instance.tags_m2m
