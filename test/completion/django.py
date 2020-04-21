@@ -16,6 +16,7 @@ class BusinessModel(models.Model):
     category_fk = models.ForeignKey(Category)
     category_fk2 = models.ForeignKey('Category')
     category_fk3 = models.ForeignKey(1)
+    category_fk4 = models.ForeignKey('models')
     integer_field = models.IntegerField()
     big_integer_field = models.BigIntegerField()
     positive_integer_field = models.PositiveIntegerField()
@@ -76,6 +77,8 @@ model_instance.category_fk2
 model_instance.category_fk2.category_name
 #? models.ForeignKey()
 model_instance.category_fk3
+#? models.ForeignKey()
+model_instance.category_fk4
 
 #? models.ManyToManyField()
 model_instance.tags_m2m

@@ -77,8 +77,9 @@ def _infer_field(cls, field):
                 for value in lazy_values.infer():
                     if value.name.string_name == 'str':
                         foreign_key_class_name = value.get_safe_value()
-                        for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
-                            return DjangoModelField(v, field)
+                        for v in cls.get_root_context().py__getattribute__(foreign_key_class_name):
+                            if v.is_class():
+                                return DjangoModelField(v, field)
                     elif value.is_class():
                         return DjangoModelField(value, field)
 
