@@ -4,6 +4,7 @@ Bugs:
     - Can't infer User model.
     - Can't infer ManyToManyField.
 """
+from jedi import debug
 from jedi.inference.base_value import LazyValueWrapper
 from jedi.inference.utils import safe_property
 from jedi.inference.filters import ParserTreeFilter, DictFilter
@@ -74,20 +75,19 @@ def _infer_field(cls, field):
 
     if field_tree_instance.name.string_name == 'ForeignKey':
         if isinstance(field_tree_instance, TreeInstance):
-             argument_iterator = field_tree_instance._arguments.unpack()
-             key, lazy_values = next(argument_iterator, (None, None))
-             if key is None and lazy_values is not None:
-                 for value in lazy_values.infer():
-                     if value.name.string_name == 'str':
-                         foreign_key_class_name = value.get_safe_value()
-                         for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
-                             return DjangoModelField(v, field).name
-                     else:
-                         return DjangoModelField(value, field).name
+            argument_iterator = field_tree_instance._arguments.unpack()
+            key, lazy_values = next(argument_iterator, (None, None))
+            if key is None and lazy_values is not None:
+                for value in lazy_values.infer():
+                    if value.name.string_name == 'str':
+                        foreign_key_class_name = value.get_safe_value()
+                        for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
+                            return DjangoModelField(v, field).name
+                    else:
+                        return DjangoModelField(value, field).name
 
-    print('django plugin: fail to infer `{}` from class `{}`'.format(
-        field.string_name, cls.name.string_name,
-    ))
+    debug.dbg('django plugin: fail to infer `%s` from class `%s`',
+              field.string_name, cls.name.string_name)
 
 
 def get_metaclass_filters(func):
