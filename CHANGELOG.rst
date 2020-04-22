@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+Unreleased: 0.17.1 (2020-04-)
++++++++++++++++++++
+
+- Django ``Model`` meta class support
+- A few bugfixes
+
 0.17.0 (2020-04-14)
 +++++++++++++++++++
 
