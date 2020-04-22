@@ -5,27 +5,11 @@ Bugs:
     - Can't infer ManyToManyField.
 """
 from jedi import debug
-from jedi.inference.base_value import LazyValueWrapper
+from jedi.inference.base_value import LazyValueWrapper, ValueSet, NO_VALUES
 from jedi.inference.utils import safe_property
 from jedi.inference.filters import ParserTreeFilter, DictFilter
-from jedi.inference.names import ValueName
+from jedi.inference.names import ValueName, NameWrapper
 from jedi.inference.value.instance import TreeInstance
-
-
-class DjangoModelField(LazyValueWrapper):
-    def __init__(self, cls, name):
-        self.inference_state = cls.inference_state
-        self._cls = cls
-        self._name = name
-        self.tree_node = self._name.tree_name
-
-    @safe_property
-    def name(self):
-        return ValueName(self, self._name.tree_name)
-
-    def _get_wrapped_value(self):
-        obj, = self._cls.execute_with_values()
-        return obj
 
 
 mapping = {
@@ -59,14 +43,14 @@ def _infer_scalar_field(inference_state, field_name, field_tree_instance):
         module = inference_state.import_module((module_name,))
 
     for attribute in module.py__getattribute__(attribute_name):
-        return DjangoModelField(attribute, field_name)
+        return attribute.execute_with_values()
 
 
 def _infer_field(cls, field_name):
     inference_state = cls.inference_state
     for field_tree_instance in field_name.infer():
         scalar_field = _infer_scalar_field(inference_state, field_name, field_tree_instance)
-        if scalar_field:
+        if scalar_field is not None:
             return scalar_field
 
         if field_tree_instance.py__name__() == 'ForeignKey':
@@ -79,25 +63,34 @@ def _infer_field(cls, field_name):
                         if value.py__name__() == 'str':
                             foreign_key_class_name = value.get_safe_value()
                             module = cls.get_root_context()
-                            for v in module.py__getattribute__(foreign_key_class_name):
-                                if v.is_class():
-                                    return DjangoModelField(v, field_name)
+                            return ValueSet.from_sets(
+                                v.execute_with_values()
+                                for v in module.py__getattribute__(foreign_key_class_name)
+                                if v.is_class()
+                            )
                         elif value.is_class():
-                            return DjangoModelField(value, field_name)
+                            return value.execute_with_values()
 
     debug.dbg('django plugin: fail to infer `%s` from class `%s`',
               field_name.string_name, cls.py__name__())
-    return None
+    return field_name.infer()
+
+
+class DjangoModelName(NameWrapper):
+    def __init__(self, cls, name):
+        super(DjangoModelName, self).__init__(name)
+        self._cls = cls
+
+    def infer(self):
+        return _infer_field(self._cls, self._wrapped_name)
 
 
 def _new_dict_filter(cls):
-    def iterate():
-        filter_ = ParserTreeFilter(parent_context=cls.as_context())
-        for name in filter_.values():
-            django_field = _infer_field(cls, name)
-            if django_field is not None:
-                yield name.string_name, django_field.name
-    return DictFilter(dict(iterate()))
+    filter_ = ParserTreeFilter(parent_context=cls.as_context())
+    return DictFilter({
+        name.string_name: DjangoModelName(cls, name)
+        for name in filter_.values()
+    })
 
 
 def get_metaclass_filters(func):
