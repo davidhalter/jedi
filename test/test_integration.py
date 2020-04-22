@@ -47,7 +47,7 @@ def test_completion(case, monkeypatch, environment, has_typing, has_django):
     _CONTAINS_TYPING = ('pep0484_typing', 'pep0484_comments', 'pep0526_variables')
     if not has_typing and any(x in case.path for x in _CONTAINS_TYPING):
         pytest.skip('Needs the typing module installed to run this test.')
-    if not has_django and case.path.endswith('django.py'):
+    if (not has_django or environment.version_info.major == 2) and case.path.endswith('django.py'):
         pytest.skip('Needs django to be installed to run this test.')
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
