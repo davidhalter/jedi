@@ -94,7 +94,11 @@ class BaseName(object):
 
     @property
     def module_path(self):
-        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+        """
+        Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``
+
+        :rtype: str or None
+        """
         module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
@@ -168,7 +172,7 @@ class BaseName(object):
         >>> defs[3]
         'function'
 
-        Valid values for are ``module``, ``class``, ``instance``, ``function``,
+        Valid values for type are ``module``, ``class``, ``instance``, ``function``,
         ``param``, ``path``, ``keyword`` and ``statement``.
 
         """
@@ -245,8 +249,8 @@ class BaseName(object):
         Document for function f.
 
         Notice that useful extra information is added to the actual
-        docstring.  For function, it is signature.  If you need
-        actual docstring, use ``raw=True`` instead.
+        docstring, e.g. function signatures are prepended to their docstrings.
+        If you need the actual docstring, use ``raw=True`` instead.
 
         >>> print(script.infer(1, len('def f'))[0].docstring(raw=True))
         Document for function f.
@@ -665,7 +669,7 @@ class Completion(BaseName):
 
     def docstring(self, raw=False, fast=True):
         """
-        Documentated under :meth:`BaseName.docstring`.
+        Documented under :meth:`BaseName.docstring`.
         """
         if self._like_name_length >= 3:
             # In this case we can just resolve the like name, because we
@@ -703,7 +707,7 @@ class Completion(BaseName):
     @property
     def type(self):
         """
-        Documentated under :meth:`BaseName.type`.
+        Documented under :meth:`BaseName.type`.
         """
         # Purely a speed optimization.
         if self._cached_name is not None:
@@ -797,7 +801,7 @@ class BaseSignature(Name):
         Returns a text representation of the signature. This could for example
         look like ``foo(bar, baz: int, **kwargs)``.
 
-        :return str
+        :rtype: str
         """
         return self._signature.to_string()
 
@@ -864,7 +868,7 @@ class ParamName(Name):
         Returns a simple representation of a param, like
         ``f: Callable[..., Any]``.
 
-        :rtype: :class:`str`
+        :rtype: str
         """
         return self._name.to_string()
 
