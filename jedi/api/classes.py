@@ -734,8 +734,7 @@ class Name(BaseName):
             DeprecationWarning,
             stacklevel=2
         )
-        position = '' if self.in_builtin_module else '@%s' % self.line
-        return "%s:%s%s" % (self.module_name, self.description, position)
+        return "%s:%s" % (self.module_name, self.description)
 
     @memoize_method
     def defined_names(self):
