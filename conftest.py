@@ -13,7 +13,7 @@ from test.helpers import test_dir
 
 collect_ignore = [
     'setup.py',
-    '__main__.py',
+    'jedi/__main__.py',
     'jedi/inference/compiled/subprocess/__main__.py',
     'build/',
     'test/examples',

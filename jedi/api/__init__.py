@@ -472,7 +472,7 @@ class Script(object):
         if definitions:
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))
-        if leaf.type in ('keyword', 'operator', 'error_leaf'):
+        if leaf is not None and leaf.type in ('keyword', 'operator', 'error_leaf'):
             reserved = self._inference_state.grammar._pgen_grammar.reserved_syntax_strings.keys()
             if leaf.value in reserved:
                 name = KeywordName(self._inference_state, leaf.value)
