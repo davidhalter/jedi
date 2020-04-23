@@ -5,10 +5,9 @@ Bugs:
     - Can't infer ManyToManyField.
 """
 from jedi import debug
-from jedi.inference.base_value import LazyValueWrapper, ValueSet, NO_VALUES
-from jedi.inference.utils import safe_property
+from jedi.inference.base_value import ValueSet
 from jedi.inference.filters import ParserTreeFilter, DictFilter
-from jedi.inference.names import ValueName, NameWrapper
+from jedi.inference.names import NameWrapper
 from jedi.inference.value.instance import TreeInstance
 
 
