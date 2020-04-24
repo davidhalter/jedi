@@ -6,6 +6,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    Optional,
     Type,
     TypeVar,
     Union,
@@ -17,7 +18,10 @@ T_co = TypeVar('T_co', covariant=True)
 V = TypeVar('V')
 
 
+optional_float = 42.  # type: Optional[float]
 list_of_ints = [42]  # type: List[int]
+list_of_floats = [42.]  # type: List[float]
+list_of_optional_floats = [x or None for x in list_of_floats]  # type: List[Optional[float]]
 list_of_ints_and_strs = [42, 'abc']  # type: List[Union[int, str]]
 
 # Test that simple parameters are handled
@@ -45,6 +49,34 @@ for z in list_t_to_list_t(list_of_ints_and_strs):
 list_of_int_type = [int]  # type: List[Type[int]]
 
 # Test that nested parameters are handled
+def list_optional_t_to_list_t(the_list: List[Optional[T]]) -> List[T]:
+    return [x for x in the_list if x is not None]
+
+
+for xa in list_optional_t_to_list_t(list_of_optional_floats):
+    #? float()
+    xa
+
+
+def optional_t_to_list_t(x: Optional[T]) -> List[T]:
+    return [x] if x is not None else []
+
+
+for xb in optional_t_to_list_t(optional_float):
+    #? float()
+    xb
+
+
+def optional_list_t_to_list_t(x: Optional[List[T]]) -> List[T]:
+    return x if x is not None else []
+
+
+optional_list_float = None  # type: Optional[List[float]]
+for xc in optional_list_t_to_list_t(optional_list_float):
+    #? float()
+    xc
+
+
 def list_type_t_to_list_t(the_list: List[Type[T]]) -> List[T]:
     return [x() for x in the_list]
 
