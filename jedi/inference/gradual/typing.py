@@ -136,6 +136,15 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
     def gather_annotation_classes(self):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
+    def get_annotated_class_object(self):
+        if self._tree_name.value == 'Tuple':
+            return Tuple(
+                self.parent_context,
+                self._tree_name,
+                generics_manager=self._generics_manager,
+            )
+        return super().get_annotated_class_object()
+
     def _create_instance_with_generics(self, generics_manager):
         return TypingValueWithIndex(
             self.parent_context,
@@ -222,7 +231,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                 )
 
         elif annotation_name == 'Tuple':
-            tuple_annotation, = self.execute_annotation()
+            tuple_annotation = self.get_annotated_class_object()
             return tuple_annotation.infer_type_vars(value_set, is_class_value)
 
         return type_var_dict
