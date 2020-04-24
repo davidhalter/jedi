@@ -75,9 +75,9 @@ def list_tuple_t_elipsis_to_tuple_list_t(the_list: List[Tuple[T, ...]]) -> Tuple
     return tuple(list(x) for x in the_list)
 
 
-list_of_int_tuples = [tuple(list_of_ints)]  # type: List[Tuple[int, ...]]
+list_of_int_tuple_elipsis = [tuple(list_of_ints)]  # type: List[Tuple[int, ...]]
 
-for b in list_tuple_t_elipsis_to_tuple_list_t(list_of_int_tuples):
+for b in list_tuple_t_elipsis_to_tuple_list_t(list_of_int_tuple_elipsis):
     #? int()
     b[0]
 
