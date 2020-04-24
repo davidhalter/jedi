@@ -337,7 +337,11 @@ class Tuple(BaseTypingValueWithGenerics):
         from jedi.inference.gradual.base import GenericClass
 
         if is_class_value:
-            value_set = value_set.execute_annotation()
+            value_set = ValueSet([
+                value.get_annotated_class_object()
+                for value in value_set
+                if value.py__name__() == 'Tuple'
+            ])
 
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
