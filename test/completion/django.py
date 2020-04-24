@@ -2,6 +2,11 @@ import datetime
 import decimal
 
 from django.db import models
+from django.contrib.auth.models import User
+
+
+#? str()
+User().email
 
 
 class Tag(models.Model):
@@ -38,6 +43,9 @@ class BusinessModel(models.Model):
 
     unidentifiable = NOT_FOUND
 
+# -----------------
+# Model attribute inference
+# -----------------
 
 model_instance = BusinessModel()
 #? int()
