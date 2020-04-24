@@ -342,6 +342,10 @@ class Tuple(BaseTypingValueWithGenerics):
                 for value in value_set
                 if value.py__name__() == 'Tuple'
             ])
+        else:
+            value_set = value_set.filter(
+                lambda x: x.py__name__() == 'tuple',
+            )
 
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
@@ -359,10 +363,6 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
-                element_name = element.py__name__()
-                if element_name != 'tuple':
-                    continue
-
                 if not is_class_value:
                     py_class = element.get_annotated_class_object()
                     if not isinstance(py_class, GenericClass):
