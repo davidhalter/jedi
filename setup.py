@@ -45,7 +45,7 @@ setup(name='jedi',
               'docopt',
               # coloroma for colored debug output
               'colorama',
-              'Django==3.0.5',  # For now pin this.
+              'Django<3.1',  # For now pin this.
           ],
           'qa': [
               'flake8==3.7.9',
