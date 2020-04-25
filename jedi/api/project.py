@@ -13,7 +13,7 @@ import json
 import sys
 
 from jedi._compatibility import FileNotFoundError, PermissionError, \
-    IsADirectoryError
+    IsADirectoryError, NotADirectoryError
 from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
@@ -383,6 +383,8 @@ def get_default_project(path=None):
             return Project.load(dir)
         except (FileNotFoundError, IsADirectoryError, PermissionError):
             pass
+        except NotADirectoryError:
+            continue
 
         if first_no_init_file is None:
             if os.path.exists(os.path.join(dir, '__init__.py')):
