@@ -12,6 +12,8 @@ from jedi.inference.value import ModuleValue
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
+DJANGO_INIT_PATH = os.path.join(_jedi_path, 'third_party', 'django-stubs',
+                                'django-stubs', '__init__.pyi')
 
 _IMPORT_MAP = dict(
     _collections='collections',
@@ -173,6 +175,13 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
             )
             if m is not None:
                 return m
+        if import_names[0] == 'django':
+            return _try_to_load_stub_from_file(
+                inference_state,
+                python_value_set,
+                file_io=FileIO(DJANGO_INIT_PATH),
+                import_names=import_names,
+            )
 
     # 2. Try to load pyi files next to py files.
     for c in python_value_set:

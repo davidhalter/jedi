@@ -8,6 +8,8 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.filters import ParserTreeFilter, DictFilter
 from jedi.inference.names import NameWrapper
 from jedi.inference.value.instance import TreeInstance
+from jedi.inference.gradual.base import GenericClass
+from jedi.inference.gradual.generics import TupleGenericManager
 
 
 mapping = {
@@ -83,12 +85,28 @@ class DjangoModelName(NameWrapper):
         return _infer_field(self._cls, self._wrapped_name)
 
 
+def _create_manager_for(cls):
+    managers = cls.inference_state.import_module(
+        ('django', 'db', 'models', 'manager')
+    ).py__getattribute__('BaseManager')
+    for m in managers:
+        if m.is_class() and not m.is_compiled():
+            generics_manager = TupleGenericManager((ValueSet([cls]),))
+            for c in GenericClass(m, generics_manager).execute_annotation():
+                return c
+    return None
+
+
 def _new_dict_filter(cls):
     filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    return DictFilter({
+    dct = {
         name.string_name: DjangoModelName(cls, name)
         for name in filter_.values()
-    })
+    }
+    manager = _create_manager_for(cls)
+    if manager:
+        dct['objects'] = manager.name
+    return DictFilter(dct)
 
 
 def get_metaclass_filters(func):

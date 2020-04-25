@@ -105,3 +105,14 @@ model_instance.tags_m2m
 model_instance.unidentifiable
 #! ['unidentifiable = NOT_FOUND']
 model_instance.unidentifiable
+
+# -----------------
+# Queries
+# -----------------
+
+#? models.query.QuerySet.filter
+model_instance.objects.filter
+#? BusinessModel() None
+model_instance.objects.filter().first()
+#? str()
+model_instance.objects.get().char_field
