@@ -6,6 +6,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -59,11 +60,32 @@ for b in list_type_t_to_list_t(list_of_int_type):
     b
 
 
-def foo(x: T) -> T:
+# Test construction of nested generic tuple return parameters
+def list_t_to_list_tuple_t(the_list: List[T]) -> List[Tuple[T]]:
+    return [(x,) for x in the_list]
+
+
+x1t = list_t_to_list_tuple_t(list_of_ints)[0][0]
+#? int()
+x1t
+
+
+for c1 in list_t_to_list_tuple_t(list_of_ints):
+    #? int()
+    c1[0]
+
+
+for c2, in list_t_to_list_tuple_t(list_of_ints):
+    #? int()
+    c2
+
+
+# Test handling of nested callables
+def foo(x: int) -> int:
     return x
 
 
-list_of_funcs = [foo]  # type: List[Callable[[T], T]]
+list_of_funcs = [foo]  # type: List[Callable[[int], int]]
 
 def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Callable[[Type[T]], T]]:
     def adapt(func: Callable[[T], T]) -> Callable[[Type[T]], T]:
@@ -76,6 +98,21 @@ def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Ca
 for b in list_func_t_to_list_func_type_t(list_of_funcs):
     #? int()
     b(int)
+
+
+def bar(*a, **k) -> int:
+    return len(a) + len(k)
+
+
+list_of_funcs_2 = [bar]  # type: List[Callable[..., int]]
+
+def list_func_t_passthrough(the_list: List[Callable[..., T]]) -> List[Callable[..., T]]:
+    return the_list
+
+
+for b in list_func_t_passthrough(list_of_funcs_2):
+    #? int()
+    b(None, x="x")
 
 
 mapping_int_str = {42: 'a'}  # type: Dict[int, str]
