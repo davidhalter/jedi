@@ -44,6 +44,7 @@ class BusinessModel(models.Model):
 # -----------------
 
 model_instance = BusinessModel()
+
 #? int()
 model_instance.integer_field
 #? int()
@@ -120,6 +121,31 @@ model_instance.objects.get().char_field
 model_instance.objects.update(x='')
 #? BusinessModel()
 model_instance.objects.create()
+
+# -----------------
+# Inheritance
+# -----------------
+
+class Inherited(BusinessModel):
+    text_field = models.IntegerField()
+    new_field = models.FloatField()
+
+inherited = Inherited()
+#? int()
+inherited.text_field
+#? str()
+inherited.char_field
+#? float()
+inherited.new_field
+
+#? str()
+inherited.category_fk2.category_name
+#? str()
+inherited.objects.get().char_field
+#? int()
+inherited.objects.get().text_field
+#? float()
+inherited.objects.get().new_field
 
 # -----------------
 # Django Auth
