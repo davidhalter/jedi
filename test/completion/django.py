@@ -5,10 +5,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-#? str()
-User().email
-
-
 class Tag(models.Model):
     tag_name = models.CharField()
 
@@ -124,3 +120,12 @@ model_instance.objects.get().char_field
 model_instance.objects.update(x='')
 #? BusinessModel()
 model_instance.objects.create()
+
+# -----------------
+# Django Auth
+# -----------------
+
+#? str()
+User().email
+#? str()
+User.objects.get().email

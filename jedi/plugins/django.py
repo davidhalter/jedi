@@ -107,9 +107,10 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
 
 
 def _new_dict_filter(cls):
-    filter_ = ParserTreeFilter(parent_context=cls.as_context())
+    filters = cls.get_filters(is_instance=True, include_metaclasses=False)
     dct = {
         name.string_name: DjangoModelName(cls, name)
+        for filter_ in filters
         for name in filter_.values()
     }
     manager = _create_manager_for(cls)
