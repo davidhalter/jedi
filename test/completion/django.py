@@ -155,3 +155,14 @@ inherited.objects.get().new_field
 User().email
 #? str()
 User.objects.get().email
+
+# -----------------
+# values & values_list (dave is too lazy to implement it)
+# -----------------
+
+#?
+model_instance.objects.values_list('char_field')[0]
+#? dict()
+model_instance.objects.values('char_field')[0]
+#?
+model_instance.objects.values('char_field')[0]['char_field']
