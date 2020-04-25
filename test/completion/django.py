@@ -91,15 +91,19 @@ model_instance.category_fk.category_name
 model_instance.category_fk2
 #? str()
 model_instance.category_fk2.category_name
-#? models.ForeignKey()
+#?
 model_instance.category_fk3
 #?
 model_instance.category_fk4
-#? models.ForeignKey()
+#?
 model_instance.category_fk5
 
-#? models.ManyToManyField()
+#? models.manager.RelatedManager()
 model_instance.tags_m2m
+#? Tag()
+model_instance.tags_m2m.get()
+#? ['add']
+model_instance.tags_m2m.add
 
 #?
 model_instance.unidentifiable
