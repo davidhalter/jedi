@@ -120,3 +120,7 @@ model_instance.objects.filter
 model_instance.objects.filter().first()
 #? str()
 model_instance.objects.get().char_field
+#? int()
+model_instance.objects.update(x='')
+#? BusinessModel()
+model_instance.objects.create()
