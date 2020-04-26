@@ -207,40 +207,36 @@ for a in list_func_t_to_list_t(12):
     a
 
 
-# The following are all actually wrong, however we're mainly testing here that
-# we don't error when processing invalid values, rather than that we get the
-# right output.
-
 x0 = list_func_t_to_list_t(["abc"])[0]
-#? str()
+#?
 x0
 
 x2 = list_func_t_to_list_t([tpl])[0]
-#? tuple()
+#?
 x2
 
 x3 = list_func_t_to_list_t([tpl_typed])[0]
-#? tuple()
+#?
 x3
 
 x4 = list_func_t_to_list_t([collection])[0]
-#? dict()
+#?
 x4
 
 x5 = list_func_t_to_list_t([collection_typed])[0]
-#? dict()
+#?
 x5
 
 x6 = list_func_t_to_list_t([custom_generic])[0]
-#? CustomGeneric()
+#?
 x6
 
 x7 = list_func_t_to_list_t([plain_instance])[0]
-#? PlainClass()
+#?
 x7
 
 for a in list_func_t_to_list_t([12]):
-    #? int()
+    #?
     a
 
 

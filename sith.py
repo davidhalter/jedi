@@ -123,7 +123,7 @@ class TestCase(object):
             with open(self.path) as f:
                 self.script = jedi.Script(f.read(), path=self.path)
             kwargs = {}
-            if self.operation == 'goto_assignments':
+            if self.operation == 'goto':
                 kwargs['follow_imports'] = random.choice([False, True])
 
             self.objects = getattr(self.script, self.operation)(self.line, self.column, **kwargs)

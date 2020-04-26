@@ -192,13 +192,17 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
     def _get_generics(self):
         return (self.merge_types_of_iterate().py__class__(),)
 
+    @inference_state_method_cache(default=())
+    def _cached_generics(self):
+        return self._get_generics()
+
     def _get_wrapped_value(self):
         from jedi.inference.gradual.base import GenericClass
         from jedi.inference.gradual.generics import TupleGenericManager
         klass = compiled.builtin_from_name(self.inference_state, self.array_type)
         c, = GenericClass(
             klass,
-            TupleGenericManager(self._get_generics())
+            TupleGenericManager(self._cached_generics())
         ).execute_annotation()
         return c
 

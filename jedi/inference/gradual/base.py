@@ -99,7 +99,7 @@ class DefineGenericBase(LazyValueWrapper):
         for generic_set in self.get_generics():
             values = NO_VALUES
             for generic in generic_set:
-                if isinstance(generic, (GenericClass, TypeVar)):
+                if isinstance(generic, (DefineGenericBase, TypeVar)):
                     result = generic.define_generics(type_var_dict)
                     values |= result
                     if result != ValueSet({generic}):

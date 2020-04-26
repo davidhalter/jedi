@@ -13,7 +13,7 @@ from test.helpers import test_dir
 
 collect_ignore = [
     'setup.py',
-    '__main__.py',
+    'jedi/__main__.py',
     'jedi/inference/compiled/subprocess/__main__.py',
     'build/',
     'test/examples',
@@ -144,6 +144,12 @@ def has_typing(environment):
         return True
 
     script = jedi.Script('import typing', environment=environment)
+    return bool(script.infer())
+
+
+@pytest.fixture(scope='session')
+def has_django(environment):
+    script = jedi.Script('import django', environment=environment)
     return bool(script.infer())
 
 

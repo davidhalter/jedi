@@ -3,6 +3,14 @@
 Changelog
 ---------
 
+Unreleased: 0.17.1 (2020-04-)
++++++++++++++++++++
+
+- Django ``Model`` meta class support
+- Added Django Stubs to Jedi, thanks to all contributors of the
+  `Django Stubs <https://github.com/typeddjango/django-stubs>`_ project
+- A few bugfixes
+
 0.17.0 (2020-04-14)
 +++++++++++++++++++
 

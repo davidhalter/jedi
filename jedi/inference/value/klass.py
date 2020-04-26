@@ -186,11 +186,12 @@ class ClassMixin(object):
                             mro.append(cls_new)
                             yield cls_new
 
-    def get_filters(self, origin_scope=None, is_instance=False):
-        metaclasses = self.get_metaclasses()
-        if metaclasses:
-            for f in self.get_metaclass_filters(metaclasses):
-                yield f
+    def get_filters(self, origin_scope=None, is_instance=False, include_metaclasses=True):
+        if include_metaclasses:
+            metaclasses = self.get_metaclasses()
+            if metaclasses:
+                for f in self.get_metaclass_filters(metaclasses):
+                    yield f
 
         for cls in self.py__mro__():
             if cls.is_compiled():

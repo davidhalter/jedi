@@ -339,6 +339,13 @@ try:
 except NameError:
     PermissionError = IOError
 
+try:
+    NotADirectoryError = NotADirectoryError
+except NameError:
+    class NotADirectoryError(Exception):
+        # Don't implement this for Python 2 anymore.
+        pass
+
 
 def no_unicode_pprint(dct):
     """

@@ -115,3 +115,18 @@ def test_docstring_decorator(goto_or_help_or_infer, skip_python2):
 
     doc = d.docstring()
     assert doc == 'FunctionType(*args: Any, **kwargs: Any) -> Any\n\nhello'
+
+
+@pytest.mark.parametrize('code', ['', '\n', ' '])
+def test_empty(Script, code):
+    assert not Script(code).help(1, 0)
+
+
+@pytest.mark.parametrize('code', ['f()', '(bar or baz)', 'f[3]'])
+def test_no_help_for_operator(Script, code):
+    assert not Script(code).help()
+
+
+@pytest.mark.parametrize('code', ['()', '(1,)', '[]', '[1]', 'f[]'])
+def test_help_for_operator(Script, code):
+    assert Script(code).help()

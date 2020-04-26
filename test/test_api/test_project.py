@@ -20,6 +20,12 @@ def test_django_default_project(Script):
     assert script._inference_state.project._django is True
 
 
+def test_django_default_project_of_file(Script):
+    project = get_default_project(__file__)
+    d = os.path.dirname
+    assert project._path == d(d(d(__file__)))
+
+
 def test_interpreter_project_path():
     # Run from anywhere it should be the cwd.
     dir = os.path.join(root_dir, 'test')
