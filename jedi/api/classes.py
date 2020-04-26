@@ -697,9 +697,8 @@ class Completion(BaseName):
         return super(Completion, self)._get_docstring_signature()
 
     def _get_cache(self):
-        typ = super(Completion, self).type
         return (
-            typ,
+            super(Completion, self).type,
             super(Completion, self)._get_docstring_signature(),
             super(Completion, self)._get_docstring(),
         )
