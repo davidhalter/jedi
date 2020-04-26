@@ -136,15 +136,6 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
     def gather_annotation_classes(self):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
-    def get_annotated_class_object(self):
-        if self._tree_name.value == 'Tuple':
-            return Tuple(
-                self.parent_context,
-                self._tree_name,
-                generics_manager=self._generics_manager,
-            )
-        return super().get_annotated_class_object()
-
     def _create_instance_with_generics(self, generics_manager):
         return TypingValueWithIndex(
             self.parent_context,
@@ -246,7 +237,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                     )
 
         elif annotation_name == 'Tuple':
-            tuple_annotation = self.get_annotated_class_object()
+            tuple_annotation, = self.execute_annotation()
             return tuple_annotation.infer_type_vars(value_set, is_class_value)
 
         return type_var_dict
@@ -351,16 +342,17 @@ class Tuple(BaseTypingValueWithGenerics):
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
         from jedi.inference.gradual.base import GenericClass
 
+        value_set = value_set.filter(
+            lambda x: x.py__name__().lower() == 'tuple',
+        )
+
+        # Somewhat unusually, this `infer_type_vars` method is on an instance
+        # representation of a type, rather than the annotation or class
+        # representation. This means that as a starting point, we need to
+        # convert the incoming values to their instance style if they're
+        # classes, rather than the reverse.
         if is_class_value:
-            value_set = ValueSet([
-                value.get_annotated_class_object()
-                for value in value_set
-                if value.py__name__() == 'Tuple'
-            ])
-        else:
-            value_set = value_set.filter(
-                lambda x: x.py__name__() == 'tuple',
-            )
+            value_set = value_set.execute_annotation()
 
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
