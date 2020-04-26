@@ -473,8 +473,19 @@ class Script(object):
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))
         if leaf is not None and leaf.type in ('keyword', 'operator', 'error_leaf'):
-            reserved = self._inference_state.grammar._pgen_grammar.reserved_syntax_strings.keys()
-            if leaf.value in reserved:
+            def need_pydoc():
+                if leaf.value in ('(', ')', '[', ']'):
+                    if leaf.parent.type == 'trailer':
+                        return False
+                    if leaf.parent.type == 'atom':
+                        return False
+                grammar = self._inference_state.grammar
+                # This parso stuff is not public, but since I control it, this
+                # is fine :-) ~dave
+                reserved = grammar._pgen_grammar.reserved_syntax_strings.keys()
+                return leaf.value in reserved
+
+            if need_pydoc():
                 name = KeywordName(self._inference_state, leaf.value)
                 return [classes.Name(self._inference_state, name)]
         return []

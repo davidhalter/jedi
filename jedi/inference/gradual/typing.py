@@ -253,9 +253,24 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
         elif annotation_name == 'Callable':
             if len(annotation_generics) == 2:
-                return annotation_generics[1].infer_type_vars(
-                    value_set.execute_annotation(),
-                )
+                if is_class_value:
+                    # This only applies if we are comparing something like
+                    # List[Callable[..., T]] with Iterable[Callable[..., T]].
+                    # First, Jedi tries to match List/Iterable. After that we
+                    # will land here, because is_class_value will be True at
+                    # that point. Obviously we also compare below that both
+                    # sides are `Callable`.
+                    for element in value_set:
+                        element_name = element.py__name__()
+                        if element_name == 'Callable':
+                            merge_type_var_dicts(
+                                type_var_dict,
+                                merge_pairwise_generics(self, element),
+                            )
+                else:
+                    return annotation_generics[1].infer_type_vars(
+                        value_set.execute_annotation(),
+                    )
 
         elif annotation_name == 'Tuple':
             tuple_annotation, = self.execute_annotation()
@@ -433,6 +448,10 @@ class NewType(Value):
         super(NewType, self).__init__(inference_state, parent_context)
         self._type_value_set = type_value_set
         self.tree_node = tree_node
+
+    def py__class__(self):
+        c, = self._type_value_set.py__class__()
+        return c
 
     def py__call__(self, arguments):
         return self._type_value_set.execute_annotation()

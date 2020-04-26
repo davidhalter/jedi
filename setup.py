@@ -19,6 +19,8 @@ with open('requirements.txt') as f:
 
 assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
     "Please download the typeshed submodule first (Hint: git submodule update --init)"
+assert os.path.isfile("jedi/third_party/django-stubs/LICENSE.txt"), \
+    "Please download the django-stubs submodule first (Hint: git submodule update --init)"
 
 setup(name='jedi',
       version=version,
@@ -43,7 +45,7 @@ setup(name='jedi',
               'docopt',
               # coloroma for colored debug output
               'colorama',
-              'Django',
+              'Django<3.1',  # For now pin this.
           ],
           'qa': [
               'flake8==3.7.9',

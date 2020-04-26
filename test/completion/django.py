@@ -2,6 +2,7 @@ import datetime
 import decimal
 
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Tag(models.Model):
@@ -38,8 +39,12 @@ class BusinessModel(models.Model):
 
     unidentifiable = NOT_FOUND
 
+# -----------------
+# Model attribute inference
+# -----------------
 
 model_instance = BusinessModel()
+
 #? int()
 model_instance.integer_field
 #? int()
@@ -83,17 +88,81 @@ model_instance.category_fk.category_name
 model_instance.category_fk2
 #? str()
 model_instance.category_fk2.category_name
-#? models.ForeignKey()
+#?
 model_instance.category_fk3
 #?
 model_instance.category_fk4
-#? models.ForeignKey()
+#?
 model_instance.category_fk5
 
-#? models.ManyToManyField()
+#? models.manager.RelatedManager()
 model_instance.tags_m2m
+#? Tag()
+model_instance.tags_m2m.get()
+#? ['add']
+model_instance.tags_m2m.add
 
 #?
 model_instance.unidentifiable
 #! ['unidentifiable = NOT_FOUND']
 model_instance.unidentifiable
+
+# -----------------
+# Queries
+# -----------------
+
+#? models.query.QuerySet.filter
+model_instance.objects.filter
+#? BusinessModel() None
+model_instance.objects.filter().first()
+#? str()
+model_instance.objects.get().char_field
+#? int()
+model_instance.objects.update(x='')
+#? BusinessModel()
+model_instance.objects.create()
+
+# -----------------
+# Inheritance
+# -----------------
+
+class Inherited(BusinessModel):
+    text_field = models.IntegerField()
+    new_field = models.FloatField()
+
+inherited = Inherited()
+#? int()
+inherited.text_field
+#? str()
+inherited.char_field
+#? float()
+inherited.new_field
+
+#? str()
+inherited.category_fk2.category_name
+#? str()
+inherited.objects.get().char_field
+#? int()
+inherited.objects.get().text_field
+#? float()
+inherited.objects.get().new_field
+
+# -----------------
+# Django Auth
+# -----------------
+
+#? str()
+User().email
+#? str()
+User.objects.get().email
+
+# -----------------
+# values & values_list (dave is too lazy to implement it)
+# -----------------
+
+#?
+model_instance.objects.values_list('char_field')[0]
+#? dict()
+model_instance.objects.values('char_field')[0]
+#?
+model_instance.objects.values('char_field')[0]['char_field']

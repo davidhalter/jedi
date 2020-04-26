@@ -11,6 +11,7 @@ include requirements.txt
 include jedi/parser/python/grammar*.txt
 recursive-include jedi/third_party *.pyi
 include jedi/third_party/typeshed/LICENSE
+include jedi/third_party/django-stubs/LICENSE.txt
 include jedi/third_party/typeshed/README
 recursive-include test *
 recursive-include docs *
