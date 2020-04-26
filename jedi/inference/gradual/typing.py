@@ -413,6 +413,10 @@ class NewType(Value):
         self._type_value_set = type_value_set
         self.tree_node = tree_node
 
+    def py__class__(self):
+        c, = self._type_value_set.py__class__()
+        return c
+
     def py__call__(self, arguments):
         return self._type_value_set.execute_annotation()
 

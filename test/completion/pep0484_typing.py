@@ -283,6 +283,18 @@ def testnewtype2(y):
     y
     #? []
     y.
+
+# The type of a NewType is equivalent to the type of its underlying type.
+MyInt = typing.NewType('MyInt', int)
+x = type(MyInt)
+#? type.mro
+x.mro
+
+PlainInt = int
+y = type(PlainInt)
+#? type.mro
+y.mro
+
 # python > 2.7
 
 class TestDefaultDict(typing.DefaultDict[str, int]):
