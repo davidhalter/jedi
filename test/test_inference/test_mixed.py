@@ -1,4 +1,5 @@
 from typing import Generic, TypeVar, List
+import sys
 
 import pytest
 
@@ -83,3 +84,21 @@ def test_mixed_module_cache():
     inference_state = interpreter._inference_state
     jedi_module, = inference_state.module_cache.get(('jedi',))
     assert isinstance(jedi_module, ModuleValue)
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
+def test_signature():
+    """
+    For performance reasons we use the signature of the compiled object and not
+    the tree object.
+    """
+    def some_signature(foo):
+        pass
+
+    from inspect import Signature, Parameter
+    some_signature.__signature__ = Signature([
+        Parameter('bar', kind=Parameter.KEYWORD_ONLY, default=1)
+    ])
+
+    s, = jedi.Interpreter('some_signature', [locals()]).goto()
+    assert s.docstring() == 'some_signature(* bar)'
