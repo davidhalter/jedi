@@ -101,4 +101,4 @@ def test_signature():
     ])
 
     s, = jedi.Interpreter('some_signature', [locals()]).goto()
-    assert s.docstring() == 'some_signature(* bar)'
+    assert s.docstring() == 'some_signature(*, bar=1)'
