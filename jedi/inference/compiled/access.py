@@ -487,7 +487,10 @@ class DirectObjectAccess(object):
     def _annotation_to_str(self, annotation):
         if isinstance(annotation, type):
             return str(annotation.__name__)
-        return str(annotation).replace('typing.', '')
+        s = str(annotation)
+        if getattr(annotation, '__module__', None) == 'typing':
+            s = s.replace('typing.', '')
+        return s
 
     def get_signature_params(self):
         return [
