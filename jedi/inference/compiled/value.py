@@ -378,9 +378,6 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
         s = self._kind_string() + self.string_name
         if self._signature_param.has_annotation:
             s += ': ' + self._signature_param.annotation_string
-        if re.fullmatch(r'Optional\[.+\]',
-                        self._signature_param.annotation_string) is not None:
-            return s
         if self._signature_param.has_default:
             s += '=' + self._signature_param.default_string
         return s
