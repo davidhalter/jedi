@@ -488,7 +488,7 @@ class DirectObjectAccess(object):
         if isinstance(annotation, type):
             return str(annotation.__name__)
         s = str(annotation)
-        if getattr(annotation, '__module__', None) == 'typing':
+        if getattr(annotation, '__module__', None) == 'typing' and s.startswith('typing.'):
             s = s.replace('typing.', '')
         return s
 
