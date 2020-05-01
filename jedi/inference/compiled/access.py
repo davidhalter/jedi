@@ -489,7 +489,7 @@ class DirectObjectAccess(object):
             return str(annotation.__name__)
         s = str(annotation)
         if getattr(annotation, '__module__', None) == 'typing' and s.startswith('typing.'):
-            s = s.replace('typing.', '')
+            s = s.replace('typing.', '', 1)
         return s
 
     def get_signature_params(self):
