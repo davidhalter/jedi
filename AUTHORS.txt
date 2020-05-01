@@ -57,6 +57,7 @@ Code Contributors
 - Tim Gates (@timgates42) <tim.gates@iress.com>
 - Lior Goldberg (@goldberglior)
 - Ryan Clary (@mrclary)
+- Vladislav Serebrennikov (@endilll)
 
 And a few more "anonymous" contributors.
 
