@@ -102,3 +102,14 @@ def test_signature():
 
     s, = jedi.Interpreter('some_signature', [locals()]).goto()
     assert s.docstring() == 'some_signature(*, bar=1)'
+
+
+@pytest.mark.skipif(sys.version_info[0:2] < (3, 5), reason="Typing was introduced in Python 3.5")
+def test_compiled_signature_annotation_string():
+    import typing
+    def func(x: typing.Optional[int], y: typing.Optional[typing.Type]): pass
+    func.__name__ = 'not_func'
+
+    s, = jedi.Interpreter('func()', [locals()]).get_signatures(1, 5)
+    assert s.params[0].description == 'param x: Optional[int]=None'
+    assert s.params[1].description == 'param y: Optional[Type]=None'
