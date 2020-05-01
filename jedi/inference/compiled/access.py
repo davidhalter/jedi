@@ -484,14 +484,6 @@ class DirectObjectAccess(object):
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
 
-    def _annotation_to_str(self, annotation):
-        if isinstance(annotation, type):
-            return str(annotation.__name__)
-        s = str(annotation)
-        if getattr(annotation, '__module__', None) == 'typing' and s.startswith('typing.'):
-            s = s.replace('typing.', '', 1)
-        return s
-
     def get_signature_params(self):
         return [
             SignatureParam(
@@ -501,7 +493,7 @@ class DirectObjectAccess(object):
                 default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
-                annotation_string=self._annotation_to_str(p.annotation),
+                annotation_string=inspect.formatannotation(p.annotation),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
