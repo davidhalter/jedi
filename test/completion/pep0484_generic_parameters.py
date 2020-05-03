@@ -19,6 +19,7 @@ T_co = TypeVar('T_co', covariant=True)
 V = TypeVar('V')
 
 
+just_float = 42.  # type: float
 optional_float = 42.  # type: Optional[float]
 list_of_ints = [42]  # type: List[int]
 list_of_floats = [42.]  # type: List[float]
@@ -58,6 +59,13 @@ for xa in list_optional_t_to_list_t(list_of_optional_floats):
     #? float()
     xa
 
+# Under covariance rules this is strictly incorrect (because List is mutable,
+# the function would be allowed to put `None`s into our List[float], which would
+# be bad), however we don't expect jedi to enforce that.
+for xa1 in list_optional_t_to_list_t(list_of_floats):
+    #? float()
+    xa1
+
 
 def optional_t_to_list_t(x: Optional[T]) -> List[T]:
     return [x] if x is not None else []
@@ -68,6 +76,11 @@ for xb in optional_t_to_list_t(optional_float):
     xb
 
 
+for xb2 in optional_t_to_list_t(just_float):
+    #? float()
+    xb2
+
+
 def optional_list_t_to_list_t(x: Optional[List[T]]) -> List[T]:
     return x if x is not None else []
 
@@ -76,6 +89,10 @@ optional_list_float = None  # type: Optional[List[float]]
 for xc in optional_list_t_to_list_t(optional_list_float):
     #? float()
     xc
+
+for xc2 in optional_list_t_to_list_t(list_of_floats):
+    #? float()
+    xc2
 
 
 def list_type_t_to_list_t(the_list: List[Type[T]]) -> List[T]:
