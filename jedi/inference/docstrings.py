@@ -23,7 +23,7 @@ from parso import parse, ParserSyntaxError
 
 from jedi._compatibility import u
 from jedi import debug
-from jedi.common.utils import indent_block
+from jedi.common import indent_block
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import iterator_to_value_set, ValueSet, \
     NO_VALUES

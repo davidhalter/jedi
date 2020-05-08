@@ -26,7 +26,7 @@ from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
 from jedi.file_io import FolderIO
-from jedi.common.utils import traverse_parents
+from jedi.common import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = \
