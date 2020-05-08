@@ -185,9 +185,6 @@ class _TypingClassMixin(ClassMixin):
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
     def infer_type_vars(self, value_set):
-        # Circular
-        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-
         type_var_dict = {}
         annotation_generics = self.get_generics()
 
@@ -197,6 +194,9 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
         annotation_name = self.py__name__()
         if annotation_name == 'Type':
             return annotation_generics[0].infer_type_vars(
+                # This is basically a trick to avoid extra code: We execute the
+                # incoming classes to be able to use the normal code for type
+                # var inference.
                 value_set.execute_with_values(),
             )
 
