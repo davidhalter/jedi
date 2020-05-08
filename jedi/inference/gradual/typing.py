@@ -201,9 +201,10 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
             )
 
         elif annotation_name == 'Callable':
-            return annotation_generics[1].infer_type_vars(
-                value_set.execute_annotation(),
-            )
+            if len(annotation_generics) == 2:
+                return annotation_generics[1].infer_type_vars(
+                    value_set.execute_annotation(),
+                )
 
         elif annotation_name == 'Tuple':
             tuple_annotation, = self.execute_annotation()
