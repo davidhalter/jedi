@@ -33,6 +33,7 @@ tpl_typed = ("2", 3)  # type: Tuple[str, int]
 collection = {"a": 1}
 collection_typed = {"a": 1}  # type: Dict[str, int]
 
+list_of_ints = [42]  # type: List[int]
 list_of_funcs = [foo]  # type: List[Callable[[T], T]]
 
 custom_generic = CustomGeneric(123.45)
@@ -319,3 +320,21 @@ x7
 for a in list_t_to_list_t(12):
     #?
     a
+
+
+def list_tuple_t_to_tuple_list_t(the_list: List[Tuple[T]]) -> Tuple[List[T], ...]:
+    return tuple(list(x) for x in the_list)
+
+
+for b in list_tuple_t_to_tuple_list_t(list_of_ints):
+    #?
+    b[0]
+
+
+def list_tuple_t_elipsis_to_tuple_list_t(the_list: List[Tuple[T, ...]]) -> Tuple[List[T], ...]:
+    return tuple(list(x) for x in the_list)
+
+
+for b in list_tuple_t_to_tuple_list_t(list_of_ints):
+    #?
+    b[0]
