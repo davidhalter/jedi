@@ -331,9 +331,17 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
-                py_class = element.get_annotated_class_object()
-                if not isinstance(py_class, GenericClass):
-                    py_class = element
+                try:
+                    method = element.get_annotated_class_object
+                except AttributeError:
+                    # This might still happen, because the tuple name matching
+                    # above is not 100% correct, so just catch the remaining
+                    # cases here.
+                    continue
+                else:
+                    py_class = method()
+                    if not isinstance(py_class, GenericClass):
+                        py_class = element
 
                 merge_type_var_dicts(
                     type_var_dict,
