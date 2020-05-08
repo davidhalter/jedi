@@ -276,7 +276,7 @@ def infer_return_for_callable(arguments, param_values, result_values):
     all_type_vars = {}
     for pv in param_values:
         if pv.array_type == 'list':
-            type_var_dict = infer_type_vars_for_callable(arguments, pv.py__iter__())
+            type_var_dict = _infer_type_vars_for_callable(arguments, pv.py__iter__())
             all_type_vars.update(type_var_dict)
 
     return ValueSet.from_sets(
@@ -286,7 +286,7 @@ def infer_return_for_callable(arguments, param_values, result_values):
     ).execute_annotation()
 
 
-def infer_type_vars_for_callable(arguments, lazy_params):
+def _infer_type_vars_for_callable(arguments, lazy_params):
     """
     Infers type vars for the Calllable class:
 
