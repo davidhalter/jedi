@@ -148,13 +148,6 @@ class Value(HelperValueMixin):
         self.inference_state = inference_state
         self.parent_context = parent_context
 
-    def get_root_context(self):
-        value = self
-        while True:
-            if value.parent_context is None:
-                return value
-            value = value.parent_context
-
     @property
     def api_type(self):
         # By default just lower name of the class. Can and should be
