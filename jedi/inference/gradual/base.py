@@ -200,29 +200,27 @@ class GenericClass(ClassMixin, DefineGenericBase):
             return True
         return self._class_value.is_sub_class_of(class_value)
 
-    def infer_type_vars(self, value_set, is_class_value=False):
+    def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
 
         annotation_name = self.py__name__()
         type_var_dict = {}
-        if annotation_name == 'Iterable' and not is_class_value:
+        if annotation_name == 'Iterable':
             annotation_generics = self.get_generics()
             if annotation_generics:
                 return annotation_generics[0].infer_type_vars(
                     value_set.merge_types_of_iterate(),
                 )
-
         else:
             # Note: we need to handle the MRO _in order_, so we need to extract
             # the elements from the set first, then handle them, even if we put
             # them back in a set afterwards.
             for py_class in value_set:
-                if not is_class_value:
-                    if py_class.is_instance() and not py_class.is_compiled():
-                        py_class = py_class.get_annotated_class_object()
-                    else:
-                        continue
+                if py_class.is_instance() and not py_class.is_compiled():
+                    py_class = py_class.get_annotated_class_object()
+                else:
+                    continue
 
                 if py_class.api_type != u'class':
                     # Functions & modules don't have an MRO and we're not

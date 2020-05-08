@@ -184,7 +184,7 @@ class _TypingClassMixin(ClassMixin):
 
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-    def infer_type_vars(self, value_set, is_class_value=False):
+    def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
 
@@ -196,49 +196,18 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
         annotation_name = self.py__name__()
         if annotation_name == 'Type':
-            if is_class_value:
-                # This only applies if we are comparing something like
-                # List[Type[int]] with Iterable[Type[int]]. First, Jedi tries to
-                # match List/Iterable. After that we will land here, because
-                # is_class_value will be True at that point. Obviously we also
-                # compare below that both sides are `Type`.
-                for element in value_set:
-                    element_name = element.py__name__()
-                    if element_name == 'Type':
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            merge_pairwise_generics(self, element),
-                        )
-            else:
-                return annotation_generics[0].infer_type_vars(
-                    value_set,
-                    is_class_value=True,
-                )
+            return annotation_generics[0].infer_type_vars(
+                value_set.execute_with_values(),
+            )
 
         elif annotation_name == 'Callable':
-            if len(annotation_generics) == 2:
-                if is_class_value:
-                    # This only applies if we are comparing something like
-                    # List[Callable[..., T]] with Iterable[Callable[..., T]].
-                    # First, Jedi tries to match List/Iterable. After that we
-                    # will land here, because is_class_value will be True at
-                    # that point. Obviously we also compare below that both
-                    # sides are `Callable`.
-                    for element in value_set:
-                        element_name = element.py__name__()
-                        if element_name == 'Callable':
-                            merge_type_var_dicts(
-                                type_var_dict,
-                                merge_pairwise_generics(self, element),
-                            )
-                else:
-                    return annotation_generics[1].infer_type_vars(
-                        value_set.execute_annotation(),
-                    )
+            return annotation_generics[1].infer_type_vars(
+                value_set.execute_annotation(),
+            )
 
         elif annotation_name == 'Tuple':
             tuple_annotation, = self.execute_annotation()
-            return tuple_annotation.infer_type_vars(value_set, is_class_value)
+            return tuple_annotation.infer_type_vars(value_set)
 
         return type_var_dict
 
@@ -337,7 +306,7 @@ class Tuple(BaseTypingValueWithGenerics):
             .py__getattribute__('tuple').execute_annotation()
         return tuple_
 
-    def infer_type_vars(self, value_set, is_class_value=False):
+    def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
         from jedi.inference.gradual.base import GenericClass
@@ -345,14 +314,6 @@ class Tuple(BaseTypingValueWithGenerics):
         value_set = value_set.filter(
             lambda x: x.py__name__().lower() == 'tuple',
         )
-
-        # Somewhat unusually, this `infer_type_vars` method is on an instance
-        # representation of a type, rather than the annotation or class
-        # representation. This means that as a starting point, we need to
-        # convert the incoming values to their instance style if they're
-        # classes, rather than the reverse.
-        if is_class_value:
-            value_set = value_set.execute_annotation()
 
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
@@ -370,11 +331,8 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
-                if not is_class_value:
-                    py_class = element.get_annotated_class_object()
-                    if not isinstance(py_class, GenericClass):
-                        py_class = element
-                else:
+                py_class = element.get_annotated_class_object()
+                if not isinstance(py_class, GenericClass):
                     py_class = element
 
                 merge_type_var_dicts(

@@ -359,12 +359,7 @@ def merge_pairwise_generics(annotation_value, annotated_argument_class):
     for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
         merge_type_var_dicts(
             type_var_dict,
-            annotation_generics_set.infer_type_vars(
-                actual_generic_set,
-                # This is a note to ourselves that we have already
-                # converted the instance representation to its class.
-                is_class_value=True,
-            ),
+            annotation_generics_set.infer_type_vars(actual_generic_set.execute_annotation()),
         )
 
     return type_var_dict
