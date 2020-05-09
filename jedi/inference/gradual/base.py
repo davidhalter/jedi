@@ -330,10 +330,9 @@ class _PseudoTreeNameClass(Value):
         yield EmptyFilter()
 
     def py__class__(self):
-        # TODO this is obviously not correct, but at least gives us a class if
-        # we have none. Some of these objects don't really have a base class in
-        # typeshed.
-        return builtin_from_name(self.inference_state, u'object')
+        # This might not be 100% correct, but it is good enough. The details of
+        # the typing library are not really an issue for Jedi.
+        return builtin_from_name(self.inference_state, u'type')
 
     @property
     def name(self):
