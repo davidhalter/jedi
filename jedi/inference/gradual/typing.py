@@ -17,7 +17,8 @@ from jedi.inference.arguments import repack_with_argument_clinic
 from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
-from jedi.inference.gradual.base import BaseTypingValue, BaseTypingValueWithGenerics
+from jedi.inference.gradual.base import BaseTypingValue, \
+    BaseTypingValueWithGenerics, BaseTypingInstance
 from jedi.inference.gradual.type_var import TypeVarClass
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 
@@ -129,6 +130,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
         cls = mapped[string_name]
         return ValueSet([cls(
             self.parent_context,
+            self,
             self._tree_name,
             generics_manager=self._generics_manager,
         )])
@@ -197,7 +199,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
                 # This is basically a trick to avoid extra code: We execute the
                 # incoming classes to be able to use the normal code for type
                 # var inference.
-                value_set.execute_with_values(),
+                value_set.execute_annotation(),
             )
 
         elif annotation_name == 'Callable':
@@ -254,7 +256,7 @@ class TypeAlias(LazyValueWrapper):
         return ValueSet([self._get_wrapped_value()])
 
 
-class Callable(BaseTypingValueWithGenerics):
+class Callable(BaseTypingInstance):
     def py__call__(self, arguments):
         """
             def x() -> Callable[[Callable[..., _T]], _T]: ...
@@ -271,7 +273,7 @@ class Callable(BaseTypingValueWithGenerics):
             return infer_return_for_callable(arguments, param_values, result_values)
 
 
-class Tuple(BaseTypingValueWithGenerics):
+class Tuple(BaseTypingInstance):
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
@@ -306,6 +308,10 @@ class Tuple(BaseTypingValueWithGenerics):
         tuple_, = self.inference_state.builtins_module \
             .py__getattribute__('tuple').execute_annotation()
         return tuple_
+
+    @property
+    def name(self):
+        return self._wrapped_value.name
 
     def infer_type_vars(self, value_set):
         # Circular
@@ -352,11 +358,11 @@ class Tuple(BaseTypingValueWithGenerics):
             return type_var_dict
 
 
-class Generic(BaseTypingValueWithGenerics):
+class Generic(BaseTypingInstance):
     pass
 
 
-class Protocol(BaseTypingValueWithGenerics):
+class Protocol(BaseTypingInstance):
     pass
 
 

@@ -4,6 +4,7 @@ from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.klass import ClassMixin
+from jedi.inference.value.instance import AbstractInstanceValue
 from jedi.inference.utils import to_list
 from jedi.inference.names import AbstractNameDefinition, ValueName
 from jedi.inference.context import ClassContext
@@ -375,3 +376,27 @@ class BaseTypingValueWithGenerics(DefineGenericBase):
     def __repr__(self):
         return '%s(%s%s)' % (self.__class__.__name__, self._tree_name.value,
                              self._generics_manager)
+
+
+class BaseTypingInstance(LazyValueWrapper):
+    def __init__(self, parent_context, class_value, tree_name, generics_manager):
+        self.inference_state = class_value.inference_state
+        self.parent_context = parent_context
+        self._class_value = class_value
+        self._tree_name = tree_name
+        self._generics_manager = generics_manager
+
+    def py__class__(self):
+        return self._class_value
+
+    @property
+    def name(self):
+        return ValueName(self, self._tree_name)
+
+    @inference_state_method_cache()
+    def get_generics(self):
+        return self._generics_manager.to_tuple()
+
+    def _get_wrapped_value(self):
+        object_, = builtin_from_name(self.inference_state, u'object').execute_annotation()
+        return object_
