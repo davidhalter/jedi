@@ -23,8 +23,8 @@ class _BoundTypeVarName(AbstractNameDefinition):
         def iter_():
             for value in self._value_set:
                 # Replace any with the constraints if they are there.
-                from jedi.inference.gradual.typing import Any
-                if isinstance(value, Any):
+                from jedi.inference.gradual.typing import AnyClass
+                if isinstance(value, AnyClass):
                     for constraint in self._type_var.constraints:
                         yield constraint
                 else:

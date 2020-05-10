@@ -67,7 +67,7 @@ class TypingModuleName(NameWrapper):
             yield TypeVarClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'Any':
-            yield Any.create_cached(
+            yield AnyClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
@@ -362,7 +362,7 @@ class Protocol(BaseTypingInstance):
     pass
 
 
-class Any(BaseTypingValue):
+class AnyClass(BaseTypingValue):
     def execute_annotation(self):
         debug.warning('Used Any - returned no results')
         return NO_VALUES
