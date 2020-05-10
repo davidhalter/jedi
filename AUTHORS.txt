@@ -58,6 +58,7 @@ Code Contributors
 - Lior Goldberg (@goldberglior)
 - Ryan Clary (@mrclary)
 - Max Mäusezahl (@mmaeusezahl) <maxmaeusezahl@googlemail.com>
+- Vladislav Serebrennikov (@endilll)
 
 And a few more "anonymous" contributors.
 
