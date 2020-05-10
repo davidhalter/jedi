@@ -81,7 +81,7 @@ class _AnnotatedClassContext(ClassContext):
         yield self._value.get_type_var_filter()
 
 
-class DefineGenericBase(LazyValueWrapper):
+class DefineGenericBaseClass(LazyValueWrapper):
     def __init__(self, generics_manager):
         self._generics_manager = generics_manager
 
@@ -99,7 +99,7 @@ class DefineGenericBase(LazyValueWrapper):
         for generic_set in self.get_generics():
             values = NO_VALUES
             for generic in generic_set:
-                if isinstance(generic, (DefineGenericBase, TypeVar)):
+                if isinstance(generic, (DefineGenericBaseClass, TypeVar)):
                     result = generic.define_generics(type_var_dict)
                     values |= result
                     if result != ValueSet({generic}):
@@ -119,7 +119,7 @@ class DefineGenericBase(LazyValueWrapper):
         )])
 
     def is_same_class(self, other):
-        if not isinstance(other, DefineGenericBase):
+        if not isinstance(other, DefineGenericBaseClass):
             return False
 
         if self.tree_node != other.tree_node:
@@ -151,7 +151,7 @@ class DefineGenericBase(LazyValueWrapper):
         )
 
 
-class GenericClass(ClassMixin, DefineGenericBase):
+class GenericClass(ClassMixin, DefineGenericBaseClass):
     """
     A class that is defined with generics, might be something simple like:
 
@@ -362,7 +362,7 @@ class BaseTypingValue(LazyValueWrapper):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 
 
-class BaseTypingClassWithGenerics(DefineGenericBase):
+class BaseTypingClassWithGenerics(DefineGenericBaseClass):
     def __init__(self, parent_context, tree_name, generics_manager):
         super(BaseTypingClassWithGenerics, self).__init__(generics_manager)
         self.inference_state = parent_context.inference_state
