@@ -325,7 +325,7 @@ class Tuple(BaseTypingInstance):
             # The parameter annotation is of the form `Tuple[T, ...]`,
             # so we treat the incoming tuple like a iterable sequence
             # rather than a positional container of elements.
-            return self.get_generics()[0].infer_type_vars(
+            return self._class_value.get_generics()[0].infer_type_vars(
                 value_set.merge_types_of_iterate(),
             )
 
@@ -348,7 +348,7 @@ class Tuple(BaseTypingInstance):
                 py_class = method()
                 merge_type_var_dicts(
                     type_var_dict,
-                    merge_pairwise_generics(self, py_class),
+                    merge_pairwise_generics(self._class_value, py_class),
                 )
 
             return type_var_dict

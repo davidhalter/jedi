@@ -396,10 +396,6 @@ class BaseTypingInstance(LazyValueWrapper):
     def name(self):
         return ValueName(self, self._tree_name)
 
-    @inference_state_method_cache()
-    def get_generics(self):
-        return self._generics_manager.to_tuple()
-
     def _get_wrapped_value(self):
         object_, = builtin_from_name(self.inference_state, u'object').execute_annotation()
         return object_
