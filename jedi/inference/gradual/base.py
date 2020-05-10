@@ -4,7 +4,6 @@ from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.klass import ClassMixin
-from jedi.inference.value.instance import AbstractInstanceValue
 from jedi.inference.utils import to_list
 from jedi.inference.names import AbstractNameDefinition, ValueName
 from jedi.inference.context import ClassContext
