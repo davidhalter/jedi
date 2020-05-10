@@ -481,6 +481,11 @@ class DirectObjectAccess(object):
                     args = safe_getattr(self._obj, '__args__', default=None)
         return name, tuple(self._create_access_path(arg) for arg in args)
 
+    def _annotation_to_str(self, annotation):
+        if py_version < 30:
+            return ''
+        return inspect.formatannotation(annotation)
+
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
 
@@ -493,7 +498,7 @@ class DirectObjectAccess(object):
                 default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
-                annotation_string=inspect.formatannotation(p.annotation),
+                annotation_string=self._annotation_to_str(p.annotation),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
