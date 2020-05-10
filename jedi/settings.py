@@ -69,8 +69,8 @@ Adds an opening bracket after a function for completions.
 # ----------------
 
 if platform.system().lower() == 'windows':
-    _cache_directory = os.path.join(os.getenv('APPDATA') or '~', 'Jedi',
-                                    'Jedi')
+    _cache_directory = os.path.join(os.getenv('LOCALAPPDATA') or 
+                                    os.path.expanduser('~'), 'Jedi', 'Jedi')
 elif platform.system().lower() == 'darwin':
     _cache_directory = os.path.join('~', 'Library', 'Caches', 'Jedi')
 else:
@@ -81,7 +81,7 @@ cache_directory = os.path.expanduser(_cache_directory)
 The path where the cache is stored.
 
 On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
-``~/Library/Caches/Jedi/`` and on Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
+``~/Library/Caches/Jedi/`` and on Windows to ``%LOCALAPPDATA%\\Jedi\\Jedi\\``.
 On Linux, if the environment variable ``$XDG_CACHE_HOME`` is set,
 ``$XDG_CACHE_HOME/jedi`` is used instead of the default one.
 """
