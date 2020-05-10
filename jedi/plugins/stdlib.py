@@ -16,7 +16,7 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
-from jedi.inference.arguments import \
+from jedi.inference.arguments import iterate_argument_clinic, ParamIssue, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.inference import analysis
 from jedi.inference import compiled
@@ -143,7 +143,7 @@ def _follow_param(inference_state, arguments, index):
         return lazy_value.infer()
 
 
-def argument_clinic(string, want_value=False, want_context=False,
+def argument_clinic(clinic_string, want_value=False, want_context=False,
                     want_arguments=False, want_inference_state=False,
                     want_callback=False):
     """
@@ -151,13 +151,15 @@ def argument_clinic(string, want_value=False, want_context=False,
     """
 
     def f(func):
-        @repack_with_argument_clinic(string, keep_arguments_param=True,
-                                     keep_callback_param=True)
-        def wrapper(value, *args, **kwargs):
-            arguments = kwargs.pop('arguments')
-            callback = kwargs.pop('callback')
-            assert not kwargs  # Python 2...
+        def wrapper(value, arguments, callback):
+            try:
+                args = tuple(iterate_argument_clinic(
+                    value.inference_state, arguments, clinic_string))
+            except ParamIssue:
+                return NO_VALUES
+
             debug.dbg('builtin start %s' % value, color='MAGENTA')
+            kwargs = {}
             if want_context:
                 kwargs['context'] = arguments.context
             if want_value:
