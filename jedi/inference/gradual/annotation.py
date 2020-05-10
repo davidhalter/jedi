@@ -350,7 +350,7 @@ def merge_pairwise_generics(annotation_value, annotated_argument_class):
 
     type_var_dict = {}
 
-    if not isinstance(annotated_argument_class, (DefineGenericBase, BaseTypingInstance)):
+    if not isinstance(annotated_argument_class, (DefineGenericBase)):
         return type_var_dict
 
     annotation_generics = annotation_value.get_generics()

@@ -389,6 +389,9 @@ class BaseTypingInstance(LazyValueWrapper):
     def py__class__(self):
         return self._class_value
 
+    def get_annotated_class_object(self):
+        return self._class_value
+
     @property
     def name(self):
         return ValueName(self, self._tree_name)
@@ -400,3 +403,6 @@ class BaseTypingInstance(LazyValueWrapper):
     def _get_wrapped_value(self):
         object_, = builtin_from_name(self.inference_state, u'object').execute_annotation()
         return object_
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._generics_manager)

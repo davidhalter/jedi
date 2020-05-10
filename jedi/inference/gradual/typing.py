@@ -316,7 +316,6 @@ class Tuple(BaseTypingInstance):
     def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-        from jedi.inference.gradual.base import GenericClass
 
         value_set = value_set.filter(
             lambda x: x.py__name__().lower() == 'tuple',
@@ -345,11 +344,8 @@ class Tuple(BaseTypingInstance):
                     # above is not 100% correct, so just catch the remaining
                     # cases here.
                     continue
-                else:
-                    py_class = method()
-                    if not isinstance(py_class, GenericClass):
-                        py_class = element
 
+                py_class = method()
                 merge_type_var_dicts(
                     type_var_dict,
                     merge_pairwise_generics(self, py_class),
