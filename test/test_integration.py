@@ -4,7 +4,7 @@ import sys
 import pytest
 
 from . import helpers
-from jedi.common.utils import indent_block
+from jedi.common import indent_block
 from jedi import RefactoringError
 
 

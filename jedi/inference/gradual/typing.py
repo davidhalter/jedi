@@ -342,6 +342,18 @@ class Tuple(BaseTypingValueWithGenerics):
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
         from jedi.inference.gradual.base import GenericClass
 
+        value_set = value_set.filter(
+            lambda x: x.py__name__().lower() == 'tuple',
+        )
+
+        # Somewhat unusually, this `infer_type_vars` method is on an instance
+        # representation of a type, rather than the annotation or class
+        # representation. This means that as a starting point, we need to
+        # convert the incoming values to their instance style if they're
+        # classes, rather than the reverse.
+        if is_class_value:
+            value_set = value_set.execute_annotation()
+
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
             # so we treat the incoming tuple like a iterable sequence
@@ -358,8 +370,11 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
-                py_class = element.get_annotated_class_object()
-                if not isinstance(py_class, GenericClass):
+                if not is_class_value:
+                    py_class = element.get_annotated_class_object()
+                    if not isinstance(py_class, GenericClass):
+                        py_class = element
+                else:
                     py_class = element
 
                 merge_type_var_dicts(

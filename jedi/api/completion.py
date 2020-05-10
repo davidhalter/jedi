@@ -586,6 +586,9 @@ def _complete_getattr(user_context, instance):
     )
     for func in functions:
         tree_node = func.tree_node
+        if tree_node.type != 'funcdef':
+            continue
+
         for return_stmt in tree_node.iter_return_stmts():
             # Basically until the next comment we just try to find out if a
             # return statement looks exactly like `return getattr(x, name)`.

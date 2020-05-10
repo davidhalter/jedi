@@ -419,6 +419,13 @@ GetattrArray().something[0]
 #? []
 GetattrArray().something
 
+class WeirdGetattr:
+    class __getattr__():
+        pass
+
+#? []
+WeirdGetattr().something
+
 
 # -----------------
 # private vars

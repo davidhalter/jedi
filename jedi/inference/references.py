@@ -9,7 +9,7 @@ from jedi.inference.imports import SubModuleName, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.gradual.conversion import convert_names
 
-_IGNORE_FOLDERS = ('.tox', 'venv', '__pycache__')
+_IGNORE_FOLDERS = ('.tox', '.venv', 'venv', '__pycache__')
 
 _OPENED_FILE_LIMIT = 2000
 """
