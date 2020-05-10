@@ -481,13 +481,13 @@ class DirectObjectAccess(object):
                     args = safe_getattr(self._obj, '__args__', default=None)
         return name, tuple(self._create_access_path(arg) for arg in args)
 
+    def needs_type_completions(self):
+        return inspect.isclass(self._obj) and self._obj != type
+
     def _annotation_to_str(self, annotation):
         if py_version < 30:
             return ''
         return inspect.formatannotation(annotation)
-
-    def needs_type_completions(self):
-        return inspect.isclass(self._obj) and self._obj != type
 
     def get_signature_params(self):
         return [
