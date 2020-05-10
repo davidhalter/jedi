@@ -241,7 +241,7 @@ class ClassMixin(object):
     def is_typeddict(self):
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        from jedi.inference.gradual.typing import TypedDictBase
+        from jedi.inference.gradual.typing import TypedDictClass
         for lazy_cls in self.py__bases__():
             if not isinstance(lazy_cls, LazyTreeValue):
                 return False
@@ -253,7 +253,7 @@ class ClassMixin(object):
                 return False
 
             for cls in lazy_cls.infer():
-                if isinstance(cls, TypedDictBase):
+                if isinstance(cls, TypedDictClass):
                     return True
                 try:
                     method = cls.is_typeddict

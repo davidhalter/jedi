@@ -85,7 +85,7 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
-            yield TypedDictBase.create_cached(
+            yield TypedDictClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
@@ -416,7 +416,7 @@ class CastFunction(BaseTypingValue):
         return type_value_set.execute_annotation()
 
 
-class TypedDictBase(BaseTypingValue):
+class TypedDictClass(BaseTypingValue):
     """
     This class has no responsibilities and is just here to make sure that typed
     dicts can be identified.
