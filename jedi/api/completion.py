@@ -586,7 +586,7 @@ def _complete_getattr(user_context, instance):
     )
     for func in functions:
         tree_node = func.tree_node
-        if tree_node.type != 'funcdef':
+        if tree_node is None or tree_node.type != 'funcdef':
             continue
 
         for return_stmt in tree_node.iter_return_stmts():
