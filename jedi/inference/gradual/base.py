@@ -362,9 +362,9 @@ class BaseTypingValue(LazyValueWrapper):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 
 
-class BaseTypingValueWithGenerics(DefineGenericBase):
+class BaseTypingClassWithGenerics(DefineGenericBase):
     def __init__(self, parent_context, tree_name, generics_manager):
-        super(BaseTypingValueWithGenerics, self).__init__(generics_manager)
+        super(BaseTypingClassWithGenerics, self).__init__(generics_manager)
         self.inference_state = parent_context.inference_state
         self.parent_context = parent_context
         self._tree_name = tree_name

@@ -18,7 +18,7 @@ from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import BaseTypingValue, \
-    BaseTypingValueWithGenerics, BaseTypingInstance
+    BaseTypingClassWithGenerics, BaseTypingInstance
 from jedi.inference.gradual.type_var import TypeVarClass
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 
@@ -101,7 +101,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class TypingValueWithIndex(BaseTypingValueWithGenerics):
+class TypingClassWithIndex(BaseTypingClassWithGenerics):
     def execute_annotation(self):
         string_name = self._tree_name.value
 
@@ -139,7 +139,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
     def _create_instance_with_generics(self, generics_manager):
-        return TypingValueWithIndex(
+        return TypingClassWithIndex(
             self.parent_context,
             self._tree_name,
             generics_manager
@@ -147,7 +147,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
 
 
 class ProxyTypingValue(BaseTypingValue):
-    index_class = TypingValueWithIndex
+    index_class = TypingClassWithIndex
 
     def with_generics(self, generics_tuple):
         return self.index_class.create_cached(
@@ -185,7 +185,7 @@ class _TypingClassMixin(ClassMixin):
         return ValueName(self, self._tree_name)
 
 
-class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
+class TypingClassValueWithIndex(_TypingClassMixin, TypingClassWithIndex):
     def infer_type_vars(self, value_set):
         type_var_dict = {}
         annotation_generics = self.get_generics()
