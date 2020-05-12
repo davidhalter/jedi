@@ -17,7 +17,8 @@ from jedi.inference.arguments import repack_with_argument_clinic
 from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
-from jedi.inference.gradual.base import BaseTypingValue, BaseTypingValueWithGenerics
+from jedi.inference.gradual.base import BaseTypingValue, \
+    BaseTypingClassWithGenerics, BaseTypingInstance
 from jedi.inference.gradual.type_var import TypeVarClass
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 
@@ -66,7 +67,7 @@ class TypingModuleName(NameWrapper):
             yield TypeVarClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'Any':
-            yield Any.create_cached(
+            yield AnyClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
@@ -84,7 +85,7 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
-            yield TypedDictBase.create_cached(
+            yield TypedDictClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
@@ -100,7 +101,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class TypingValueWithIndex(BaseTypingValueWithGenerics):
+class TypingClassWithIndex(BaseTypingClassWithGenerics):
     def execute_annotation(self):
         string_name = self._tree_name.value
 
@@ -129,6 +130,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
         cls = mapped[string_name]
         return ValueSet([cls(
             self.parent_context,
+            self,
             self._tree_name,
             generics_manager=self._generics_manager,
         )])
@@ -137,7 +139,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
     def _create_instance_with_generics(self, generics_manager):
-        return TypingValueWithIndex(
+        return TypingClassWithIndex(
             self.parent_context,
             self._tree_name,
             generics_manager
@@ -145,7 +147,7 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
 
 
 class ProxyTypingValue(BaseTypingValue):
-    index_class = TypingValueWithIndex
+    index_class = TypingClassWithIndex
 
     def with_generics(self, generics_tuple):
         return self.index_class.create_cached(
@@ -183,11 +185,8 @@ class _TypingClassMixin(ClassMixin):
         return ValueName(self, self._tree_name)
 
 
-class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-    def infer_type_vars(self, value_set, is_class_value=False):
-        # Circular
-        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-
+class TypingClassValueWithIndex(_TypingClassMixin, TypingClassWithIndex):
+    def infer_type_vars(self, value_set):
         type_var_dict = {}
         annotation_generics = self.get_generics()
 
@@ -196,49 +195,22 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
         annotation_name = self.py__name__()
         if annotation_name == 'Type':
-            if is_class_value:
-                # This only applies if we are comparing something like
-                # List[Type[int]] with Iterable[Type[int]]. First, Jedi tries to
-                # match List/Iterable. After that we will land here, because
-                # is_class_value will be True at that point. Obviously we also
-                # compare below that both sides are `Type`.
-                for element in value_set:
-                    element_name = element.py__name__()
-                    if element_name == 'Type':
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            merge_pairwise_generics(self, element),
-                        )
-            else:
-                return annotation_generics[0].infer_type_vars(
-                    value_set,
-                    is_class_value=True,
-                )
+            return annotation_generics[0].infer_type_vars(
+                # This is basically a trick to avoid extra code: We execute the
+                # incoming classes to be able to use the normal code for type
+                # var inference.
+                value_set.execute_annotation(),
+            )
 
         elif annotation_name == 'Callable':
             if len(annotation_generics) == 2:
-                if is_class_value:
-                    # This only applies if we are comparing something like
-                    # List[Callable[..., T]] with Iterable[Callable[..., T]].
-                    # First, Jedi tries to match List/Iterable. After that we
-                    # will land here, because is_class_value will be True at
-                    # that point. Obviously we also compare below that both
-                    # sides are `Callable`.
-                    for element in value_set:
-                        element_name = element.py__name__()
-                        if element_name == 'Callable':
-                            merge_type_var_dicts(
-                                type_var_dict,
-                                merge_pairwise_generics(self, element),
-                            )
-                else:
-                    return annotation_generics[1].infer_type_vars(
-                        value_set.execute_annotation(),
-                    )
+                return annotation_generics[1].infer_type_vars(
+                    value_set.execute_annotation(),
+                )
 
         elif annotation_name == 'Tuple':
             tuple_annotation, = self.execute_annotation()
-            return tuple_annotation.infer_type_vars(value_set, is_class_value)
+            return tuple_annotation.infer_type_vars(value_set)
 
         return type_var_dict
 
@@ -284,7 +256,7 @@ class TypeAlias(LazyValueWrapper):
         return ValueSet([self._get_wrapped_value()])
 
 
-class Callable(BaseTypingValueWithGenerics):
+class Callable(BaseTypingInstance):
     def py__call__(self, arguments):
         """
             def x() -> Callable[[Callable[..., _T]], _T]: ...
@@ -301,7 +273,7 @@ class Callable(BaseTypingValueWithGenerics):
             return infer_return_for_callable(arguments, param_values, result_values)
 
 
-class Tuple(BaseTypingValueWithGenerics):
+class Tuple(BaseTypingInstance):
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
@@ -337,28 +309,23 @@ class Tuple(BaseTypingValueWithGenerics):
             .py__getattribute__('tuple').execute_annotation()
         return tuple_
 
-    def infer_type_vars(self, value_set, is_class_value=False):
+    @property
+    def name(self):
+        return self._wrapped_value.name
+
+    def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-        from jedi.inference.gradual.base import GenericClass
 
         value_set = value_set.filter(
             lambda x: x.py__name__().lower() == 'tuple',
         )
 
-        # Somewhat unusually, this `infer_type_vars` method is on an instance
-        # representation of a type, rather than the annotation or class
-        # representation. This means that as a starting point, we need to
-        # convert the incoming values to their instance style if they're
-        # classes, rather than the reverse.
-        if is_class_value:
-            value_set = value_set.execute_annotation()
-
         if self._is_homogenous():
             # The parameter annotation is of the form `Tuple[T, ...]`,
             # so we treat the incoming tuple like a iterable sequence
             # rather than a positional container of elements.
-            return self.get_generics()[0].infer_type_vars(
+            return self._class_value.get_generics()[0].infer_type_vars(
                 value_set.merge_types_of_iterate(),
             )
 
@@ -370,30 +337,32 @@ class Tuple(BaseTypingValueWithGenerics):
 
             type_var_dict = {}
             for element in value_set:
-                if not is_class_value:
-                    py_class = element.get_annotated_class_object()
-                    if not isinstance(py_class, GenericClass):
-                        py_class = element
-                else:
-                    py_class = element
+                try:
+                    method = element.get_annotated_class_object
+                except AttributeError:
+                    # This might still happen, because the tuple name matching
+                    # above is not 100% correct, so just catch the remaining
+                    # cases here.
+                    continue
 
+                py_class = method()
                 merge_type_var_dicts(
                     type_var_dict,
-                    merge_pairwise_generics(self, py_class),
+                    merge_pairwise_generics(self._class_value, py_class),
                 )
 
             return type_var_dict
 
 
-class Generic(BaseTypingValueWithGenerics):
+class Generic(BaseTypingInstance):
     pass
 
 
-class Protocol(BaseTypingValueWithGenerics):
+class Protocol(BaseTypingInstance):
     pass
 
 
-class Any(BaseTypingValue):
+class AnyClass(BaseTypingValue):
     def execute_annotation(self):
         debug.warning('Used Any - returned no results')
         return NO_VALUES
@@ -447,7 +416,7 @@ class CastFunction(BaseTypingValue):
         return type_value_set.execute_annotation()
 
 
-class TypedDictBase(BaseTypingValue):
+class TypedDictClass(BaseTypingValue):
     """
     This class has no responsibilities and is just here to make sure that typed
     dicts can be identified.

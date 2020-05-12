@@ -268,7 +268,7 @@ class Value(HelperValueMixin):
     def get_type_hint(self, add_class_info=True):
         return None
 
-    def infer_type_vars(self, value_set, is_class_value=False):
+    def infer_type_vars(self, value_set):
         """
         When the current instance represents a type annotation, this method
         tries to find information about undefined type vars and returns a dict
@@ -294,14 +294,6 @@ class Value(HelperValueMixin):
             we're inferrined for, or (for recursive calls) their types. In the
             above example this would first be the representation of the list
             `[1]` and then, when recursing, just of `1`.
-
-        `is_class_value`: tells us whether or not to treat the `value_set` as
-            representing the instances or types being passed, which is neccesary
-            to correctly cope with `Type[T]` annotations. When it is True, this
-            means that we are being called with a nested portion of an
-            annotation and that the `value_set` represents the types of the
-            arguments, rather than their actual instances. Note: not all
-            recursive calls will neccesarily set this to True.
         """
         return {}
 
@@ -538,7 +530,7 @@ class ValueSet(object):
             s = 'Optional[%s]' % s
         return s
 
-    def infer_type_vars(self, value_set, is_class_value=False):
+    def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_type_var_dicts
 
@@ -546,7 +538,7 @@ class ValueSet(object):
         for value in self._set:
             merge_type_var_dicts(
                 type_var_dict,
-                value.infer_type_vars(value_set, is_class_value),
+                value.infer_type_vars(value_set),
             )
         return type_var_dict
 

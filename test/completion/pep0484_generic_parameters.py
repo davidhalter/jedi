@@ -10,6 +10,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    Sequence,
 )
 
 K = TypeVar('K')
@@ -165,6 +166,9 @@ some_str = NotImplemented  # type: str
 #? str()
 first(some_str)
 
+annotated = [len]  # type: List[ Callable[[Sequence[float]], int] ]
+#? int()
+first(annotated)()
 
 # Test that the right type is chosen when a partially realised mapping is expected
 def values(mapping: Mapping[int, T]) -> List[T]:
