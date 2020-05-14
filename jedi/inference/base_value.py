@@ -143,16 +143,11 @@ class Value(HelperValueMixin):
     # Possible values: None, tuple, list, dict and set. Here to deal with these
     # very important containers.
     array_type = None
+    api_type = 'not_defined_please_report_bug'
 
     def __init__(self, inference_state, parent_context=None):
         self.inference_state = inference_state
         self.parent_context = parent_context
-
-    @property
-    def api_type(self):
-        # By default just lower name of the class. Can and should be
-        # overwritten.
-        return self.__class__.__name__.lower()
 
     def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference import analysis
