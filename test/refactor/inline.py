@@ -3,6 +3,11 @@
 1
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 There is no name under the cursor
+# -------------------------------------------------- no-reference-error
+#? 0 error
+a = 1
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+There are no references to this name
 # -------------------------------------------------- multi-equal-error
 def test():
     #? 4 error

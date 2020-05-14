@@ -173,6 +173,8 @@ def inline(inference_state, names):
         raise RefactoringError("No definition found to inline")
     if len(definitions) > 1:
         raise RefactoringError("Cannot inline a name with multiple definitions")
+    if len(names) == 1:
+        raise RefactoringError("There are no references to this name")
 
     tree_name = definitions[0].tree_name
 
