@@ -32,11 +32,6 @@ class HelperValueMixin(object):
                 return value
             value = value.parent_context
 
-    @classmethod
-    @inference_state_as_method_param_cache()
-    def create_cached(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
-
     def execute(self, arguments):
         return self.inference_state.execute(self, arguments=arguments)
 
