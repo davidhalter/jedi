@@ -145,41 +145,23 @@ class TypingClassWithIndex(BaseTypingClassWithGenerics):
             generics_manager
         )
 
-    def infer_type_vars(self, value_set, is_class_value=False):
-        # Circular
-        from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
-
-        type_var_dict = {}
+    def infer_type_vars(self, value_set):
         annotation_generics = self.get_generics()
 
         if not annotation_generics:
-            return type_var_dict
+            return {}
 
         annotation_name = self.py__name__()
         if annotation_name == 'Optional':
-            if is_class_value:
-                # This only applies if we are comparing something like
-                # List[Optional[int]] with Iterable[Optional[int]]. First, Jedi
-                # tries to match List/Iterable. After that we will land here,
-                # because is_class_value will be True at that point. Obviously
-                # we also compare below that both sides are `Optional`.
-                for element in value_set:
-                    element_name = element.py__name__()
-                    if element_name == 'Optional':
-                        merge_type_var_dicts(
-                            type_var_dict,
-                            merge_pairwise_generics(self, element),
-                        )
-            else:
-                # Optional[T] is equivalent to Union[T, None]. In Jedi unions
-                # are represented by members within a ValueSet, so we extract
-                # the T from the Optional[T] by removing the None value.
-                none = builtin_from_name(self.inference_state, u'None')
-                return annotation_generics[0].infer_type_vars(
-                    value_set.filter(lambda x: x != none),
-                )
+            # Optional[T] is equivalent to Union[T, None]. In Jedi unions
+            # are represented by members within a ValueSet, so we extract
+            # the T from the Optional[T] by removing the None value.
+            none = builtin_from_name(self.inference_state, u'None')
+            return annotation_generics[0].infer_type_vars(
+                value_set.filter(lambda x: x != none),
+            )
 
-        return type_var_dict
+        return {}
 
 
 class ProxyTypingValue(BaseTypingValue):
