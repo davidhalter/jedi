@@ -5,7 +5,7 @@ from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string, get_str_or_none
-from jedi.common.utils import traverse_parents
+from jedi.common import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.file_io import FileIO
 from jedi import settings

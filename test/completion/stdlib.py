@@ -171,6 +171,9 @@ def example(a):
 #? str()
 example('')
 
+# From GH #1574
+#? float()
+functools.wraps(functools.partial(str, 1))(lambda: 1.0)()
 
 # -----------------
 # sqlite3 (#84)

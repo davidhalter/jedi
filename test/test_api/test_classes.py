@@ -599,3 +599,7 @@ def test_get_type_hint(Script, code, expected, skip_pre_python36):
     code = 'from typing import *\n' + code
     d, = Script(code).goto()
     assert d.get_type_hint() == expected
+
+
+def test_pseudotreenameclass_type(Script):
+    assert Script('from typing import Any\n').get_names()[0].type == 'class'

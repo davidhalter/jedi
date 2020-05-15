@@ -62,3 +62,17 @@ def test_rename_none_path(Script):
     with pytest.raises(jedi.RefactoringError, match='on a Script with path=None'):
         refactoring.apply()
     assert refactoring
+
+
+def test_diff_without_ending_newline(Script):
+    refactoring = Script('a = 1\nb\na').rename(1, 0, new_name='c')
+    assert refactoring.get_diff() == dedent('''\
+        --- 
+        +++ 
+        @@ -1,3 +1,3 @@
+        -a = 1
+        +c = 1
+         b
+        -a
+        +c
+        ''')

@@ -25,11 +25,33 @@ class ChangedFile(object):
     def get_diff(self):
         old_lines = split_lines(self._module_node.get_code(), keepends=True)
         new_lines = split_lines(self.get_new_code(), keepends=True)
+
+        # Add a newline at the end if it's missing. Otherwise the diff will be
+        # very weird. A `diff -u file1 file2` would show the string:
+        #
+        #     \ No newline at end of file
+        #
+        # This is not necessary IMO, because Jedi does not really play with
+        # newlines and the ending newline does not really matter in Python
+        # files. ~dave
+        if old_lines[-1] != '':
+            old_lines[-1] += '\n'
+        if new_lines[-1] != '':
+            new_lines[-1] += '\n'
+
         project_path = self._inference_state.project._path
+        if self._from_path is None:
+            from_p = ''
+        else:
+            from_p = relpath(self._from_path, project_path)
+        if self._to_path is None:
+            to_p = ''
+        else:
+            to_p = relpath(self._to_path, project_path)
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=relpath(self._from_path, project_path),
-            tofile=relpath(self._to_path, project_path),
+            fromfile=from_p,
+            tofile=to_p,
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
@@ -151,6 +173,8 @@ def inline(inference_state, names):
         raise RefactoringError("No definition found to inline")
     if len(definitions) > 1:
         raise RefactoringError("Cannot inline a name with multiple definitions")
+    if len(names) == 1:
+        raise RefactoringError("There are no references to this name")
 
     tree_name = definitions[0].tree_name
 

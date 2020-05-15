@@ -485,9 +485,9 @@ class DirectObjectAccess(object):
         return inspect.isclass(self._obj) and self._obj != type
 
     def _annotation_to_str(self, annotation):
-        if isinstance(annotation, type):
-            return str(annotation.__name__)
-        return str(annotation)
+        if py_version < 30:
+            return ''
+        return inspect.formatannotation(annotation)
 
     def get_signature_params(self):
         return [

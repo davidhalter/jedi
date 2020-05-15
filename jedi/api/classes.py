@@ -25,6 +25,7 @@ from jedi.inference.utils import unite
 from jedi.cache import memoize_method
 from jedi.inference import imports
 from jedi.inference.imports import ImportName
+from jedi.inference.compiled.mixed import MixedName
 from jedi.inference.gradual.typeshed import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
@@ -561,6 +562,12 @@ class BaseName(object):
             # statements and not stubs. This is a speed optimization.
             return []
 
+        if isinstance(self._name, MixedName):
+            # While this would eventually happen anyway, it's basically just a
+            # shortcut to not infer anything tree related, because it's really
+            # not necessary.
+            return self._name.infer_compiled_value().get_signatures()
+
         names = convert_names([self._name], prefer_stubs=True)
         return [sig for name in names for sig in name.infer().get_signatures()]
 
@@ -697,9 +704,8 @@ class Completion(BaseName):
         return super(Completion, self)._get_docstring_signature()
 
     def _get_cache(self):
-        typ = super(Completion, self).type
         return (
-            typ,
+            super(Completion, self).type,
             super(Completion, self)._get_docstring_signature(),
             super(Completion, self)._get_docstring(),
         )

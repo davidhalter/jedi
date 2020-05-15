@@ -656,7 +656,8 @@ def bar():
         ({'return': 'typing.Optional[str, int]'}, [], ''),  # Takes only one arg
         ({'return': 'typing.Any'}, [], ''),
 
-        ({'return': 'typing.Tuple[int, str]'}, ['tuple'], ''),
+        ({'return': 'typing.Tuple[int, str]'},
+         ['Tuple' if sys.version_info[:2] == (3, 6) else 'tuple'], ''),
         ({'return': 'typing.Tuple[int, str]'}, ['int'], 'x()[0]'),
         ({'return': 'typing.Tuple[int, str]'}, ['str'], 'x()[1]'),
         ({'return': 'typing.Tuple[int, str]'}, [], 'x()[2]'),

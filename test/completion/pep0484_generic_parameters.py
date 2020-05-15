@@ -11,6 +11,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    Sequence,
 )
 
 K = TypeVar('K')
@@ -129,6 +130,29 @@ for c2, in list_t_to_list_tuple_t(list_of_ints):
     c2
 
 
+# Test handling of nested tuple input parameters
+def list_tuple_t_to_tuple_list_t(the_list: List[Tuple[T]]) -> Tuple[List[T], ...]:
+    return tuple(list(x) for x in the_list)
+
+
+list_of_int_tuples = [(x,) for x in list_of_ints]  # type: List[Tuple[int]]
+
+for b in list_tuple_t_to_tuple_list_t(list_of_int_tuples):
+    #? int()
+    b[0]
+
+
+def list_tuple_t_elipsis_to_tuple_list_t(the_list: List[Tuple[T, ...]]) -> Tuple[List[T], ...]:
+    return tuple(list(x) for x in the_list)
+
+
+list_of_int_tuple_elipsis = [tuple(list_of_ints)]  # type: List[Tuple[int, ...]]
+
+for b in list_tuple_t_elipsis_to_tuple_list_t(list_of_int_tuple_elipsis):
+    #? int()
+    b[0]
+
+
 # Test handling of nested callables
 def foo(x: int) -> int:
     return x
@@ -191,6 +215,9 @@ some_str = NotImplemented  # type: str
 #? str()
 first(some_str)
 
+annotated = [len]  # type: List[ Callable[[Sequence[float]], int] ]
+#? int()
+first(annotated)()
 
 # Test that the right type is chosen when a partially realised mapping is expected
 def values(mapping: Mapping[int, T]) -> List[T]:

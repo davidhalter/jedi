@@ -1,5 +1,5 @@
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.common.utils import monkeypatch
+from jedi.common import monkeypatch
 
 
 class AbstractLazyValue(object):
