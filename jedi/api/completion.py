@@ -343,19 +343,20 @@ class Completion:
         if stack_node.nonterminal == 'funcdef':
             context = get_user_context(self._module_context, self._position)
             node = search_ancestor(leaf, 'error_node', 'funcdef')
-            if node.type == 'error_node':
-                n = node.children[0]
-                if n.type == 'decorators':
-                    decorators = n.children
-                elif n.type == 'decorator':
-                    decorators = [n]
+            if node is not None:
+                if node.type == 'error_node':
+                    n = node.children[0]
+                    if n.type == 'decorators':
+                        decorators = n.children
+                    elif n.type == 'decorator':
+                        decorators = [n]
+                    else:
+                        decorators = []
                 else:
-                    decorators = []
-            else:
-                decorators = node.get_decorators()
-            function_name = stack_node.nodes[1]
+                    decorators = node.get_decorators()
+                function_name = stack_node.nodes[1]
 
-            return complete_param_names(context, function_name.value, decorators)
+                return complete_param_names(context, function_name.value, decorators)
         return []
 
     def _complete_keywords(self, allowed_transitions, only_values):
