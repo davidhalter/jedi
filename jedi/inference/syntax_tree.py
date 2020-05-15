@@ -31,6 +31,25 @@ from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 
+operator_to_magic_method = {
+    '+': '__add__',
+    '-': '__sub__',
+    '*': '__mul__',
+    '/': '__div__',
+    '//': '__floordiv__',
+    '%': '__mod__',
+    '**': '__pow__',
+    '<<': '__lshift__',
+    '>>': '__rshift__',
+    '&': '__and__',
+    '|': '__or__',
+    '^': '__xor__',
+}
+
+reverse_operator_to_magic_method = {
+    k: '__r' + v[2:] for k, v in operator_to_magic_method.items()
+}
+
 
 def _limit_value_infers(func):
     """
@@ -538,12 +557,8 @@ def _is_annotation_name(name):
     return False
 
 
-def _is_tuple(value):
-    return isinstance(value, iterable.Sequence) and value.array_type == 'tuple'
-
-
-def _is_list(value):
-    return isinstance(value, iterable.Sequence) and value.array_type == 'list'
+def _is_list_or_tuple(value):
+    return value.array_type in ('tuple', 'list')
 
 
 def _bool_to_value(inference_state, bool_):
@@ -584,7 +599,7 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
             return left.execute_operation(right, str_operator)
-        elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
+        elif _is_list_or_tuple(left) and _is_list_or_tuple(right):
             return ValueSet([iterable.MergedArray(inference_state, (left, right))])
     elif str_operator == '-':
         if l_is_num and r_is_num:
@@ -636,6 +651,20 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
         analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
+
+    if left.is_class() or right.is_class():
+        return NO_VALUES
+
+    method_name = operator_to_magic_method[str_operator]
+    magic_methods = left.py__getattribute__(method_name)
+    if not magic_methods:
+        reverse_method_name = reverse_operator_to_magic_method[str_operator]
+        magic_methods = left.py__getattribute__(reverse_method_name)
+
+    if magic_methods:
+        result = magic_methods.execute_with_values(right)
+        if result:
+            return result
 
     result = ValueSet([left, right])
     debug.dbg('Used operator %s resulting in %s', operator, result)

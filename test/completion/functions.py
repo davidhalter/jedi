@@ -241,7 +241,7 @@ args_func(*1)[0]
 args_func(*iter([1]))[0]
 
 # different types
-e = args_func(*[1+"", {}])
+e = args_func(*[1 if UNDEFINED else "", {}])
 #? int() str()
 e[0]
 #? dict()

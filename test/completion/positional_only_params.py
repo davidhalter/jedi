@@ -5,7 +5,10 @@ def positional_only_call(a, /, b):
     a
     #? int()
     b
-    return a + b
+    if UNDEFINED:
+        return a
+    else:
+        return b
 
 
 #? int() str()
@@ -13,7 +16,10 @@ positional_only_call('', 1)
 
 
 def positional_only_call2(a, /, b=3):
-    return a + b
+    if UNDEFINED:
+        return a
+    else:
+        return b
 
 #? int()
 positional_only_call2(1)

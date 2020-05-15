@@ -56,7 +56,7 @@ a
 (3 ** 3)
 #? int() str()
 (3 ** 'a')
-#? int() str()
+#? int()
 (3 + 'a')
 #? bool()
 (3 == 'a')
@@ -147,3 +147,18 @@ a = foobarbaz + 'hello'
 
 #? int() float()
 {'hello': 1, 'bar': 1.0}[a]
+
+# -----------------
+# stubs
+# -----------------
+
+from datetime import datetime, timedelta
+
+#?
+(datetime - timedelta)
+#? datetime()
+(datetime() - timedelta())
+#? timedelta()
+(timedelta() - datetime())
+#? timedelta()
+(timedelta() - timedelta())
