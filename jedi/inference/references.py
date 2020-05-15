@@ -128,7 +128,8 @@ def find_references(module_context, tree_name):
     found_names_dct = _dictionarize(found_names)
 
     module_contexts = set(d.get_root_context() for d in found_names)
-    module_contexts = [module_context] + [m for m in module_contexts if m != module_context]
+    module_contexts = [module_context] \
+        + [m for m in module_contexts if m != module_context and m.tree_node is not None]
     # For param no search for other modules is necessary.
     if any(n.api_type == 'param' for n in found_names):
         potential_modules = module_contexts
