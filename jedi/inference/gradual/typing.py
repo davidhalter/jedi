@@ -145,6 +145,24 @@ class TypingClassWithIndex(BaseTypingClassWithGenerics):
             generics_manager
         )
 
+    def infer_type_vars(self, value_set):
+        annotation_generics = self.get_generics()
+
+        if not annotation_generics:
+            return {}
+
+        annotation_name = self.py__name__()
+        if annotation_name == 'Optional':
+            # Optional[T] is equivalent to Union[T, None]. In Jedi unions
+            # are represented by members within a ValueSet, so we extract
+            # the T from the Optional[T] by removing the None value.
+            none = builtin_from_name(self.inference_state, u'None')
+            return annotation_generics[0].infer_type_vars(
+                value_set.filter(lambda x: x != none),
+            )
+
+        return {}
+
 
 class ProxyTypingValue(BaseTypingValue):
     index_class = TypingClassWithIndex
