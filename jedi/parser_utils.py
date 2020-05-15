@@ -288,6 +288,8 @@ def cut_value_at_position(leaf, position):
     column = position[1]
     if leaf.line == position[0]:
         column -= leaf.column
+    if not lines:
+        return ''
     lines[-1] = lines[-1][:column]
     return ''.join(lines)
 

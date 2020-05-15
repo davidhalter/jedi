@@ -394,8 +394,7 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
         casted_mod["full"] = 8
         keywords = {None: 1, False: 2, "a": 3}
         ''')
-    line = None
-    comps = Script(code + added_code).complete(line=line, column=column)
+    comps = Script(code + added_code).complete(column=column)
     if Ellipsis in expected:
         # This means that global completions are part of this, so filter all of
         # that out.
@@ -403,6 +402,11 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
         expected = [e for e in expected if e is not Ellipsis]
 
     assert [c.complete for c in comps] == expected
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_dict_keys_in_weird_case(Script, skip_pre_python36):
+    assert Script('a[\n# foo\nx]').complete(line=2, column=0)
 
 
 def test_start_match():
