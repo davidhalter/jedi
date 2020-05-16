@@ -101,7 +101,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class TypingClassWithIndex(BaseTypingClassWithGenerics):
+class ProxyWithGenerics(BaseTypingClassWithGenerics):
     def execute_annotation(self):
         string_name = self._tree_name.value
 
@@ -139,7 +139,7 @@ class TypingClassWithIndex(BaseTypingClassWithGenerics):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
     def _create_instance_with_generics(self, generics_manager):
-        return TypingClassWithIndex(
+        return ProxyWithGenerics(
             self.parent_context,
             self._tree_name,
             generics_manager
@@ -165,7 +165,7 @@ class TypingClassWithIndex(BaseTypingClassWithGenerics):
 
 
 class ProxyTypingValue(BaseTypingValue):
-    index_class = TypingClassWithIndex
+    index_class = ProxyWithGenerics
 
     def with_generics(self, generics_tuple):
         return self.index_class.create_cached(
@@ -203,7 +203,7 @@ class _TypingClassMixin(ClassMixin):
         return ValueName(self, self._tree_name)
 
 
-class TypingClassValueWithIndex(_TypingClassMixin, TypingClassWithIndex):
+class TypingClassWithGenerics(_TypingClassMixin, ProxyWithGenerics):
     def infer_type_vars(self, value_set):
         type_var_dict = {}
         annotation_generics = self.get_generics()
@@ -234,7 +234,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingClassWithIndex):
 
 
 class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
-    index_class = TypingClassValueWithIndex
+    index_class = TypingClassWithGenerics
 
 
 class TypeAlias(LazyValueWrapper):
