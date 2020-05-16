@@ -3,6 +3,7 @@
   default otherwise.
 - ``CachedMetaClass`` uses ``_memoize_default`` to do the same with classes.
 """
+from functools import wraps
 
 from jedi import debug
 
@@ -86,6 +87,7 @@ def inference_state_method_generator_cache():
     recursion errors and returns no further iterator elemends in that case.
     """
     def func(function):
+        @wraps(function)
         def wrapper(obj, *args, **kwargs):
             cache = obj.inference_state.memoize_cache
             try:
