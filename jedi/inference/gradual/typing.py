@@ -138,6 +138,13 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
     def gather_annotation_classes(self):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
 
+    def _create_instance_with_generics(self, generics_manager):
+        return ProxyWithGenerics(
+            self.parent_context,
+            self._tree_name,
+            generics_manager
+        )
+
     def infer_type_vars(self, value_set):
         annotation_generics = self.get_generics()
 
