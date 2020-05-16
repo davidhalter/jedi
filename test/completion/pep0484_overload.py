@@ -1,5 +1,5 @@
 # python >= 3.6
-from typing import List, Dict, overload
+from typing import List, Dict, overload, Tuple, TypeVar
 
 lst: list
 list_alias: List
@@ -72,3 +72,18 @@ overload_f1(list_alias)
 overload_f1(list_str)
 #? str() dict()
 overload_f1(list_int)
+
+# -------------------------
+# Broken Matching
+# -------------------------
+T = TypeVar('T')
+
+@overload
+def broken_f1(value: 1) -> str: ...
+
+@overload
+def broken_f1(value: Tuple[T]) -> Tuple[T]: ...
+
+tup: Tuple[float]
+#? float()
+broken_f1(broken_f1(tup))[0]
