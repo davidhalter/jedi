@@ -557,8 +557,12 @@ def _is_annotation_name(name):
     return False
 
 
-def _is_list_or_tuple(value):
-    return value.array_type in ('tuple', 'list')
+def _is_list(value):
+    return value.array_type == 'list'
+
+
+def _is_tuple(value):
+    return value.array_type == 'tuple'
 
 
 def _bool_to_value(inference_state, bool_):
@@ -599,7 +603,7 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
             return left.execute_operation(right, str_operator)
-        elif _is_list_or_tuple(left) and _is_list_or_tuple(right):
+        elif _is_list(left) and _is_list(right) or _is_tuple(left) and _is_tuple(right):
             return ValueSet([iterable.MergedArray(inference_state, (left, right))])
     elif str_operator == '-':
         if l_is_num and r_is_num:
