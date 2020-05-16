@@ -231,6 +231,37 @@ class BaseName(object):
             return None
         return start_pos[1]
 
+    @property
+    def definition_start_position(self):
+        """
+        The (row, column) of the start of the definition range. Rows start with
+        1, columns start with 0.
+
+        :rtype: Tuple[int, int]
+        """
+        definition = self._name.tree_name.get_definition()
+        if definition is None:
+            return self._name.start_pos
+        return definition.start_pos
+
+    @property
+    def definition_end_position(self):
+        """
+        The (row, column) of the end of the definition range. Rows start with
+        1, columns start with 0.
+
+        :rtype: Tuple[int, int]
+        """
+        definition = self._name.tree_name.get_definition()
+        if definition is None:
+            return self._name.end_pos
+        if self.type in ("function", "class"):
+            last_leaf = definition.get_last_leaf()
+            if last_leaf.type == "newline":
+                return last_leaf.get_previous_leaf().end_pos
+            return last_leaf.end_pos
+        return definition.end_pos
+
     def docstring(self, raw=False, fast=True):
         r"""
         Return a document string for this completion object.
