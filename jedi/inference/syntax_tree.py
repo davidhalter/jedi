@@ -661,12 +661,16 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
 
     method_name = operator_to_magic_method[str_operator]
     magic_methods = left.py__getattribute__(method_name)
-    if not magic_methods:
-        reverse_method_name = reverse_operator_to_magic_method[str_operator]
-        magic_methods = left.py__getattribute__(reverse_method_name)
-
     if magic_methods:
         result = magic_methods.execute_with_values(right)
+        if result:
+            return result
+
+    if not magic_methods:
+        reverse_method_name = reverse_operator_to_magic_method[str_operator]
+        magic_methods = right.py__getattribute__(reverse_method_name)
+
+        result = magic_methods.execute_with_values(left)
         if result:
             return result
 

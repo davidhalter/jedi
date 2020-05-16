@@ -159,6 +159,25 @@ from datetime import datetime, timedelta
 #? datetime()
 (datetime() - timedelta())
 #? timedelta()
+(datetime() - datetime())
+#? timedelta()
 (timedelta() - datetime())
 #? timedelta()
 (timedelta() - timedelta())
+
+# -----------------
+# magic methods
+# -----------------
+
+class C:
+    def __sub__(self, other) -> int: ...
+    def __radd__(self, other) -> float: ...
+
+#? int()
+(C() - object())
+#? C() object()
+(object() - C())
+#? C() object()
+(C() + object())
+#? float()
+(object() + C())
