@@ -231,8 +231,7 @@ class BaseName(object):
             return None
         return start_pos[1]
 
-    @property
-    def definition_start_position(self):
+    def get_definition_start_position(self):
         """
         The (row, column) of the start of the definition range. Rows start with
         1, columns start with 0.
@@ -244,8 +243,7 @@ class BaseName(object):
             return self._name.start_pos
         return definition.start_pos
 
-    @property
-    def definition_end_position(self):
+    def get_definition_end_position(self):
         """
         The (row, column) of the end of the definition range. Rows start with
         1, columns start with 0.
