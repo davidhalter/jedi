@@ -603,3 +603,38 @@ def test_get_type_hint(Script, code, expected, skip_pre_python36):
 
 def test_pseudotreenameclass_type(Script):
     assert Script('from typing import Any\n').get_names()[0].type == 'class'
+
+def test_definition_start_end_position(Script):
+    '''Tests for definition_start_position and definition_end_position'''
+    code = '\n'.join([
+        'def a_func():',
+        '    return "bar"',
+        '',
+        'var1 = 12',
+        '',
+        'class AClass:',
+        '    """my class"""',
+        '    @staticmethod',
+        '    def hello():',
+        '        func_var = 1',
+        '        return func_var',
+    ])
+    script = Script(code=code)
+    names = script.get_names(all_scopes=True)
+    assert len(names) == 5
+    a_func, var1, AClass, hello, func_var = names
+
+    assert a_func.definition_start_position == (1, 0)
+    assert a_func.definition_end_position == (2, 16)
+
+    assert var1.definition_start_position == (4, 0)
+    assert var1.definition_end_position == (4, 9)
+
+    assert AClass.definition_start_position == (6, 0)
+    assert AClass.definition_end_position == (11, 23)
+
+    assert hello.definition_start_position == (9, 4)
+    assert hello.definition_end_position == (11, 23)
+
+    assert func_var.definition_start_position == (10, 8)
+    assert func_var.definition_end_position == (10, 20)
