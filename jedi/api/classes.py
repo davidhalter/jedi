@@ -236,7 +236,7 @@ class BaseName(object):
         The (row, column) of the start of the definition range. Rows start with
         1, columns start with 0.
 
-        :rtype: Tuple[int, int]
+        :rtype: Optional[Tuple[int, int]]
         """
         definition = self._name.tree_name.get_definition()
         if definition is None:
@@ -248,11 +248,13 @@ class BaseName(object):
         The (row, column) of the end of the definition range. Rows start with
         1, columns start with 0.
 
-        :rtype: Tuple[int, int]
+        :rtype: Optional[Tuple[int, int]]
         """
         definition = self._name.tree_name.get_definition()
         if definition is None:
-            return self._name.end_pos
+            if self._name.tree_name is None:
+                return None
+            return self._name.tree_name.end_pos
         if self.type in ("function", "class"):
             last_leaf = definition.get_last_leaf()
             if last_leaf.type == "newline":

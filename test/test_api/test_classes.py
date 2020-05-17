@@ -619,6 +619,7 @@ class AClass:
     'code, pos, start, end', [
         ('def a_func():\n    return "bar"\n', (1, 4), (1, 0), (2, 16)),
         ('var1 = 12', (1, 0), (1, 0), (1, 9)),
+        ('var1 + 1', (1, 0), (1, 0), (1, 4)),
         ('class AClass: pass', (1, 6), (1, 0), (1, 18)),
         ('class AClass: pass\n', (1, 6), (1, 0), (1, 18)),
         (cls_code, (1, 6), (1, 0), (6, 23)),
