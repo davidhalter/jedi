@@ -18,6 +18,7 @@ mapping = {
     'CharField': (None, 'str'),
     'TextField': (None, 'str'),
     'EmailField': (None, 'str'),
+    'GenericIPAddressField': (None, 'str'),
     'FloatField': (None, 'float'),
     'BinaryField': (None, 'bytes'),
     'BooleanField': (None, 'bool'),
