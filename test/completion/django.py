@@ -49,6 +49,9 @@ class BusinessModel(models.Model):
 
     unidentifiable = NOT_FOUND
 
+    def method(self):
+        return 42
+
 # -----------------
 # Model attribute inference
 # -----------------
@@ -131,6 +134,11 @@ model_instance.tags_m2m.add
 model_instance.unidentifiable
 #! ['unidentifiable = NOT_FOUND']
 model_instance.unidentifiable
+
+#? int()
+model_instance.method()
+#! ['def method']
+model_instance.method
 
 # -----------------
 # Queries
