@@ -238,6 +238,8 @@ class BaseName(object):
 
         :rtype: Optional[Tuple[int, int]]
         """
+        if self._name.tree_name is None:
+            return None
         definition = self._name.tree_name.get_definition()
         if definition is None:
             return self._name.start_pos
@@ -250,10 +252,10 @@ class BaseName(object):
 
         :rtype: Optional[Tuple[int, int]]
         """
+        if self._name.tree_name is None:
+            return None
         definition = self._name.tree_name.get_definition()
         if definition is None:
-            if self._name.tree_name is None:
-                return None
             return self._name.tree_name.end_pos
         if self.type in ("function", "class"):
             last_leaf = definition.get_last_leaf()
