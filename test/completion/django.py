@@ -14,7 +14,13 @@ class Category(models.Model):
     category_name = models.CharField()
 
 
+class AttachedData(models.Model):
+    extra_data = models.TextField()
+
+
 class BusinessModel(models.Model):
+    attached_o2o = models.OneToOneField(AttachedData)
+
     category_fk = models.ForeignKey(Category)
     category_fk2 = models.ForeignKey('Category')
     category_fk3 = models.ForeignKey(1)
@@ -85,6 +91,15 @@ model_instance.date_field
 model_instance.date_time_field
 #? uuid.UUID()
 model_instance.uuid_field
+
+#! ['attached_o2o = models.OneToOneField(AttachedData)']
+model_instance.attached_o2o
+#! ['extra_data = models.TextField()']
+model_instance.attached_o2o.extra_data
+#? AttachedData()
+model_instance.attached_o2o
+#? str()
+model_instance.attached_o2o.extra_data
 
 #! ['category_fk = models.ForeignKey(Category)']
 model_instance.category_fk

@@ -74,7 +74,7 @@ def _infer_field(cls, field_name):
 
         name = field_tree_instance.py__name__()
         is_many_to_many = name == 'ManyToManyField'
-        if name == 'ForeignKey' or is_many_to_many:
+        if name in ('ForeignKey', 'OneToOneField') or is_many_to_many:
             values = _get_foreign_key_values(cls, field_tree_instance)
             if is_many_to_many:
                 return ValueSet(filter(None, [
