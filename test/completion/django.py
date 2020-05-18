@@ -28,6 +28,7 @@ class BusinessModel(models.Model):
     text_field = models.TextField()
     email_field = models.EmailField()
     ip_address_field = models.GenericIPAddressField()
+    url_field = models.URLField()
     float_field = models.FloatField()
     binary_field = models.BinaryField()
     boolean_field = models.BooleanField()
@@ -62,6 +63,8 @@ model_instance.text_field
 model_instance.email_field
 #? str()
 model_instance.ip_address_field
+#? str()
+model_instance.url_field
 #? float()
 model_instance.float_field
 #? bytes()

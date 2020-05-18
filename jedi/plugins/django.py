@@ -19,6 +19,7 @@ mapping = {
     'TextField': (None, 'str'),
     'EmailField': (None, 'str'),
     'GenericIPAddressField': (None, 'str'),
+    'URLField': (None, 'str'),
     'FloatField': (None, 'float'),
     'BinaryField': (None, 'bytes'),
     'BooleanField': (None, 'bool'),
