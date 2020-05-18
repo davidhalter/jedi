@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -13,7 +14,13 @@ class Category(models.Model):
     category_name = models.CharField()
 
 
+class AttachedData(models.Model):
+    extra_data = models.TextField()
+
+
 class BusinessModel(models.Model):
+    attached_o2o = models.OneToOneField(AttachedData)
+
     category_fk = models.ForeignKey(Category)
     category_fk2 = models.ForeignKey('Category')
     category_fk3 = models.ForeignKey(1)
@@ -27,6 +34,8 @@ class BusinessModel(models.Model):
     char_field = models.CharField()
     text_field = models.TextField()
     email_field = models.EmailField()
+    ip_address_field = models.GenericIPAddressField()
+    url_field = models.URLField()
     float_field = models.FloatField()
     binary_field = models.BinaryField()
     boolean_field = models.BooleanField()
@@ -35,6 +44,7 @@ class BusinessModel(models.Model):
     duration_field = models.DurationField()
     date_field = models.DateField()
     date_time_field = models.DateTimeField()
+    uuid_field = models.UUIDField()
     tags_m2m = models.ManyToManyField(Tag)
 
     unidentifiable = NOT_FOUND
@@ -59,6 +69,10 @@ model_instance.char_field
 model_instance.text_field
 #? str()
 model_instance.email_field
+#? str()
+model_instance.ip_address_field
+#? str()
+model_instance.url_field
 #? float()
 model_instance.float_field
 #? bytes()
@@ -75,6 +89,17 @@ model_instance.duration_field
 model_instance.date_field
 #? datetime.datetime()
 model_instance.date_time_field
+#? uuid.UUID()
+model_instance.uuid_field
+
+#! ['attached_o2o = models.OneToOneField(AttachedData)']
+model_instance.attached_o2o
+#! ['extra_data = models.TextField()']
+model_instance.attached_o2o.extra_data
+#? AttachedData()
+model_instance.attached_o2o
+#? str()
+model_instance.attached_o2o.extra_data
 
 #! ['category_fk = models.ForeignKey(Category)']
 model_instance.category_fk

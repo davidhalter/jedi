@@ -18,6 +18,8 @@ mapping = {
     'CharField': (None, 'str'),
     'TextField': (None, 'str'),
     'EmailField': (None, 'str'),
+    'GenericIPAddressField': (None, 'str'),
+    'URLField': (None, 'str'),
     'FloatField': (None, 'float'),
     'BinaryField': (None, 'bytes'),
     'BooleanField': (None, 'bool'),
@@ -26,6 +28,7 @@ mapping = {
     'DurationField': ('datetime', 'timedelta'),
     'DateField': ('datetime', 'date'),
     'DateTimeField': ('datetime', 'datetime'),
+    'UUIDField': ('uuid', 'UUID'),
 }
 
 
@@ -71,7 +74,7 @@ def _infer_field(cls, field_name):
 
         name = field_tree_instance.py__name__()
         is_many_to_many = name == 'ManyToManyField'
-        if name == 'ForeignKey' or is_many_to_many:
+        if name in ('ForeignKey', 'OneToOneField') or is_many_to_many:
             values = _get_foreign_key_values(cls, field_tree_instance)
             if is_many_to_many:
                 return ValueSet(filter(None, [
