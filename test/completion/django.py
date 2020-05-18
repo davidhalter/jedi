@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -37,6 +38,7 @@ class BusinessModel(models.Model):
     duration_field = models.DurationField()
     date_field = models.DateField()
     date_time_field = models.DateTimeField()
+    uuid_field = models.UUIDField()
     tags_m2m = models.ManyToManyField(Tag)
 
     unidentifiable = NOT_FOUND
@@ -81,6 +83,8 @@ model_instance.duration_field
 model_instance.date_field
 #? datetime.datetime()
 model_instance.date_time_field
+#? uuid.UUID()
+model_instance.uuid_field
 
 #! ['category_fk = models.ForeignKey(Category)']
 model_instance.category_fk

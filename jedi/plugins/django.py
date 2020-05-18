@@ -28,6 +28,7 @@ mapping = {
     'DurationField': ('datetime', 'timedelta'),
     'DateField': ('datetime', 'date'),
     'DateTimeField': ('datetime', 'datetime'),
+    'UUIDField': ('uuid', 'UUID'),
 }
 
 
