@@ -138,7 +138,7 @@ class AbstractTreeName(AbstractNameDefinition):
             return self.parent_context.get_value()  # Might be None
         return None
 
-    def goto(self):
+    def goto(self, all_scopes=True):
         context = self.parent_context
         name = self.tree_name
         definition = name.get_definition(import_name_always=True)
@@ -150,13 +150,13 @@ class AbstractTreeName(AbstractNameDefinition):
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
                     return [self]
-            elif type_ in ('import_from', 'import_name'):
+            elif all_scopes and type_ in ('import_from', 'import_name'):
                 from jedi.inference.imports import goto_import
                 module_names = goto_import(context, name)
                 return module_names
             else:
                 return [self]
-        else:
+        elif all_scopes:
             from jedi.inference.imports import follow_error_node_imports_if_possible
             values = follow_error_node_imports_if_possible(context, name)
             if values is not None:
@@ -498,8 +498,8 @@ class _ActualTreeParamName(BaseTreeParamName):
 
 class AnonymousParamName(_ActualTreeParamName):
     @plugin_manager.decorate(name='goto_anonymous_param')
-    def goto(self):
-        return super(AnonymousParamName, self).goto()
+    def goto(self, **kwargs):
+        return super(AnonymousParamName, self).goto(**kwargs)
 
     @plugin_manager.decorate(name='infer_anonymous_param')
     def infer(self):
