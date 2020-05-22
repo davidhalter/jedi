@@ -71,3 +71,22 @@ foo()
     script = Script('from datetime', project=project)
     places = r(1, 5)
     assert len(places) == 1
+
+
+def test_local_references_method_other_file(Script):
+    from jedi.api.project import Project
+    script = Script('''from datetime import datetime
+d1 = datetime.now()
+d2 = datetime.now()
+''', project=Project('', sys_path=[], smart_sys_path=False))
+    now_places = script.get_references(2, 14, all_scopes=False)
+    assert len(now_places) == 2
+    assert now_places == script.get_references(3, 14, all_scopes=False)
+
+
+def test_local_references_kwarg(Script):
+    from jedi.api.project import Project
+    script = Script('''from jedi import Script
+Script(code='')
+''', project=Project('', sys_path=[], smart_sys_path=False))
+    assert len(script.get_references(2, 7, all_scopes=False)) == 1
