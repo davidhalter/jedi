@@ -6,8 +6,17 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class TagManager(models.Manager):
+    def specially_filtered_tags(self):
+        return self.all()
+
+
 class Tag(models.Model):
     tag_name = models.CharField()
+
+    objects = TagManager()
+
+    custom_objects = TagManager()
 
 
 class Category(models.Model):
@@ -154,6 +163,16 @@ model_instance.objects.get().char_field
 model_instance.objects.update(x='')
 #? BusinessModel()
 model_instance.objects.create()
+
+# -----------------
+# Custom object manager
+# -----------------
+
+#? TagManager()
+Tag.objects
+
+#? TagManager()
+Tag.custom_objects
 
 # -----------------
 # Inheritance
