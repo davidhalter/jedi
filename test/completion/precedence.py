@@ -100,6 +100,15 @@ else:
 #? str() int()
 a
 
+if 'X' not in 'Y':
+    b = 3
+else:
+    b = ''
+# For now don't really check for truth values. So in should return both
+# results.
+#? str() int()
+b
+
 # -----------------
 # for flow assignments
 # -----------------
