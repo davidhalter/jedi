@@ -166,6 +166,8 @@ class AbstractTreeName(AbstractNameDefinition):
         node_type = par.type
         if node_type == 'argument' and par.children[1] == '=' and par.children[0] == name:
             # Named param goto.
+            if not all_scopes:
+                return [self]
             trailer = par.parent
             if trailer.type == 'arglist':
                 trailer = trailer.parent
@@ -200,6 +202,8 @@ class AbstractTreeName(AbstractNameDefinition):
                 )
 
         if node_type == 'trailer' and par.children[0] == '.':
+            if not all_scopes:
+                return [self]
             values = infer_call_of_leaf(context, name, cut_own_trailer=True)
             return values.goto(name, name_context=context)
         else:

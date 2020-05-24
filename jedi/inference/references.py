@@ -144,6 +144,11 @@ def find_references(module_context, tree_name, all_scopes=True):
             search_name,
         )
 
+    gotos = set()
+    if not all_scopes:
+        for name in found_names_dct.values():
+            gotos |= set(name.goto())
+
     non_matching_reference_maps = {}
     for module_context in potential_modules:
         for name_leaf in module_context.tree_node.get_used_names().get(search_name, []):
@@ -162,6 +167,18 @@ def find_references(module_context, tree_name, all_scopes=True):
             else:
                 for name in new:
                     non_matching_reference_maps.setdefault(name, []).append(new)
+
+    if not all_scopes:
+        def in_gotos(g):
+            for g_ in gotos:
+                if g.start_pos == g_.start_pos and g.get_root_context() == g_.get_root_context():
+                    return True
+
+        for dct_list in non_matching_reference_maps.values():
+            for dct in dct_list:
+                for k, v in dct.items():
+                    if any(in_gotos(g) for g in v.goto()):
+                        found_names_dct[k] = v
     return found_names_dct.values()
 
 
