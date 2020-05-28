@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+from setuptools.depends import get_module_constant
 
 import os
-import ast
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 # Get the version from within jedi. It's defined in exactly one place now.
-with open('jedi/__init__.py') as f:
-    tree = ast.parse(f.read())
-version = tree.body[int(not hasattr(tree, 'docstring'))].value.s
+version = get_module_constant("jedi", "__version__")
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
