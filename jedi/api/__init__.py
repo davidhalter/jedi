@@ -751,7 +751,6 @@ class Script(object):
             global_var = 3
 
             def x():
-                foo = 3.1
                 x = int(foo + 1 + global_var)
 
         the code above will become::
