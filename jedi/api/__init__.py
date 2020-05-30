@@ -97,7 +97,7 @@ class Script(object):
         an issue for people that do more complex stuff with Jedi.
 
         This is purely a performance optimization and works pretty well for all
-        typical usages, however consider to turn the setting of if it causes
+        typical usages, however consider to turn the setting off if it causes
         you problems. See also
         `this discussion <https://github.com/davidhalter/jedi/issues/1240>`_.
 
