@@ -470,8 +470,8 @@ def validate_line_column(func):
         line_string = self._code_lines[line - 1]
         line_len = len(line_string)
         if line_string.endswith('\r\n'):
-            line_len -= 1
-        if line_string.endswith('\n'):
+            line_len -= 2
+        elif line_string.endswith('\n'):
             line_len -= 1
 
         column = line_len if column is None else column
