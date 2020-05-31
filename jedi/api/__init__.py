@@ -759,10 +759,11 @@ class Script(object):
             global_var = 3
 
             def bar(foo):
-                return foo + 1 + global_var
+                return int(foo + 1 + global_var)
 
-            def x(foo):
-                x = int(bar(foo))
+            def x():
+                foo = 3.1
+                x = bar(foo)
 
         :param new_name: The expression under the cursor will be replaced with
             a function with this name.

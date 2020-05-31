@@ -1,3 +1,19 @@
+# -------------------------------------------------- in-module-0
+global_var = 3
+def x():
+    foo = 3.1
+    #? 11 text {'new_name': 'bar'}
+    x = int(foo + 1 + global_var)
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+global_var = 3
+def bar(foo):
+    return int(foo + 1 + global_var)
+
+
+def x():
+    foo = 3.1
+    #? 11 text {'new_name': 'bar'}
+    x = bar(foo)
 # -------------------------------------------------- in-module-1
 glob = 3
 #? 11 text {'new_name': 'a'}
