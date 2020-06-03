@@ -38,7 +38,7 @@ foo()
 ''', project=project)
 
     def r(*args):
-        return script.get_references(all_scopes=False, *args)
+        return script.get_references(scope='file', *args)
 
     print(script._code_lines)
     sys_places = r(1, 7)
@@ -79,9 +79,9 @@ def test_local_references_method_other_file(Script):
 d1 = datetime.now()
 d2 = datetime.now()
 ''', project=Project('', sys_path=[], smart_sys_path=False))
-    now_places = script.get_references(2, 14, all_scopes=False)
+    now_places = script.get_references(2, 14, scope='file')
     assert len(now_places) == 2
-    assert now_places == script.get_references(3, 14, all_scopes=False)
+    assert now_places == script.get_references(3, 14, scope='file')
 
 
 def test_local_references_kwarg(Script):
@@ -89,4 +89,4 @@ def test_local_references_kwarg(Script):
     script = Script('''from jedi import Script
 Script(code='')
 ''', project=Project('', sys_path=[], smart_sys_path=False))
-    assert len(script.get_references(2, 7, all_scopes=False)) == 1
+    assert len(script.get_references(2, 7, scope='file')) == 1

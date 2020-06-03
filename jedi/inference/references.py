@@ -25,7 +25,7 @@ easily 100ms for bigger files.
 """
 
 
-def _resolve_names(definition_names, avoid_names=(), all_scopes=True):
+def _resolve_names(definition_names, avoid_names=()):
     for name in definition_names:
         if name in avoid_names:
             # Avoiding recursions here, because goto on a module name lands
@@ -37,7 +37,7 @@ def _resolve_names(definition_names, avoid_names=(), all_scopes=True):
             # names when importing something like `import foo.bar.baz`.
             yield name
 
-        if all_scopes and name.api_type == 'module':
+        if name.api_type == 'module':
             for n in _resolve_names(name.goto(), definition_names):
                 yield n
 
@@ -49,17 +49,16 @@ def _dictionarize(names):
     )
 
 
-def _find_defining_names(module_context, tree_name, all_scopes=True):
-    found_names = _find_names(module_context, tree_name, all_scopes=all_scopes)
+def _find_defining_names(module_context, tree_name):
+    found_names = _find_names(module_context, tree_name)
 
-    if all_scopes:
-        for name in list(found_names):
-            # Convert from/to stubs, because those might also be usages.
-            found_names |= set(convert_names(
-                [name],
-                only_stubs=not name.get_root_context().is_stub(),
-                prefer_stub_to_compiled=False
-            ))
+    for name in list(found_names):
+        # Convert from/to stubs, because those might also be usages.
+        found_names |= set(convert_names(
+            [name],
+            only_stubs=not name.get_root_context().is_stub(),
+            prefer_stub_to_compiled=False
+        ))
 
     found_names |= set(_find_global_variables(found_names, tree_name.value))
     for name in list(found_names):
@@ -67,15 +66,15 @@ def _find_defining_names(module_context, tree_name, all_scopes=True):
                 or name.tree_name.parent.type == 'trailer':
             continue
         found_names |= set(_add_names_in_same_context(name.parent_context, name.string_name))
-    return set(_resolve_names(found_names, all_scopes=all_scopes))
+    return set(_resolve_names(found_names))
 
 
-def _find_names(module_context, tree_name, all_scopes=True):
+def _find_names(module_context, tree_name):
     name = module_context.create_name(tree_name)
-    found_names = set(name.goto(all_scopes=all_scopes))
+    found_names = set(name.goto())
     found_names.add(name)
 
-    return set(_resolve_names(found_names, all_scopes=all_scopes))
+    return set(_resolve_names(found_names))
 
 
 def _add_names_in_same_context(context, string_name):
@@ -114,7 +113,7 @@ def _find_global_variables(names, search_name):
                     yield n
 
 
-def find_references(module_context, tree_name, all_scopes=True):
+def find_references(module_context, tree_name, only_in_module=False):
     inf = module_context.inference_state
     search_name = tree_name.value
 
@@ -122,20 +121,20 @@ def find_references(module_context, tree_name, all_scopes=True):
     # certain cases, we want both sides.
     try:
         inf.flow_analysis_enabled = False
-        found_names = _find_defining_names(module_context, tree_name, all_scopes=all_scopes)
+        found_names = _find_defining_names(module_context, tree_name)
     finally:
         inf.flow_analysis_enabled = True
 
     found_names_dct = _dictionarize(found_names)
 
     module_contexts = [module_context]
-    if all_scopes:
+    if not only_in_module:
         module_contexts.extend(
             m for m in set(d.get_root_context() for d in found_names)
             if m != module_context and m.tree_node is not None
         )
     # For param no search for other modules is necessary.
-    if not all_scopes or any(n.api_type == 'param' for n in found_names):
+    if only_in_module or any(n.api_type == 'param' for n in found_names):
         potential_modules = module_contexts
     else:
         potential_modules = get_module_contexts_containing_name(
@@ -144,15 +143,10 @@ def find_references(module_context, tree_name, all_scopes=True):
             search_name,
         )
 
-    gotos = set()
-    if not all_scopes:
-        for name in found_names_dct.values():
-            gotos |= set(name.goto())
-
     non_matching_reference_maps = {}
     for module_context in potential_modules:
         for name_leaf in module_context.tree_node.get_used_names().get(search_name, []):
-            new = _dictionarize(_find_names(module_context, name_leaf, all_scopes=all_scopes))
+            new = _dictionarize(_find_names(module_context, name_leaf))
             if any(tree_name in found_names_dct for tree_name in new):
                 found_names_dct.update(new)
                 for tree_name in new:
@@ -167,19 +161,10 @@ def find_references(module_context, tree_name, all_scopes=True):
             else:
                 for name in new:
                     non_matching_reference_maps.setdefault(name, []).append(new)
-
-    if not all_scopes:
-        def in_gotos(g):
-            for g_ in gotos:
-                if g.start_pos == g_.start_pos and g.get_root_context() == g_.get_root_context():
-                    return True
-
-        for dct_list in non_matching_reference_maps.values():
-            for dct in dct_list:
-                for k, v in dct.items():
-                    if any(in_gotos(g) for g in v.goto()):
-                        found_names_dct[k] = v
-    return found_names_dct.values()
+    result = found_names_dct.values()
+    if only_in_module:
+        return [n for n in result if n.get_root_context() == module_context]
+    return result
 
 
 def _check_fs(inference_state, file_io, regex):

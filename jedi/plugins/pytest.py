@@ -63,7 +63,7 @@ def infer_anonymous_param(func):
 
 
 def goto_anonymous_param(func):
-    def wrapper(param_name, **kwargs):
+    def wrapper(param_name):
         is_pytest_param, param_name_is_function_name = \
             _is_a_pytest_param_and_inherited(param_name)
         if is_pytest_param:
@@ -74,7 +74,7 @@ def goto_anonymous_param(func):
             )
             if names:
                 return names
-        return func(param_name, **kwargs)
+        return func(param_name)
     return wrapper
 
 

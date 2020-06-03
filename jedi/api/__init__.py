@@ -505,23 +505,23 @@ class Script(object):
         quite hard to do for Jedi, if it is too complicated, Jedi will stop
         searching.
 
-        :param include_builtins: Default ``True``. If ``False`` checks if a reference
+        :param include_builtins: Default ``True``. If ``False``, checks if a reference
             is a builtin (e.g. ``sys``) and in that case does not return it.
-        :param all_scopes: Default ``True``. If ``False`` include references in
+        :param scope: Default ``'project'``. If ``'file'``, include references in
             the current module only.
         :rtype: list of :class:`.Name`
         """
 
-        def _references(include_builtins=True, all_scopes=True):
+        def _references(include_builtins=True, scope='project'):
             tree_name = self._module_node.get_name_of_position((line, column))
             if tree_name is None:
                 # Must be syntax
                 return []
 
-            names = find_references(self._get_module_context(), tree_name, all_scopes)
+            names = find_references(self._get_module_context(), tree_name, scope == 'file')
 
             definitions = [classes.Name(self._inference_state, n) for n in names]
-            if not (include_builtins and all_scopes):
+            if not include_builtins or scope == 'file':
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
         return _references(**kwargs)
