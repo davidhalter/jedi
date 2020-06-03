@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_import_references(Script):
     s = Script("from .. import foo", path="foo.py")
     assert [usage.line for usage in s.get_references(line=1, column=18)] == [1]
@@ -17,11 +20,26 @@ def test_exclude_builtin_modules(Script):
     assert places == [(1, 7), (2, 6)]
 
 
-def test_references_scope(Script):
-    from jedi.api.project import Project
-    project = Project('', sys_path=[], smart_sys_path=False)
-    script = Script(
-        '''import sys
+@pytest.mark.parametrize('code, places', [
+    ('', [(1, 7), (4, 6)]),
+    ('', [(2, 5)]),
+    ('', [(2, 24), (7, 10), (11, 10)]),
+    ('', [(6, 4), (14, 0)]),
+    ('', [(7, 4), (8, 11)]),
+    ('', [(7, 22), (11, 22)]),
+    ('', [(11, 4), (12, 11)]),
+    ('from datetime', [(1, 5)]),
+    ('''from datetime import datetime
+d1 = datetime.now()
+d2 = datetime.now()
+''', [(2, 14), (3, 14)]),
+    ('''from jedi import Script
+Script(code='')
+''', [(2, 7)])
+])
+def test_references_scope(Script, code, places):
+    if not code:
+        code = '''import sys
 from collections import defaultdict
 
 print(sys.path)
@@ -35,58 +53,10 @@ def bar(foo):
     return baz
 
 foo()
-''', project=project)
-
-    def r(*args):
-        return script.get_references(scope='file', *args)
-
-    print(script._code_lines)
-    sys_places = r(1, 7)
-    assert len(sys_places) == 2
-    assert sys_places == r(4, 6)
-
-    assert len(r(2, 5)) == 1
-
-    dd_places = r(2, 24)
-    assert len(dd_places) == 3
-    assert dd_places == r(7, 10)
-    assert dd_places == r(11, 10)
-
-    foo_places = r(6, 4)
-    assert len(foo_places) == 2
-    assert foo_places == r(14, 0)
-
-    baz_places = r(7, 4)
-    assert len(baz_places) == 2
-    assert baz_places == r(8, 11)
-
-    int_places = r(7, 22)
-    assert len(int_places) == 2
-    assert int_places == r(11, 22)
-
-    baz_places = r(11, 4)
-    assert len(baz_places) == 2
-    assert baz_places == r(12, 11)
-
-    script = Script('from datetime', project=project)
-    places = r(1, 5)
-    assert len(places) == 1
-
-
-def test_local_references_method_other_file(Script):
+'''
     from jedi.api.project import Project
-    script = Script('''from datetime import datetime
-d1 = datetime.now()
-d2 = datetime.now()
-''', project=Project('', sys_path=[], smart_sys_path=False))
-    now_places = script.get_references(2, 14, scope='file')
-    assert len(now_places) == 2
-    assert now_places == script.get_references(3, 14, scope='file')
+    project = Project('', sys_path=[], smart_sys_path=False)
+    script = Script(code, project=project)
 
-
-def test_local_references_kwarg(Script):
-    from jedi.api.project import Project
-    script = Script('''from jedi import Script
-Script(code='')
-''', project=Project('', sys_path=[], smart_sys_path=False))
-    assert len(script.get_references(2, 7, scope='file')) == 1
+    for place in places:
+        assert places == [(n.line, n.column) for n in script.get_references(scope='file', *place)]
