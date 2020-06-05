@@ -34,8 +34,9 @@ d1 = datetime.now()
 d2 = datetime.now()
 ''', [(2, 14), (3, 14)]),
     ('''from jedi import Script
-Script(code='')
-''', [(2, 7)])
+s1 = Script(code='')
+s2 = Script(code='')
+''', [(2, 12), (3, 12)])
 ])
 def test_references_scope(Script, code, places):
     if not code:
