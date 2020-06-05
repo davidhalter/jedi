@@ -33,10 +33,10 @@ def test_exclude_builtin_modules(Script):
 d1 = datetime.now()
 d2 = datetime.now()
 ''', [(2, 14), (3, 14)]),
-    ('''from jedi import Script
-s1 = Script(code='')
-s2 = Script(code='')
-''', [(2, 12), (3, 12)])
+    ('''from datetime import timedelta
+t1 = timedelta(seconds=1)
+t2 = timedelta(seconds=2)
+''', [(2, 15), (3, 15)])
 ])
 def test_references_scope(Script, code, places):
     if not code:
