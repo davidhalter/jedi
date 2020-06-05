@@ -190,7 +190,7 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
     @to_list
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
-            yield _LazyGenericBaseClass(self, base)
+            yield _LazyGenericBaseClass(self, base, self._generics_manager)
 
     def _create_instance_with_generics(self, generics_manager):
         return GenericClass(self._class_value, generics_manager)
@@ -241,9 +241,10 @@ class GenericClass(ClassMixin, DefineGenericBaseClass):
 
 
 class _LazyGenericBaseClass(object):
-    def __init__(self, class_value, lazy_base_class):
+    def __init__(self, class_value, lazy_base_class, generics_manager):
         self._class_value = class_value
         self._lazy_base_class = lazy_base_class
+        self._generics_manager = generics_manager
 
     @iterator_to_value_set
     def infer(self):
@@ -256,7 +257,17 @@ class _LazyGenericBaseClass(object):
                     TupleGenericManager(tuple(self._remap_type_vars(base))),
                 )
             else:
-                yield base
+                if base.is_class_mixin():
+                    # This case basically allows classes like `class Foo(List)`
+                    # to be used like `Foo[int]`. The generics are not
+                    # necessary and can be used later.
+                    yield GenericClass.create_cached(
+                        base.inference_state,
+                        base,
+                        self._generics_manager,
+                    )
+                else:
+                    yield base
 
     def _remap_type_vars(self, base):
         from jedi.inference.gradual.type_var import TypeVar

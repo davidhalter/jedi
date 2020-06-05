@@ -102,7 +102,7 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
         ('django', 'db', 'models', 'manager')
     ).py__getattribute__(manager_cls)
     for m in managers:
-        if m.is_class() and not m.is_compiled():
+        if m.is_class_mixin():
             generics_manager = TupleGenericManager((ValueSet([cls]),))
             for c in GenericClass(m, generics_manager).execute_annotation():
                 return c

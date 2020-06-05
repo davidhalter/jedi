@@ -174,6 +174,9 @@ class Value(HelperValueMixin):
     def is_class(self):
         return False
 
+    def is_class_mixin(self):
+        return False
+
     def is_instance(self):
         return False
 

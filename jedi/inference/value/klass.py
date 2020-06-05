@@ -135,6 +135,9 @@ class ClassMixin(object):
     def is_class(self):
         return True
 
+    def is_class_mixin(self):
+        return True
+
     def py__call__(self, arguments=None):
         from jedi.inference.value import TreeInstance
 
@@ -314,6 +317,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
     def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference.gradual.base import GenericClass
         if not index_value_set:
+            debug.warning('Class indexes inferred to nothing. Returning class instead')
             return ValueSet([self])
         return ValueSet(
             GenericClass(
