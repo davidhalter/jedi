@@ -6,8 +6,17 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class TagManager(models.Manager):
+    def specially_filtered_tags(self):
+        return self.all()
+
+
 class Tag(models.Model):
     tag_name = models.CharField()
+
+    objects = TagManager()
+
+    custom_objects = TagManager()
 
 
 class Category(models.Model):
@@ -48,6 +57,9 @@ class BusinessModel(models.Model):
     tags_m2m = models.ManyToManyField(Tag)
 
     unidentifiable = NOT_FOUND
+
+    def method(self):
+        return 42
 
 # -----------------
 # Model attribute inference
@@ -132,6 +144,11 @@ model_instance.unidentifiable
 #! ['unidentifiable = NOT_FOUND']
 model_instance.unidentifiable
 
+#? int()
+model_instance.method()
+#! ['def method']
+model_instance.method
+
 # -----------------
 # Queries
 # -----------------
@@ -146,6 +163,16 @@ model_instance.objects.get().char_field
 model_instance.objects.update(x='')
 #? BusinessModel()
 model_instance.objects.create()
+
+# -----------------
+# Custom object manager
+# -----------------
+
+#? TagManager()
+Tag.objects
+
+#? TagManager()
+Tag.custom_objects
 
 # -----------------
 # Inheritance

@@ -110,15 +110,47 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
 
 
 def _new_dict_filter(cls):
-    filters = cls.get_filters(is_instance=True, include_metaclasses=False)
+    def get_manager_name(filters):
+        for f in filters:
+            names = f.get('objects')
+            if not names:
+                continue
+
+            # Found a match. Either the model has a custom manager, or we're
+            # now in django.db.models.Model. If the latter we need to use
+            # `_create_manager_for` because the manager we get from the
+            # stubs doesn't work right.
+
+            name = names[0]  # The first name should be good enough.
+
+            parent = name.get_defining_qualified_value()
+            if parent.py__name__() == 'Model':
+
+                django_models_model, = cls.inference_state.import_module(
+                    ('django', 'db', 'models', 'base'),
+                ).py__getattribute__('Model')
+                if django_models_model == parent:
+                    # Don't want to use the value from the Django stubs, but
+                    # we have found the point where they'd take precedence.
+                    break
+
+            return name
+
+        manager = _create_manager_for(cls)
+        if manager:
+            return manager.name
+
+    filters = list(cls.get_filters(is_instance=True, include_metaclasses=False))
     dct = {
         name.string_name: DjangoModelName(cls, name)
-        for filter_ in reversed(list(filters))
+        for filter_ in reversed(filters)
         for name in filter_.values()
     }
-    manager = _create_manager_for(cls)
-    if manager:
-        dct['objects'] = manager.name
+
+    manager_name = get_manager_name(filters)
+    if manager_name:
+        dct['objects'] = manager_name
+
     return DictFilter(dct)
 
 
