@@ -126,3 +126,19 @@ for p in typed_bound_generic_passthrough(untyped_list_str):
 for q in typed_bound_generic_passthrough(typed_list_str):
     #? str()
     q
+
+
+class CustomList(List):
+    def get_first(self):
+        return self[0]
+
+
+#? str()
+CustomList[str]()[0]
+#? str()
+CustomList[str]().get_first()
+
+#? str()
+typed_fully_generic_passthrough(CustomList[str]())[0]
+#?
+typed_list_generic_passthrough(CustomList[str])[0]
