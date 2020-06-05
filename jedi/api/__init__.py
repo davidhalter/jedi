@@ -513,6 +513,8 @@ class Script(object):
         """
 
         def _references(include_builtins=True, scope='project'):
+            if scope not in ('project', 'file'):
+                raise ValueError('Only the scopes "file" and "project" are allowed')
             tree_name = self._module_node.get_name_of_position((line, column))
             if tree_name is None:
                 # Must be syntax
