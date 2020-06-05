@@ -256,7 +256,6 @@ class Completion:
                             allowed_transitions.append('else')
 
         completion_names = []
-        current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
 
         kwargs_only = False
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
@@ -315,6 +314,7 @@ class Completion:
                     completion_names += self._complete_inherited(is_function=False)
 
         if not kwargs_only:
+            current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
             completion_names += self._complete_keywords(
                 allowed_transitions,
                 only_values=not (not current_line or current_line[-1] in ' \t.;'
@@ -456,7 +456,7 @@ class Completion:
         relevant_code_lines = list(iter_relevant_lines(code_lines))
         if relevant_code_lines[-1] is not None:
             # Some code lines might be None, therefore get rid of that.
-            relevant_code_lines = [c or '\n' for c in relevant_code_lines]
+            relevant_code_lines = ['\n' if c is None else c for c in relevant_code_lines]
             return self._complete_code_lines(relevant_code_lines)
         match = re.search(r'`([^`\s]+)', code_lines[-1])
         if match:

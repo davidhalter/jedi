@@ -445,3 +445,20 @@ def test_doctest_result_completion(Script):
     c1, c2 = Script(code).complete(line=5)
     assert c1.complete == 'ng'
     assert c2.complete == 'ng_else'
+
+
+def test_doctest_function_start(Script):
+    code = dedent('''\
+        def test(a, b):
+            """
+            From GH #1585
+
+            >>> a = {}
+            >>> b = {}
+            >>> get_remainder(a, b) == {
+            ...     "foo": 10, "bar": 7
+            ... }
+            """
+            return
+    ''')
+    assert Script(code).complete(7, 8)
