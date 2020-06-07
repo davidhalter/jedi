@@ -395,7 +395,7 @@ class PropertyObject(AttributeOverwrite, ValueWrapper):
 
     def py__get__(self, instance, class_value):
         if instance is None:
-            return NO_VALUES
+            return ValueSet([self])
         return self._function.execute_with_values(instance)
 
     @publish_method('deleter')
@@ -518,6 +518,8 @@ class PartialObject(ValueWrapper):
 
 class PartialMethodObject(PartialObject):
     def py__get__(self, instance, class_value):
+        if instance is None:
+            return ValueSet([self])
         return ValueSet([PartialObject(self._actual_value, self._arguments, instance)])
 
 
