@@ -189,7 +189,8 @@ class ClassMixin(object):
                             mro.append(cls_new)
                             yield cls_new
 
-    def get_filters(self, origin_scope=None, is_instance=False, include_metaclasses=True):
+    def get_filters(self, origin_scope=None, is_instance=False,
+                    include_metaclasses=True, include_type_when_class=True):
         if include_metaclasses:
             metaclasses = self.get_metaclasses()
             if metaclasses:
@@ -206,7 +207,7 @@ class ClassMixin(object):
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )
-        if not is_instance:
+        if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
             type_ = builtin_from_name(self.inference_state, u'type')
             assert isinstance(type_, ClassValue)

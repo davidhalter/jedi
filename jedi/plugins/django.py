@@ -154,7 +154,11 @@ def _new_dict_filter(cls, is_instance):
         if manager:
             return manager.name
 
-    filters = list(cls.get_filters(is_instance=True, include_metaclasses=False))
+    filters = list(cls.get_filters(
+        is_instance=is_instance,
+        include_metaclasses=False,
+        include_type_when_class=False)
+    )
     dct = {
         name.string_name: DjangoModelName(cls, name, is_instance)
         for filter_ in reversed(filters)
