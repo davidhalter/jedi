@@ -271,6 +271,22 @@ class ClassMixin(object):
                         return True
         return False
 
+    def py__getitem__(self, index_value_set, contextualized_node):
+        from jedi.inference.gradual.base import GenericClass
+        if not index_value_set:
+            debug.warning('Class indexes inferred to nothing. Returning class instead')
+            return ValueSet([self])
+        return ValueSet(
+            GenericClass(
+                self,
+                LazyGenericManager(
+                    context_of_index=contextualized_node.context,
+                    index_value=index_value,
+                )
+            )
+            for index_value in index_value_set
+        )
+
     def with_generics(self, generics_tuple):
         from jedi.inference.gradual.base import GenericClass
         return GenericClass(
@@ -344,22 +360,6 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         return [LazyKnownValues(
             self.inference_state.builtins_module.py__getattribute__('object')
         )]
-
-    def py__getitem__(self, index_value_set, contextualized_node):
-        from jedi.inference.gradual.base import GenericClass
-        if not index_value_set:
-            debug.warning('Class indexes inferred to nothing. Returning class instead')
-            return ValueSet([self])
-        return ValueSet(
-            GenericClass(
-                self,
-                LazyGenericManager(
-                    context_of_index=contextualized_node.context,
-                    index_value=index_value,
-                )
-            )
-            for index_value in index_value_set
-        )
 
     @plugin_manager.decorate()
     def get_metaclass_filters(self, metaclass, is_instance):
