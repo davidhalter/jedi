@@ -193,7 +193,7 @@ class ClassMixin(object):
         if include_metaclasses:
             metaclasses = self.get_metaclasses()
             if metaclasses:
-                for f in self.get_metaclass_filters(metaclasses):
+                for f in self.get_metaclass_filters(metaclasses, is_instance):
                     yield f
 
         for cls in self.py__mro__():
@@ -361,8 +361,8 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         return ValueSet({self})
 
     @plugin_manager.decorate()
-    def get_metaclass_filters(self, metaclass):
-        debug.dbg('Unprocessed metaclass %s', metaclass)
+    def get_metaclass_filters(self, metaclass, is_instance):
+        debug.warning('Unprocessed metaclass %s', metaclass)
         return []
 
     @inference_state_method_cache(default=NO_VALUES)

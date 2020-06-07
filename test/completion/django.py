@@ -4,6 +4,7 @@ import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.query_utils import DeferredAttribute
 
 
 class TagManager(models.Manager):
@@ -58,12 +59,20 @@ class BusinessModel(models.Model):
 
     unidentifiable = NOT_FOUND
 
+    #? models.IntegerField()
+    integer_field
+
     def method(self):
         return 42
 
 # -----------------
 # Model attribute inference
 # -----------------
+
+#? DeferredAttribute()
+BusinessModel.integer_field
+#? DeferredAttribute()
+BusinessModel.tags_m2m
 
 model_instance = BusinessModel()
 

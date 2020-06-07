@@ -32,11 +32,20 @@ mapping = {
 }
 
 
-def _infer_scalar_field(inference_state, field_name, field_tree_instance):
+def _get_deferred_attributes(inference_state):
+    return inference_state.import_module(
+        ('django', 'db', 'models', 'query_utils')
+    ).py__getattribute__('DeferredAttribute').execute_annotation()
+
+
+def _infer_scalar_field(inference_state, field_name, field_tree_instance, is_instance):
     try:
         module_name, attribute_name = mapping[field_tree_instance.py__name__()]
     except KeyError:
         return None
+
+    if not is_instance:
+        return _get_deferred_attributes(inference_state)
 
     if module_name is None:
         module = inference_state.builtins_module
@@ -65,16 +74,20 @@ def _get_foreign_key_values(cls, field_tree_instance):
                     yield value
 
 
-def _infer_field(cls, field_name):
+def _infer_field(cls, field_name, is_instance):
     inference_state = cls.inference_state
     for field_tree_instance in field_name.infer():
-        scalar_field = _infer_scalar_field(inference_state, field_name, field_tree_instance)
+        scalar_field = _infer_scalar_field(
+            inference_state, field_name, field_tree_instance, is_instance)
         if scalar_field is not None:
             return scalar_field
 
         name = field_tree_instance.py__name__()
         is_many_to_many = name == 'ManyToManyField'
         if name in ('ForeignKey', 'OneToOneField') or is_many_to_many:
+            if not is_instance:
+                return _get_deferred_attributes(inference_state)
+
             values = _get_foreign_key_values(cls, field_tree_instance)
             if is_many_to_many:
                 return ValueSet(filter(None, [
@@ -89,12 +102,13 @@ def _infer_field(cls, field_name):
 
 
 class DjangoModelName(NameWrapper):
-    def __init__(self, cls, name):
+    def __init__(self, cls, name, is_instance):
         super(DjangoModelName, self).__init__(name)
         self._cls = cls
+        self._is_instance = is_instance
 
     def infer(self):
-        return _infer_field(self._cls, self._wrapped_name)
+        return _infer_field(self._cls, self._wrapped_name, self._is_instance)
 
 
 def _create_manager_for(cls, manager_cls='BaseManager'):
@@ -109,7 +123,7 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
     return None
 
 
-def _new_dict_filter(cls):
+def _new_dict_filter(cls, is_instance):
     def get_manager_name(filters):
         for f in filters:
             names = f.get('objects')
@@ -142,7 +156,7 @@ def _new_dict_filter(cls):
 
     filters = list(cls.get_filters(is_instance=True, include_metaclasses=False))
     dct = {
-        name.string_name: DjangoModelName(cls, name)
+        name.string_name: DjangoModelName(cls, name, is_instance)
         for filter_ in reversed(filters)
         for name in filter_.values()
     }
@@ -155,11 +169,11 @@ def _new_dict_filter(cls):
 
 
 def get_metaclass_filters(func):
-    def wrapper(cls, metaclasses):
+    def wrapper(cls, metaclasses, is_instance):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'ModelBase' \
                     and metaclass.get_root_context().py__name__() == 'django.db.models.base':
-                return [_new_dict_filter(cls)]
+                return [_new_dict_filter(cls, is_instance)]
 
-        return func(cls, metaclasses)
+        return func(cls, metaclasses, is_instance)
     return wrapper

@@ -801,7 +801,7 @@ _implemented = {
 
 
 def get_metaclass_filters(func):
-    def wrapper(cls, metaclasses):
+    def wrapper(cls, metaclasses, is_instance):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
@@ -809,7 +809,7 @@ def get_metaclass_filters(func):
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]
-        return func(cls, metaclasses)
+        return func(cls, metaclasses, is_instance)
     return wrapper
 
 
