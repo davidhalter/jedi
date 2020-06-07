@@ -203,7 +203,7 @@ class _TypingClassMixin(ClassMixin):
         return ValueName(self, self._tree_name)
 
 
-class TypingClassWithGenerics(_TypingClassMixin, ProxyWithGenerics):
+class TypingClassWithGenerics(ProxyWithGenerics, _TypingClassMixin):
     def infer_type_vars(self, value_set):
         type_var_dict = {}
         annotation_generics = self.get_generics()
@@ -240,7 +240,7 @@ class TypingClassWithGenerics(_TypingClassMixin, ProxyWithGenerics):
         )
 
 
-class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
+class ProxyTypingClassValue(ProxyTypingValue, _TypingClassMixin):
     index_class = TypingClassWithGenerics
 
 

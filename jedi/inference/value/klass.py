@@ -271,6 +271,36 @@ class ClassMixin(object):
                         return True
         return False
 
+    def with_generics(self, generics_tuple):
+        from jedi.inference.gradual.base import GenericClass
+        return GenericClass(
+            self,
+            TupleGenericManager(generics_tuple)
+        )
+
+    def define_generics(self, type_var_dict):
+        from jedi.inference.gradual.base import GenericClass
+
+        def remap_type_vars():
+            """
+            The TypeVars in the resulting classes have sometimes different names
+            and we need to check for that, e.g. a signature can be:
+
+            def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+            However, the iterator is defined as Iterator[_T_co], which means it has
+            a different type var name.
+            """
+            for type_var in self.list_type_vars():
+                yield type_var_dict.get(type_var.py__name__(), NO_VALUES)
+
+        if type_var_dict:
+            return ValueSet([GenericClass(
+                self,
+                TupleGenericManager(tuple(remap_type_vars()))
+            )])
+        return ValueSet({self})
+
 
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'
@@ -330,36 +360,6 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             )
             for index_value in index_value_set
         )
-
-    def with_generics(self, generics_tuple):
-        from jedi.inference.gradual.base import GenericClass
-        return GenericClass(
-            self,
-            TupleGenericManager(generics_tuple)
-        )
-
-    def define_generics(self, type_var_dict):
-        from jedi.inference.gradual.base import GenericClass
-
-        def remap_type_vars():
-            """
-            The TypeVars in the resulting classes have sometimes different names
-            and we need to check for that, e.g. a signature can be:
-
-            def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
-
-            However, the iterator is defined as Iterator[_T_co], which means it has
-            a different type var name.
-            """
-            for type_var in self.list_type_vars():
-                yield type_var_dict.get(type_var.py__name__(), NO_VALUES)
-
-        if type_var_dict:
-            return ValueSet([GenericClass(
-                self,
-                TupleGenericManager(tuple(remap_type_vars()))
-            )])
-        return ValueSet({self})
 
     @plugin_manager.decorate()
     def get_metaclass_filters(self, metaclass, is_instance):

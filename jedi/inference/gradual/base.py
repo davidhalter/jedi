@@ -151,7 +151,7 @@ class DefineGenericBaseClass(LazyValueWrapper):
         )
 
 
-class GenericClass(ClassMixin, DefineGenericBaseClass):
+class GenericClass(DefineGenericBaseClass, ClassMixin):
     """
     A class that is defined with generics, might be something simple like:
 
