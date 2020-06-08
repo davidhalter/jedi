@@ -58,13 +58,13 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
         return True
 
     @publish_method('__iter__')
-    def py__iter__(self, contextualized_node=None):
+    def _iter(self, arguments):
         return ValueSet([self])
 
     @publish_method('send')
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
-    def py__next__(self):
+    def py__next__(self, arguments):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
 
     def py__stop_iteration_returns(self):
@@ -290,12 +290,12 @@ class DictComprehension(ComprehensionMixin, Sequence, _DictKeyMixin):
         return ValueSet.from_sets(values for keys, values in self._iterate())
 
     @publish_method('values')
-    def _imitate_values(self):
+    def _imitate_values(self, arguments):
         lazy_value = LazyKnownValues(self._dict_values())
         return ValueSet([FakeList(self.inference_state, [lazy_value])])
 
     @publish_method('items')
-    def _imitate_items(self):
+    def _imitate_items(self, arguments):
         lazy_values = [
             LazyKnownValue(
                 FakeTuple(
@@ -457,12 +457,12 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
             yield LazyKnownValues(types)
 
     @publish_method('values')
-    def _imitate_values(self):
+    def _imitate_values(self, arguments):
         lazy_value = LazyKnownValues(self._dict_values())
         return ValueSet([FakeList(self.inference_state, [lazy_value])])
 
     @publish_method('items')
-    def _imitate_items(self):
+    def _imitate_items(self, arguments):
         lazy_values = [
             LazyKnownValue(FakeTuple(
                 self.inference_state,
@@ -552,7 +552,7 @@ class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
         return lazy_value.infer()
 
     @publish_method('values')
-    def _values(self):
+    def _values(self, arguments):
         return ValueSet([FakeTuple(
             self.inference_state,
             [LazyKnownValues(self._dict_values())]

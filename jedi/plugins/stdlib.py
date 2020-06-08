@@ -260,13 +260,12 @@ class ReversedObject(AttributeOverwrite):
         super(ReversedObject, self).__init__(reversed_obj)
         self._iter_list = iter_list
 
-    @publish_method('__iter__')
-    def py__iter__(self, contextualized_node=None):
+    def py__iter__(self, contextualized_node):
         return self._iter_list
 
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
-    def py__next__(self):
+    def py__next__(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )
@@ -401,7 +400,7 @@ class PropertyObject(AttributeOverwrite, ValueWrapper):
     @publish_method('deleter')
     @publish_method('getter')
     @publish_method('setter')
-    def _return_self(self):
+    def _return_self(self, arguments):
         return ValueSet({self})
 
 
