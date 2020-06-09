@@ -114,8 +114,6 @@ class ClassFilter(ParserTreeFilter):
             if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
                 annassign = expr_stmt.children[1]
                 if annassign.type == 'annassign':
-                    # TODO this is not proper matching
-
                     # If there is an =, the variable is obviously also
                     # defined on the class.
                     if 'ClassVar' not in annassign.children[1].get_code() \
@@ -138,7 +136,7 @@ class ClassMixin(object):
     def is_class_mixin(self):
         return True
 
-    def py__call__(self, arguments=None):
+    def py__call__(self, arguments):
         from jedi.inference.value import TreeInstance
 
         from jedi.inference.gradual.typing import TypedDict
@@ -195,7 +193,7 @@ class ClassMixin(object):
             metaclasses = self.get_metaclasses()
             if metaclasses:
                 for f in self.get_metaclass_filters(metaclasses, is_instance):
-                    yield f
+                    yield f  # Python 2..
 
         for cls in self.py__mro__():
             if cls.is_compiled():
@@ -203,7 +201,7 @@ class ClassMixin(object):
                     yield filter
             else:
                 yield ClassFilter(
-                    self, node_context=cls.as_context(),
+                    cls, node_context=self.as_context(),
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )

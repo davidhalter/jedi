@@ -288,6 +288,11 @@ class _BaseTreeInstance(AbstractInstanceValue):
         """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
+        for cls in self.class_value.py__mro__():
+            result = cls.py__get__on_class(self, instance, class_value)
+            if result is not NotImplemented:
+                return result
+
         names = self.get_function_slot_names(u'__get__')
         if names:
             if instance is None:

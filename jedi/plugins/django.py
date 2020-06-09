@@ -2,12 +2,15 @@
 Module is used to infer Django model fields.
 """
 from jedi import debug
-from jedi.inference.base_value import ValueSet, iterator_to_value_set
-from jedi.inference.filters import ParserTreeFilter, DictFilter
+from jedi.inference.base_value import ValueSet, iterator_to_value_set, ValueWrapper
+from jedi.inference.filters import DictFilter, AttributeOverwrite, publish_method
 from jedi.inference.names import NameWrapper
+from jedi.inference.compiled.value import EmptyCompiledName
 from jedi.inference.value.instance import TreeInstance
+from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
+from jedi.inference.arguments import repack_with_argument_clinic
 
 
 mapping = {
@@ -124,36 +127,6 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
 
 
 def _new_dict_filter(cls, is_instance):
-    def get_manager_name(filters):
-        for f in filters:
-            names = f.get('objects')
-            if not names:
-                continue
-
-            # Found a match. Either the model has a custom manager, or we're
-            # now in django.db.models.Model. If the latter we need to use
-            # `_create_manager_for` because the manager we get from the
-            # stubs doesn't work right.
-
-            name = names[0]  # The first name should be good enough.
-
-            parent = name.get_defining_qualified_value()
-            if parent.py__name__() == 'Model':
-
-                django_models_model, = cls.inference_state.import_module(
-                    ('django', 'db', 'models', 'base'),
-                ).py__getattribute__('Model')
-                if django_models_model == parent:
-                    # Don't want to use the value from the Django stubs, but
-                    # we have found the point where they'd take precedence.
-                    break
-
-            return name
-
-        manager = _create_manager_for(cls)
-        if manager:
-            return manager.name
-
     filters = list(cls.get_filters(
         is_instance=is_instance,
         include_metaclasses=False,
@@ -164,10 +137,14 @@ def _new_dict_filter(cls, is_instance):
         for filter_ in reversed(filters)
         for name in filter_.values()
     }
-
-    manager_name = get_manager_name(filters)
-    if manager_name:
-        dct['objects'] = manager_name
+    if is_instance:
+        # Replace the objects with a name that amounts to nothing when accessed
+        # in an instance. This is not perfect and still completes "objects" in
+        # that case, but it at least not inferes stuff like `.objects.filter`.
+        # It would be nicer to do that in a better way, so that it also doesn't
+        # show up in completions, but it's probably just not worth doing that
+        # for the extra amount of work.
+        dct['objects'] = EmptyCompiledName(cls.inference_state, 'objects')
 
     return DictFilter(dct)
 
@@ -180,4 +157,33 @@ def get_metaclass_filters(func):
                 return [_new_dict_filter(cls, is_instance)]
 
         return func(cls, metaclasses, is_instance)
+    return wrapper
+
+
+class ManagerWrapper(ValueWrapper):
+    def py__getitem__(self, index_value_set, contextualized_node):
+        return ValueSet(
+            GenericManagerWrapper(generic)
+            for generic in self._wrapped_value.py__getitem__(
+                index_value_set, contextualized_node)
+        )
+
+
+class GenericManagerWrapper(AttributeOverwrite, ClassMixin):
+    def py__get__on_class(self, calling_instance, instance, class_value):
+        return calling_instance.class_value.with_generics(
+            (ValueSet({class_value}),)
+        ).py__call__(calling_instance._arguments)
+
+    def with_generics(self, generics_tuple):
+        return self._wrapped_value.with_generics(generics_tuple)
+
+
+def tree_name_to_values(func):
+    def wrapper(inference_state, context, tree_name):
+        result = func(inference_state, context, tree_name)
+        if tree_name.value == 'BaseManager' and context.is_module() \
+                and context.py__name__() == 'django.db.models.manager':
+            return ValueSet(ManagerWrapper(r) for r in result)
+        return result
     return wrapper

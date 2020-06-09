@@ -200,6 +200,9 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
             return True
         return self._class_value.is_sub_class_of(class_value)
 
+    def with_generics(self, generics_tuple):
+        return self._class_value.with_generics(generics_tuple)
+
     def infer_type_vars(self, value_set):
         # Circular
         from jedi.inference.gradual.annotation import merge_pairwise_generics, merge_type_var_dicts
@@ -286,6 +289,9 @@ class _LazyGenericBaseClass(object):
                     # case just add it to the value set.
                     new |= ValueSet([type_var])
             yield new
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._lazy_base_class)
 
 
 class _GenericInstanceWrapper(ValueWrapper):

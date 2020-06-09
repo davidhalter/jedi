@@ -162,16 +162,22 @@ model_instance.method
 # Queries
 # -----------------
 
-#? models.query.QuerySet.filter
+#? ['objects']
+model_instance.object
+#?
+model_instance.objects
+#?
 model_instance.objects.filter
+#? models.query.QuerySet.filter
+BusinessModel.objects.filter
 #? BusinessModel() None
-model_instance.objects.filter().first()
+BusinessModel.objects.filter().first()
 #? str()
-model_instance.objects.get().char_field
+BusinessModel.objects.get().char_field
 #? int()
-model_instance.objects.update(x='')
+BusinessModel.objects.update(x='')
 #? BusinessModel()
-model_instance.objects.create()
+BusinessModel.objects.create()
 
 # -----------------
 # Custom object manager
@@ -179,9 +185,13 @@ model_instance.objects.create()
 
 #? TagManager()
 Tag.objects
+#? Tag() None
+Tag.objects.filter().first()
 
 #? TagManager()
 Tag.custom_objects
+#? Tag() None
+Tag.custom_objects.filter().first()
 
 # -----------------
 # Inheritance
@@ -199,14 +209,27 @@ inherited.char_field
 #? float()
 inherited.new_field
 
+#?
+Inherited.category_fk2.category_name
 #? str()
 inherited.category_fk2.category_name
 #? str()
-inherited.objects.get().char_field
+Inherited.objects.get().char_field
 #? int()
-inherited.objects.get().text_field
+Inherited.objects.get().text_field
 #? float()
-inherited.objects.get().new_field
+Inherited.objects.get().new_field
+
+# -----------------
+# Model methods
+# -----------------
+
+#? ['from_db']
+Inherited.from_db
+#? ['validate_unique']
+Inherited.validate_uniqu
+#? ['validate_unique']
+Inherited().validate_unique
 
 # -----------------
 # Django Auth
@@ -222,8 +245,8 @@ User.objects.get().email
 # -----------------
 
 #?
-model_instance.objects.values_list('char_field')[0]
+BusinessModel.objects.values_list('char_field')[0]
 #? dict()
-model_instance.objects.values('char_field')[0]
+BusinessModel.objects.values('char_field')[0]
 #?
-model_instance.objects.values('char_field')[0]['char_field']
+BusinessModel.objects.values('char_field')[0]['char_field']
