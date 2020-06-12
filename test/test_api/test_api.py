@@ -134,8 +134,19 @@ def test_infer_on_non_name(Script):
     assert Script('import x').infer(column=0) == []
 
 
-def test_infer_on_generator(Script):
-    def_, = Script('def x(): yield 1\ny=x()\ny').infer()
+def test_infer_on_generator(Script, environment):
+    script = Script('def x(): yield 1\ny=x()\ny')
+    def_, = script.infer()
+    if environment.version_info >= (3, 9):
+        # The Generator in Python 3.9 is properly inferred, however once it is
+        # converted from stub to Python, the definition is
+        # Generator = _SpecialGenericAlias(collections.abc.Generator, 3)
+        # This is pretty normal for most typing types, like Sequence, List,
+        # etc.
+        assert def_.name == '_SpecialGenericAlias'
+    else:
+        assert def_.name == 'Generator'
+    def_, = script.infer(only_stubs=True)
     assert def_.name == 'Generator'
 
 
