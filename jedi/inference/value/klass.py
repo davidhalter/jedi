@@ -201,7 +201,7 @@ class ClassMixin(object):
                     yield filter
             else:
                 yield ClassFilter(
-                    cls, node_context=self.as_context(),
+                    self, node_context=cls.as_context(),
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )
