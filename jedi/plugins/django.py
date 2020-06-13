@@ -13,6 +13,7 @@ from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
 from jedi.inference.signature import AbstractSignature
+from jedi.inference.value.function import FunctionMixin
 
 
 mapping = {
@@ -171,6 +172,17 @@ def get_metaclass_filters(func):
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
         result = func(inference_state, context, tree_name)
+        if tree_name.value in ('create', 'filter', 'exclude', 'update', 'get',
+                               'get_or_create', 'update_or_create'):
+            for v in result:
+                if v.get_qualified_names() == ('_BaseQuerySet', tree_name.value) \
+                        and v.parent_context.is_module() \
+                        and v.parent_context.py__name__() == 'django.db.models.query':
+                    qs = context.get_value()
+                    generics = qs.get_generics()
+                    if len(generics) >= 1:
+                        return ValueSet(QuerySetMethodWrapper(v, model)
+                                        for model in generics[0])
         if tree_name.value == 'BaseManager' and context.is_module() \
                 and context.py__name__() == 'django.db.models.manager':
             return ValueSet(ManagerWrapper(r) for r in result)
@@ -257,3 +269,22 @@ class DjangoParamName(BaseTreeParamName):
 
     def infer(self):
         return self._field_name.infer()
+
+
+class QuerySetMethodWrapper(ValueWrapper):
+    def __init__(self, method, model_cls):
+        super(QuerySetMethodWrapper, self).__init__(method)
+        self._model_cls = model_cls
+
+    def py__get__(self, instance, class_value):
+        return ValueSet({QuerySetBoundMethodWrapper(v, self._model_cls)
+                         for v in self._wrapped_value.py__get__(instance, class_value)})
+
+
+class QuerySetBoundMethodWrapper(ValueWrapper):
+    def __init__(self, method, model_cls):
+        super(QuerySetBoundMethodWrapper, self).__init__(method)
+        self._model_cls = model_cls
+
+    def get_signatures(self):
+        return _get_signatures(self._model_cls)

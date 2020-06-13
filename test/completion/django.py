@@ -273,3 +273,20 @@ Inherited(category_fk)
 Inherited(attached_o2)
 #? 18 ['tags_m2m=']
 Inherited(tags_m2m)
+
+#? 32 ['tags_m2m=']
+Inherited.objects.create(tags_m2)
+#? 32 ['tags_m2m=']
+Inherited.objects.filter(tags_m2)
+#? 35 ['char_field=']
+Inherited.objects.exclude(char_fiel)
+#? 34 ['char_field=']
+Inherited.objects.update(char_fiel)
+#? 32 ['email_field=']
+Inherited.objects.get(email_fiel)
+#? 44 ['category_fk2=']
+Inherited.objects.get_or_create(category_fk2)
+#? 44 ['uuid_field=']
+Inherited.objects.update_or_create(uuid_fiel)
+#? 48 ['char_field=']
+Inherited.objects.exclude(pk=3).filter(char_fiel)
