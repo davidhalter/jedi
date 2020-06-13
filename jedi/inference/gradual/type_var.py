@@ -1,6 +1,6 @@
 from jedi._compatibility import unicode, force_unicode
 from jedi import debug
-from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES, ValueWrapper
 from jedi.inference.gradual.base import BaseTypingValue
 
 
@@ -108,8 +108,24 @@ class TypeVar(BaseTypingValue):
         return self._get_classes().execute_annotation()
 
     def infer_type_vars(self, value_set):
+        def iterate():
+            for v in value_set:
+                cls = v.py__class__()
+                if v.is_function() or v.is_class():
+                    cls = TypeWrapper(cls, v)
+                yield cls
+
         annotation_name = self.py__name__()
-        return {annotation_name: value_set.py__class__()}
+        return {annotation_name: ValueSet(iterate())}
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.py__name__())
+
+
+class TypeWrapper(ValueWrapper):
+    def __init__(self, wrapped_value, original_value):
+        super().__init__(wrapped_value)
+        self._original_value = original_value
+
+    def execute_annotation(self):
+        return ValueSet({self._original_value})
