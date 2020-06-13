@@ -1,16 +1,18 @@
 """
 Module is used to infer Django model fields.
 """
+from jedi._compatibility import Parameter
 from jedi import debug
+from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, ValueWrapper
-from jedi.inference.filters import DictFilter, AttributeOverwrite, publish_method
-from jedi.inference.names import NameWrapper
+from jedi.inference.filters import DictFilter, AttributeOverwrite
+from jedi.inference.names import NameWrapper, BaseTreeParamName
 from jedi.inference.compiled.value import EmptyCompiledName
 from jedi.inference.value.instance import TreeInstance
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
-from jedi.inference.arguments import repack_with_argument_clinic
+from jedi.inference.signature import AbstractSignature
 
 
 mapping = {
@@ -35,6 +37,7 @@ mapping = {
 }
 
 
+@inference_state_function_cache()
 def _get_deferred_attributes(inference_state):
     return inference_state.import_module(
         ('django', 'db', 'models', 'query_utils')
@@ -150,14 +153,53 @@ def _new_dict_filter(cls, is_instance):
     return DictFilter(dct)
 
 
+def is_django_model_base(value):
+    return value.py__name__() == 'ModelBase' \
+        and value.get_root_context().py__name__() == 'django.db.models.base'
+
+
 def get_metaclass_filters(func):
     def wrapper(cls, metaclasses, is_instance):
         for metaclass in metaclasses:
-            if metaclass.py__name__() == 'ModelBase' \
-                    and metaclass.get_root_context().py__name__() == 'django.db.models.base':
+            if is_django_model_base(metaclass):
                 return [_new_dict_filter(cls, is_instance)]
 
         return func(cls, metaclasses, is_instance)
+    return wrapper
+
+
+def tree_name_to_values(func):
+    def wrapper(inference_state, context, tree_name):
+        result = func(inference_state, context, tree_name)
+        if tree_name.value == 'BaseManager' and context.is_module() \
+                and context.py__name__() == 'django.db.models.manager':
+            return ValueSet(ManagerWrapper(r) for r in result)
+
+        if tree_name.value == 'Field' and context.is_module() \
+                and context.py__name__() == 'django.db.models.fields':
+            return ValueSet(FieldWrapper(r) for r in result)
+        return result
+    return wrapper
+
+
+def _find_fields(cls):
+    for name in _new_dict_filter(cls, is_instance=False).values():
+        for value in name.infer():
+            if value.name.get_qualified_names(include_module_names=True) \
+                    == ('django', 'db', 'models', 'query_utils', 'DeferredAttribute'):
+                yield name
+
+
+def _get_signatures(cls):
+    return [DjangoModelSignature(cls, field_names=list(_find_fields(cls)))]
+
+
+def get_metaclass_signatures(func):
+    def wrapper(cls, metaclasses):
+        for metaclass in metaclasses:
+            if is_django_model_base(metaclass):
+                return _get_signatures(cls)
+        return func(cls, metaclass)
     return wrapper
 
 
@@ -180,11 +222,38 @@ class GenericManagerWrapper(AttributeOverwrite, ClassMixin):
         return self._wrapped_value.with_generics(generics_tuple)
 
 
-def tree_name_to_values(func):
-    def wrapper(inference_state, context, tree_name):
-        result = func(inference_state, context, tree_name)
-        if tree_name.value == 'BaseManager' and context.is_module() \
-                and context.py__name__() == 'django.db.models.manager':
-            return ValueSet(ManagerWrapper(r) for r in result)
-        return result
-    return wrapper
+class FieldWrapper(ValueWrapper):
+    def py__getitem__(self, index_value_set, contextualized_node):
+        return ValueSet(
+            GenericFieldWrapper(generic)
+            for generic in self._wrapped_value.py__getitem__(
+                index_value_set, contextualized_node)
+        )
+
+
+class GenericFieldWrapper(AttributeOverwrite, ClassMixin):
+    def py__get__on_class(self, calling_instance, instance, class_value):
+        # This is mostly an optimization to avoid Jedi aborting inference,
+        # because of too many function executions of Field.__get__.
+        return ValueSet({calling_instance})
+
+
+class DjangoModelSignature(AbstractSignature):
+    def __init__(self, value, field_names):
+        super(DjangoModelSignature, self).__init__(value)
+        self._field_names = field_names
+
+    def get_param_names(self, resolve_stars=False):
+        return [DjangoParamName(name) for name in self._field_names]
+
+
+class DjangoParamName(BaseTreeParamName):
+    def __init__(self, field_name):
+        super(DjangoParamName, self).__init__(field_name.parent_context, field_name.tree_name)
+        self._field_name = field_name
+
+    def get_kind(self):
+        return Parameter.KEYWORD_ONLY
+
+    def infer(self):
+        return self._field_name.infer()

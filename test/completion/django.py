@@ -73,6 +73,8 @@ class BusinessModel(models.Model):
 BusinessModel.integer_field
 #? DeferredAttribute()
 BusinessModel.tags_m2m
+#? DeferredAttribute()
+BusinessModel.email_field
 
 model_instance = BusinessModel()
 
@@ -250,3 +252,24 @@ BusinessModel.objects.values_list('char_field')[0]
 BusinessModel.objects.values('char_field')[0]
 #?
 BusinessModel.objects.values('char_field')[0]['char_field']
+
+# -----------------
+# Completion
+# -----------------
+
+#? 19 ['text_field=']
+Inherited(text_fiel)
+#? 18 ['new_field=']
+Inherited(new_fiel)
+#? 19 ['char_field=']
+Inherited(char_fiel)
+#? 19 ['email_field=']
+Inherited(email_fie)
+#? 19 []
+Inherited(unidentif)
+#? 21 ['category_fk=', 'category_fk2=', 'category_fk3=', 'category_fk4=', 'category_fk5=']
+Inherited(category_fk)
+#? 21 ['attached_o2o=']
+Inherited(attached_o2)
+#? 18 ['tags_m2m=']
+Inherited(tags_m2m)

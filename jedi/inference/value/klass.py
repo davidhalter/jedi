@@ -227,6 +227,11 @@ class ClassMixin(object):
         # Since calling staticmethod without a function is illegal, the Jedi
         # plugin doesn't return anything. Therefore call directly and get what
         # we want: An instance of staticmethod.
+        metaclasses = self.get_metaclasses()
+        if metaclasses:
+            sigs = self.get_metaclass_signatures(metaclasses)
+            if sigs:
+                return sigs
         args = ValuesArguments([])
         init_funcs = self.py__call__(args).py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
@@ -360,8 +365,8 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         )]
 
     @plugin_manager.decorate()
-    def get_metaclass_filters(self, metaclass, is_instance):
-        debug.warning('Unprocessed metaclass %s', metaclass)
+    def get_metaclass_filters(self, metaclasses, is_instance):
+        debug.warning('Unprocessed metaclass %s', metaclasses)
         return []
 
     @inference_state_method_cache(default=NO_VALUES)
@@ -381,3 +386,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                     if values:
                         return values
         return NO_VALUES
+
+    @plugin_manager.decorate()
+    def get_metaclass_signatures(self, metaclasses):
+        return []
