@@ -79,7 +79,8 @@ def _get_foreign_key_values(cls, field_tree_instance):
 
 def _infer_field(cls, field_name, is_instance):
     inference_state = cls.inference_state
-    for field_tree_instance in field_name.infer():
+    result = field_name.infer()
+    for field_tree_instance in result:
         scalar_field = _infer_scalar_field(
             inference_state, field_name, field_tree_instance, is_instance)
         if scalar_field is not None:
@@ -101,7 +102,7 @@ def _infer_field(cls, field_name, is_instance):
 
     debug.dbg('django plugin: fail to infer `%s` from class `%s`',
               field_name.string_name, cls.py__name__())
-    return field_name.infer()
+    return result
 
 
 class DjangoModelName(NameWrapper):
