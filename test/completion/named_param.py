@@ -66,6 +66,10 @@ def foo(xyz):
     pass
 
 #? 7 ['xyz=']
+@foo(xy)
+def x(): pass
+
+#? 7 ['xyz=']
 foo(xyz)
 # No completion should be possible if it's not a simple name
 #? 17 []

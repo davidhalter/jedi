@@ -402,7 +402,7 @@ def get_signature_details(module, position):
     # parents for possible function definitions.
     node = leaf.parent
     while node is not None:
-        if node.type in ('funcdef', 'classdef'):
+        if node.type in ('funcdef', 'classdef', 'decorated', 'async_stmt'):
             # Don't show signatures if there's stuff before it that just
             # makes it feel strange to have a signature.
             return None
@@ -422,7 +422,8 @@ def get_signature_details(module, position):
                 additional_children.insert(0, n)
 
         # Find a valid trailer
-        if node.type == 'trailer' and node.children[0] == '(':
+        if node.type == 'trailer' and node.children[0] == '(' \
+                or node.type == 'decorator' and node.children[2] == '(':
             # Additionally we have to check that an ending parenthesis isn't
             # interpreted wrong. There are two cases:
             # 1. Cursor before paren -> The current signature is good
@@ -431,7 +432,11 @@ def get_signature_details(module, position):
                 leaf = node.get_previous_leaf()
                 if leaf is None:
                     return None
-                return CallDetails(node.children[0], node.children, position)
+                return CallDetails(
+                    node.children[0] if node.type == 'trailer' else node.children[2],
+                    node.children,
+                    position
+                )
 
         node = node.parent
 
