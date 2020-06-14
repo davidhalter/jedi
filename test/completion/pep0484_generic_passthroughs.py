@@ -215,7 +215,7 @@ def decorator(fn: TCallable) -> TCallable:
     pass
 
 
-def will_be_decorated(var: complex) -> float:
+def will_be_decorated(the_param: complex) -> float:
     pass
 
 
@@ -223,3 +223,7 @@ is_decorated = decorator(will_be_decorated)
 
 #? will_be_decorated
 is_decorated
+
+#? ['the_param=']
+is_decorated(the_para
+)
