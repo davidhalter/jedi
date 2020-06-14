@@ -260,13 +260,12 @@ class ReversedObject(AttributeOverwrite):
         super(ReversedObject, self).__init__(reversed_obj)
         self._iter_list = iter_list
 
-    @publish_method('__iter__')
-    def py__iter__(self, contextualized_node=None):
+    def py__iter__(self, contextualized_node):
         return self._iter_list
 
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
-    def py__next__(self):
+    def py__next__(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )
@@ -395,13 +394,13 @@ class PropertyObject(AttributeOverwrite, ValueWrapper):
 
     def py__get__(self, instance, class_value):
         if instance is None:
-            return NO_VALUES
+            return ValueSet([self])
         return self._function.execute_with_values(instance)
 
     @publish_method('deleter')
     @publish_method('getter')
     @publish_method('setter')
-    def _return_self(self):
+    def _return_self(self, arguments):
         return ValueSet({self})
 
 
@@ -518,6 +517,8 @@ class PartialObject(ValueWrapper):
 
 class PartialMethodObject(PartialObject):
     def py__get__(self, instance, class_value):
+        if instance is None:
+            return ValueSet([self])
         return ValueSet([PartialObject(self._actual_value, self._arguments, instance)])
 
 
@@ -802,7 +803,7 @@ _implemented = {
 
 
 def get_metaclass_filters(func):
-    def wrapper(cls, metaclasses):
+    def wrapper(cls, metaclasses, is_instance):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
@@ -810,7 +811,7 @@ def get_metaclass_filters(func):
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]
-        return func(cls, metaclasses)
+        return func(cls, metaclasses, is_instance)
     return wrapper
 
 

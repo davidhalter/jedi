@@ -4,10 +4,20 @@ import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.query_utils import DeferredAttribute
+
+
+class TagManager(models.Manager):
+    def specially_filtered_tags(self):
+        return self.all()
 
 
 class Tag(models.Model):
     tag_name = models.CharField()
+
+    objects = TagManager()
+
+    custom_objects = TagManager()
 
 
 class Category(models.Model):
@@ -49,9 +59,22 @@ class BusinessModel(models.Model):
 
     unidentifiable = NOT_FOUND
 
+    #? models.IntegerField()
+    integer_field
+
+    def method(self):
+        return 42
+
 # -----------------
 # Model attribute inference
 # -----------------
+
+#? DeferredAttribute()
+BusinessModel.integer_field
+#? DeferredAttribute()
+BusinessModel.tags_m2m
+#? DeferredAttribute()
+BusinessModel.email_field
 
 model_instance = BusinessModel()
 
@@ -132,20 +155,45 @@ model_instance.unidentifiable
 #! ['unidentifiable = NOT_FOUND']
 model_instance.unidentifiable
 
+#? int()
+model_instance.method()
+#! ['def method']
+model_instance.method
+
 # -----------------
 # Queries
 # -----------------
 
-#? models.query.QuerySet.filter
+#? ['objects']
+model_instance.object
+#?
+model_instance.objects
+#?
 model_instance.objects.filter
+#? models.query.QuerySet.filter
+BusinessModel.objects.filter
 #? BusinessModel() None
-model_instance.objects.filter().first()
+BusinessModel.objects.filter().first()
 #? str()
-model_instance.objects.get().char_field
+BusinessModel.objects.get().char_field
 #? int()
-model_instance.objects.update(x='')
+BusinessModel.objects.update(x='')
 #? BusinessModel()
-model_instance.objects.create()
+BusinessModel.objects.create()
+
+# -----------------
+# Custom object manager
+# -----------------
+
+#? TagManager()
+Tag.objects
+#? Tag() None
+Tag.objects.filter().first()
+
+#? TagManager()
+Tag.custom_objects
+#? Tag() None
+Tag.custom_objects.filter().first()
 
 # -----------------
 # Inheritance
@@ -163,14 +211,27 @@ inherited.char_field
 #? float()
 inherited.new_field
 
+#?
+Inherited.category_fk2.category_name
 #? str()
 inherited.category_fk2.category_name
 #? str()
-inherited.objects.get().char_field
+Inherited.objects.get().char_field
 #? int()
-inherited.objects.get().text_field
+Inherited.objects.get().text_field
 #? float()
-inherited.objects.get().new_field
+Inherited.objects.get().new_field
+
+# -----------------
+# Model methods
+# -----------------
+
+#? ['from_db']
+Inherited.from_db
+#? ['validate_unique']
+Inherited.validate_uniqu
+#? ['validate_unique']
+Inherited().validate_unique
 
 # -----------------
 # Django Auth
@@ -186,8 +247,46 @@ User.objects.get().email
 # -----------------
 
 #?
-model_instance.objects.values_list('char_field')[0]
+BusinessModel.objects.values_list('char_field')[0]
 #? dict()
-model_instance.objects.values('char_field')[0]
+BusinessModel.objects.values('char_field')[0]
 #?
-model_instance.objects.values('char_field')[0]['char_field']
+BusinessModel.objects.values('char_field')[0]['char_field']
+
+# -----------------
+# Completion
+# -----------------
+
+#? 19 ['text_field=']
+Inherited(text_fiel)
+#? 18 ['new_field=']
+Inherited(new_fiel)
+#? 19 ['char_field=']
+Inherited(char_fiel)
+#? 19 ['email_field=']
+Inherited(email_fie)
+#? 19 []
+Inherited(unidentif)
+#? 21 ['category_fk=', 'category_fk2=', 'category_fk3=', 'category_fk4=', 'category_fk5=']
+Inherited(category_fk)
+#? 21 ['attached_o2o=']
+Inherited(attached_o2)
+#? 18 ['tags_m2m=']
+Inherited(tags_m2m)
+
+#? 32 ['tags_m2m=']
+Inherited.objects.create(tags_m2)
+#? 32 ['tags_m2m=']
+Inherited.objects.filter(tags_m2)
+#? 35 ['char_field=']
+Inherited.objects.exclude(char_fiel)
+#? 34 ['char_field=']
+Inherited.objects.update(char_fiel)
+#? 32 ['email_field=']
+Inherited.objects.get(email_fiel)
+#? 44 ['category_fk2=']
+Inherited.objects.get_or_create(category_fk2)
+#? 44 ['uuid_field=']
+Inherited.objects.update_or_create(uuid_fiel)
+#? 48 ['char_field=']
+Inherited.objects.exclude(pk=3).filter(char_fiel)

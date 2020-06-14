@@ -244,6 +244,9 @@ class Value(HelperValueMixin):
         debug.warning("No __get__ defined on %s", self)
         return ValueSet([self])
 
+    def py__get__on_class(self, calling_instance, instance, class_value):
+        return NotImplemented
+
     def get_qualified_names(self):
         # Returns Optional[Tuple[str, ...]]
         return None

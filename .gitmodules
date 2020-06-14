@@ -3,4 +3,4 @@
 	url = https://github.com/davidhalter/typeshed.git
 [submodule "jedi/third_party/django-stubs"]
 	path = jedi/third_party/django-stubs
-	url = https://github.com/typeddjango/django-stubs
+	url = https://github.com/davidhalter/django-stubs

@@ -255,7 +255,7 @@ class _BuiltinMappedMethod(ValueWrapper):
 
     def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
-        return self._method(self._value)
+        return self._method(self._value, arguments)
 
 
 class SpecialMethodFilter(DictFilter):
@@ -330,7 +330,7 @@ class _AttributeOverwriteMixin(object):
     def get_filters(self, *args, **kwargs):
         yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_value)
 
-        for filter in self._wrapped_value.get_filters():
+        for filter in self._wrapped_value.get_filters(*args, **kwargs):
             yield filter
 
 
