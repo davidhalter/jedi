@@ -13,7 +13,6 @@ from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
 from jedi.inference.signature import AbstractSignature
-from jedi.inference.value.function import FunctionMixin
 
 
 mapping = {
@@ -36,6 +35,9 @@ mapping = {
     'DateTimeField': ('datetime', 'datetime'),
     'UUIDField': ('uuid', 'UUID'),
 }
+
+_FILTER_LIKE_METHODS = ('create', 'filter', 'exclude', 'update', 'get',
+                        'get_or_create', 'update_or_create')
 
 
 @inference_state_function_cache()
@@ -172,8 +174,10 @@ def get_metaclass_filters(func):
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
         result = func(inference_state, context, tree_name)
-        if tree_name.value in ('create', 'filter', 'exclude', 'update', 'get',
-                               'get_or_create', 'update_or_create'):
+        if tree_name.value in _FILTER_LIKE_METHODS:
+            # Here we try to overwrite stuff like User.objects.filter. We need
+            # this to make sure that keyword param completion works on these
+            # kind of methods.
             for v in result:
                 if v.get_qualified_names() == ('_BaseQuerySet', tree_name.value) \
                         and v.parent_context.is_module() \
@@ -183,11 +187,12 @@ def tree_name_to_values(func):
                     if len(generics) >= 1:
                         return ValueSet(QuerySetMethodWrapper(v, model)
                                         for model in generics[0])
-        if tree_name.value == 'BaseManager' and context.is_module() \
+
+        elif tree_name.value == 'BaseManager' and context.is_module() \
                 and context.py__name__() == 'django.db.models.manager':
             return ValueSet(ManagerWrapper(r) for r in result)
 
-        if tree_name.value == 'Field' and context.is_module() \
+        elif tree_name.value == 'Field' and context.is_module() \
                 and context.py__name__() == 'django.db.models.fields':
             return ValueSet(FieldWrapper(r) for r in result)
         return result
