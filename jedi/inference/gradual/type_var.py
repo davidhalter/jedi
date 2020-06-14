@@ -102,7 +102,12 @@ class TypeVar(BaseTypingValue):
         else:
             if found:
                 return found
-        return self._get_classes() or ValueSet({self})
+
+        classes = self._get_classes()
+        if not classes:
+            return ValueSet({self})
+
+        return ValueSet(TypeVarWrapper(cls, self) for cls in classes)
 
     def execute_annotation(self):
         return self._get_classes().execute_annotation()
@@ -120,6 +125,15 @@ class TypeVar(BaseTypingValue):
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.py__name__())
+
+
+class TypeVarWrapper(ValueWrapper):
+    def __init__(self, wrapped_value, original_value):
+        super(TypeVarWrapper, self).__init__(wrapped_value)
+        self._original_value = original_value
+
+    def define_generics(self, type_var_dict):
+        return self._original_value.define_generics(type_var_dict)
 
 
 class TypeWrapper(ValueWrapper):

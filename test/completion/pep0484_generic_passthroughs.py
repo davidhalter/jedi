@@ -250,6 +250,28 @@ is_decorated_by_class_decorator_factory(the_par
 )
 
 
+def decorator_factory_plain() -> Callable[[T], T]:
+    pass
+
+#? Callable()
+decorator_factory_plain()
+
+#?
+decorator_factory_plain()()
+
+#? int()
+decorator_factory_plain()(42)
+
+is_decorated_by_plain_factory = decorator_factory_plain()(will_be_decorated)
+
+#? will_be_decorated
+is_decorated_by_plain_factory
+
+#? ['the_param=']
+is_decorated_by_plain_factory(the_par
+)
+
+
 class class_decorator_factory_bound_callable:
     def __call__(self, func: TCallable) -> TCallable:
         ...
@@ -267,6 +289,25 @@ is_decorated_by_class_bound_factory
 
 #? ['the_param=']
 is_decorated_by_class_bound_factory(the_par
+)
+
+
+def decorator_factory_bound_callable() -> Callable[[TCallable], TCallable]:
+    pass
+
+#? Callable()
+decorator_factory_bound_callable()
+
+#? Callable()
+decorator_factory_bound_callable()()
+
+is_decorated_by_bound_factory = decorator_factory_bound_callable()(will_be_decorated)
+
+#? will_be_decorated
+is_decorated_by_bound_factory
+
+#? ['the_param=']
+is_decorated_by_bound_factory(the_par
 )
 
 
