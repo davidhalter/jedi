@@ -114,10 +114,14 @@ class HelperValueMixin(object):
         return self.py__iter__(contextualized_node)
 
     def is_sub_class_of(self, class_value):
-        for cls in self.py__mro__():
-            if cls.is_same_class(class_value):
-                return True
-        return False
+        with debug.increase_indent_cm('subclass matching of %s <=> %s' % (self, class_value),
+                                      color='BLUE'):
+            for cls in self.py__mro__():
+                if cls.is_same_class(class_value):
+                    debug.dbg('matched subclass True', color='BLUE')
+                    return True
+            debug.dbg('matched subclass False', color='BLUE')
+            return False
 
     def is_same_class(self, class2):
         # Class matching should prefer comparisons that are not this function.
