@@ -1,9 +1,22 @@
 # python >= 3.4
-from typing import Any, Iterable, List, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 T = TypeVar('T')
 U = TypeVar('U')
 TList = TypeVar('TList', bound=List[Any])
+TType = TypeVar('TType', bound=Type)
+TTypeAny = TypeVar('TTypeAny', bound=Type[Any])
+TCallable = TypeVar('TCallable', bound=Callable[..., Any])
 
 untyped_list_str = ['abc', 'def']
 typed_list_str = ['abc', 'def']  # type: List[str]
@@ -40,6 +53,9 @@ def typed_fully_generic_passthrough(x: T) -> T:
     return x
 
 def typed_bound_generic_passthrough(x: TList) -> TList:
+    #? list()
+    x
+
     return x
 
 
@@ -109,6 +125,8 @@ for m in typed_variadic_tuple_generic_passthrough(variadic_tuple_str_int):
     #? str() int()
     m
 
+#? float
+typed_fully_generic_passthrough(float)
 
 for n in typed_fully_generic_passthrough(untyped_list_str):
     #? str()
@@ -142,3 +160,70 @@ CustomList[str]().get_first()
 typed_fully_generic_passthrough(CustomList[str]())[0]
 #?
 typed_list_generic_passthrough(CustomList[str])[0]
+
+
+def typed_bound_type_implicit_any_generic_passthrough(x: TType) -> TType:
+    #? Type()
+    x
+    return x
+
+def typed_bound_type_any_generic_passthrough(x: TTypeAny) -> TTypeAny:
+    # Should be Type(), though we don't get the handling of the nested argument
+    # to `Type[...]` quite right here.
+    x
+    return x
+
+
+class MyClass:
+    pass
+
+def my_func(a: str, b: int) -> float:
+    pass
+
+#? MyClass
+typed_fully_generic_passthrough(MyClass)
+
+#? MyClass()
+typed_fully_generic_passthrough(MyClass())
+
+#? my_func
+typed_fully_generic_passthrough(my_func)
+
+#? CustomList()
+typed_bound_generic_passthrough(CustomList[str]())
+
+# should be list(), but we don't validate generic typevar upper bounds
+#? int()
+typed_bound_generic_passthrough(42)
+
+#? MyClass
+typed_bound_type_implicit_any_generic_passthrough(MyClass)
+
+#? MyClass
+typed_bound_type_any_generic_passthrough(MyClass)
+
+# should be Type(), but we don't validate generic typevar upper bounds
+#? int()
+typed_bound_type_implicit_any_generic_passthrough(42)
+
+# should be Type(), but we don't validate generic typevar upper bounds
+#? int()
+typed_bound_type_any_generic_passthrough(42)
+
+
+def decorator(fn: TCallable) -> TCallable:
+    pass
+
+
+def will_be_decorated(the_param: complex) -> float:
+    pass
+
+
+is_decorated = decorator(will_be_decorated)
+
+#? will_be_decorated
+is_decorated
+
+#? ['the_param=']
+is_decorated(the_para
+)
