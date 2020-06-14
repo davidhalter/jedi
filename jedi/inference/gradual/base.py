@@ -138,8 +138,13 @@ class DefineGenericBaseClass(LazyValueWrapper):
             any(
                 # TODO why is this ordering the correct one?
                 cls2.is_same_class(cls1)
-                for cls1 in class_set1
-                for cls2 in class_set2
+                # TODO I'm still not sure gather_annotation_classes is a good
+                # idea. They are essentially here to avoid comparing Tuple <=>
+                # tuple and instead compare tuple <=> tuple, but at the moment
+                # the whole `is_same_class` and `is_sub_class` matching is just
+                # not in the best shape.
+                for cls1 in class_set1.gather_annotation_classes()
+                for cls2 in class_set2.gather_annotation_classes()
             ) for class_set1, class_set2 in zip(given_params1, given_params2)
         )
 

@@ -1,5 +1,5 @@
 # python >= 3.4
-from typing import Any, Iterable, List, Sequence, Tuple, TypeVar, Union
+from typing import Any, Iterable, List, Sequence, Tuple, TypeVar, Union, Generic
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -142,3 +142,17 @@ CustomList[str]().get_first()
 typed_fully_generic_passthrough(CustomList[str]())[0]
 #?
 typed_list_generic_passthrough(CustomList[str])[0]
+
+
+class That(Generic[T]):
+    def __init__(self, items: List[Tuple[str, T]]) -> None:
+        pass
+
+    def get(self) -> T:
+        pass
+
+inst = That([("abc", 2)])
+
+# No completions here, but should have completions for `int`
+#? int()
+inst.get()
