@@ -784,6 +784,9 @@ _implemented = {
         # Therefore, just make it return nothing, which leads to the stubs
         # being used instead. This only matters for 3.7+.
         '_alias': lambda value, arguments, callback: NO_VALUES,
+        # runtime_checkable doesn't really change anything and is just
+        # adding logs for infering stuff, so we can safely ignore it.
+        'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
