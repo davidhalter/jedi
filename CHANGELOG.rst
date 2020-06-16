@@ -12,7 +12,7 @@ Unreleased: 0.17.1 (2020-04-)
   `Django Stubs <https://github.com/typeddjango/django-stubs>`_ project
 - Added ``SyntaxError.get_message``
 - Python 3.9 support
-- A few bugfixes
+- Bugfixes (mostly towards Generics)
 
 0.17.0 (2020-04-14)
 +++++++++++++++++++
