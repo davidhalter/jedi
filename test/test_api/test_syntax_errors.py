@@ -10,20 +10,21 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    'code, line, column, until_line, until_column', [
-        ('?\n', 1, 0, 1, 1),
-        ('x %% y', 1, 3, 1, 4),
-        ('"""\n\n', 1, 0, 3, 0),
-        ('(1, 2\n', 2, 0, 2, 0),
-        ('foo(1, 2\ndef x(): pass', 2, 0, 2, 3),
+    'code, line, column, until_line, until_column, message', [
+        ('?\n', 1, 0, 1, 1, 'SyntaxError: invalid syntax'),
+        ('x %% y', 1, 3, 1, 4, 'SyntaxError: invalid syntax'),
+        ('"""\n\n', 1, 0, 3, 0, 'SyntaxError: EOF while scanning triple-quoted string literal'),
+        ('(1, 2\n', 2, 0, 2, 0, 'SyntaxError: invalid syntax'),
+        ('foo(1, 2\ndef x(): pass', 2, 0, 2, 3, 'SyntaxError: invalid syntax'),
     ]
 )
-def test_simple_syntax_errors(Script, code, line, column, until_line, until_column):
+def test_simple_syntax_errors(Script, code, line, column, until_line, until_column, message):
     e, = Script(code).get_syntax_errors()
     assert e.line == line
     assert e.column == column
     assert e.until_line == until_line
     assert e.until_column == until_column
+    assert e.get_message() == message
 
 
 @pytest.mark.parametrize(

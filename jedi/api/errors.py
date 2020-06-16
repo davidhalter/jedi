@@ -35,6 +35,9 @@ class SyntaxError(object):
         """The column where the error ends (starting with 0)."""
         return self._parso_error.end_pos[1]
 
+    def get_message(self):
+        return self._parso_error.message
+
     def __repr__(self):
         return '<%s from=%s to=%s>' % (
             self.__class__.__name__,
