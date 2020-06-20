@@ -417,6 +417,7 @@ type_in_out2()
 type_in_out2(float)
 
 def ma(a: typing.Callable[[str], TYPE_VARX]) -> typing.Callable[[str], TYPE_VARX]:
+    #? typing.Callable()
     return a
 
 def mf(s: str) -> int:

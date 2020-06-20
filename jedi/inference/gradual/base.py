@@ -415,6 +415,9 @@ class BaseTypingInstance(LazyValueWrapper):
     def get_annotated_class_object(self):
         return self._class_value
 
+    def get_qualified_names(self):
+        return (self.py__name__(),)
+
     @property
     def name(self):
         return ValueName(self, self._tree_name)

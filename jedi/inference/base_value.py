@@ -97,6 +97,9 @@ class HelperValueMixin(object):
             debug.warning('Tried to run __await__ on value %s', self)
         return await_value_set.execute_with_values()
 
+    def py__name__(self):
+        return self.name.string_name
+
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
         if is_async:
@@ -261,9 +264,6 @@ class Value(HelperValueMixin):
     @property
     def name(self):
         raise NotImplementedError
-
-    def py__name__(self):
-        return self.name.string_name
 
     def get_type_hint(self, add_class_info=True):
         return None
