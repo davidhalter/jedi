@@ -230,6 +230,46 @@ is_decorated(the_para
 )
 
 
+class class_decorator_factory_plain:
+    def __call__(self, func: T) -> T:
+        ...
+
+#? class_decorator_factory_plain()
+class_decorator_factory_plain()
+
+#?
+class_decorator_factory_plain()()
+
+is_decorated_by_class_decorator_factory = class_decorator_factory_plain()(will_be_decorated)
+
+#? will_be_decorated
+is_decorated_by_class_decorator_factory
+
+#? ['the_param=']
+is_decorated_by_class_decorator_factory(the_par
+)
+
+
+class class_decorator_factory_bound_callable:
+    def __call__(self, func: TCallable) -> TCallable:
+        ...
+
+#? class_decorator_factory_bound_callable()
+class_decorator_factory_bound_callable()
+
+#? Callable()
+class_decorator_factory_bound_callable()()
+
+is_decorated_by_class_bound_factory = class_decorator_factory_bound_callable()(will_be_decorated)
+
+#? will_be_decorated
+is_decorated_by_class_bound_factory
+
+#? ['the_param=']
+is_decorated_by_class_bound_factory(the_par
+)
+
+
 class That(Generic[T]):
     def __init__(self, items: List[Tuple[str, T]]) -> None:
         pass
