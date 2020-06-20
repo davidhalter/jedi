@@ -61,8 +61,9 @@ class Environment(_BaseEnvironment):
     """
     _subprocess = None
 
-    def __init__(self, executable):
+    def __init__(self, executable, env_vars={}):
         self._start_executable = executable
+        self._env_vars = env_vars
         # Initialize the environment
         self._get_subprocess()
 
@@ -71,7 +72,8 @@ class Environment(_BaseEnvironment):
             return self._subprocess
 
         try:
-            self._subprocess = CompiledSubprocess(self._start_executable)
+            self._subprocess = CompiledSubprocess(self._start_executable,
+                                                  env_vars=self._env_vars)
             info = self._subprocess._send(None, _get_info)
         except Exception as exc:
             raise InvalidPythonEnvironment(
@@ -134,6 +136,7 @@ class _SameEnvironmentMixin(object):
         self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
+        self._env_vars = {}
 
 
 class SameEnvironment(_SameEnvironmentMixin, Environment):
@@ -321,7 +324,7 @@ def find_virtualenvs(paths=None, **kwargs):
     return py27_comp(paths, **kwargs)
 
 
-def find_system_environments():
+def find_system_environments(**kwargs):
     """
     Ignores virtualenvs and returns the Python versions that were installed on
     your system. This might return nothing, if you're running Python e.g. from
@@ -333,14 +336,14 @@ def find_system_environments():
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
-            yield get_system_environment(version_string)
+            yield get_system_environment(version_string, **kwargs)
         except InvalidPythonEnvironment:
             pass
 
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_system_environment(version):
+def get_system_environment(version, **kwargs):
     """
     Return the first Python environment found for a string of the form 'X.Y'
     where X and Y are the major and minor versions of Python.
@@ -357,24 +360,30 @@ def get_system_environment(version):
     if os.name == 'nt':
         for exe in _get_executables_from_windows_registry(version):
             try:
-                return Environment(exe)
+                return Environment(exe, **kwargs)
             except InvalidPythonEnvironment:
                 pass
     raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
 
 
-def create_environment(path, safe=True):
+def create_environment(path, safe=True, **kwargs):
     """
     Make it possible to manually create an Environment object by specifying a
-    Virtualenv path or an executable path.
+    Virtualenv path or an executable path and optional environment variables.
 
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`.Environment`
+
+    TODO: make env_vars a kwarg when Python 2 is dropped. For now, preserve API
     """
+    return _create_environment(path, safe, **kwargs)
+
+
+def _create_environment(path, safe=True, env_vars={}):
     if os.path.isfile(path):
         _assert_safe(path, safe)
-        return Environment(path)
-    return Environment(_get_executable_path(path, safe=safe))
+        return Environment(path, env_vars=env_vars)
+    return Environment(_get_executable_path(path, safe=safe), env_vars=env_vars)
 
 
 def _get_executable_path(path, safe=True):
