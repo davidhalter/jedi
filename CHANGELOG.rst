@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Added an option to pass environment variables to ``Environment``
+
 0.17.1 (2020-06-20)
 +++++++++++++++++++
 
