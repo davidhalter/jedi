@@ -102,7 +102,7 @@ class TypeVar(BaseTypingValue):
         else:
             if found:
                 return found
-        return self._get_classes() or ValueSet({self})
+        return ValueSet({self})
 
     def execute_annotation(self):
         return self._get_classes().execute_annotation()

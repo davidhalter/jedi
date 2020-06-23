@@ -14,8 +14,8 @@ TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 def test_get_typeshed_directories():
     def get_dirs(version_info):
         return {
-            d.replace(typeshed.TYPESHED_PATH, '').lstrip(os.path.sep)
-            for d in typeshed._get_typeshed_directories(version_info)
+            p.path.replace(typeshed.TYPESHED_PATH, '').lstrip(os.path.sep)
+            for p in typeshed._get_typeshed_directories(version_info)
         }
 
     def transform(set_):
@@ -35,11 +35,8 @@ def test_get_typeshed_directories():
 
 
 def test_get_stub_files():
-    def get_map(version_info):
-        return typeshed._create_stub_map(version_info)
-
-    map_ = typeshed._create_stub_map(TYPESHED_PYTHON3)
-    assert map_['functools'] == os.path.join(TYPESHED_PYTHON3, 'functools.pyi')
+    map_ = typeshed._create_stub_map(typeshed.PathInfo(TYPESHED_PYTHON3, is_third_party=False))
+    assert map_['functools'].path == os.path.join(TYPESHED_PYTHON3, 'functools.pyi')
 
 
 def test_function(Script, environment):
@@ -227,3 +224,25 @@ def test_goto_stubs_on_itself(Script, code, type_):
 
     _assert_is_same(same_definition, definition)
     _assert_is_same(same_definition, same_definition2)
+
+
+def test_module_exists_only_as_stub(Script):
+    try:
+        import redis
+    except ImportError:
+        pass
+    else:
+        pytest.skip('redis is already installed, it should only exist as a stub for this test')
+    redis_path = os.path.join(typeshed.TYPESHED_PATH, 'third_party', '2and3', 'redis')
+    assert os.path.isdir(redis_path)
+    assert not Script('import redis').infer()
+
+
+def test_django_exists_only_as_stub(Script):
+    try:
+        import django
+    except ImportError:
+        pass
+    else:
+        pytest.skip('django is already installed, it should only exist as a stub for this test')
+    assert not Script('import django').infer()
