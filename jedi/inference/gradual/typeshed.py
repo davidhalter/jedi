@@ -262,7 +262,6 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
 
     if map_ is not None:
         path_info = map_.get(import_name)
-        print(path_info)
         if path_info is not None and (not path_info.is_third_party or python_value_set):
             return _try_to_load_stub_from_file(
                 inference_state,
