@@ -422,6 +422,19 @@ def test_decorator(Script):
     assert d.docstring(raw=True) == 'Nice docstring'
 
 
+def test_partial(Script):
+    code = dedent('''
+        def foo():
+            'x y z'
+        from functools import partial
+        x = partial(foo)
+        x''')
+
+    p1, p2 = Script(code).infer()
+    assert p1.docstring(raw=True) == 'x y z'
+    assert p2.docstring(raw=True) == 'x y z'
+
+
 def test_basic_str_init_signature(Script, disable_typeshed):
     # See GH #1414 and GH #1426
     code = dedent('''

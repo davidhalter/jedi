@@ -474,11 +474,10 @@ def collections_namedtuple(value, arguments, callback):
 class PartialObject(ValueWrapper):
     def __init__(self, actual_value, arguments, instance=None):
         super(PartialObject, self).__init__(actual_value)
-        self._actual_value = actual_value
         self._arguments = arguments
         self._instance = instance
 
-    def _get_function(self, unpacked_arguments):
+    def _get_functions(self, unpacked_arguments):
         key, lazy_value = next(unpacked_arguments, (None, None))
         if key is not None or lazy_value is None:
             debug.warning("Partial should have a proper function %s", self._arguments)
@@ -487,8 +486,8 @@ class PartialObject(ValueWrapper):
 
     def get_signatures(self):
         unpacked_arguments = self._arguments.unpack()
-        func = self._get_function(unpacked_arguments)
-        if func is None:
+        funcs = self._get_functions(unpacked_arguments)
+        if funcs is None:
             return []
 
         arg_count = 0
@@ -500,16 +499,29 @@ class PartialObject(ValueWrapper):
                 arg_count += 1
             else:
                 keys.add(key)
-        return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
+        return [PartialSignature(s, arg_count, keys) for s in funcs.get_signatures()]
 
     def py__call__(self, arguments):
-        func = self._get_function(self._arguments.unpack())
-        if func is None:
+        funcs = self._get_functions(self._arguments.unpack())
+        if funcs is None:
             return NO_VALUES
 
-        return func.execute(
+        return funcs.execute(
             MergedPartialArguments(self._arguments, arguments, self._instance)
         )
+
+    def py__doc__(self):
+        """
+        In CPython partial does not replace the docstring. However we are still
+        imitating it here, because we want this docstring to be worth something
+        for the user.
+        """
+        callables = self._get_functions(self._arguments.unpack())
+        if callables is None:
+            return ''
+        for callable_ in callables:
+            return callable_.py__doc__()
+        return ''
 
     def py__get__(self, instance, class_value):
         return ValueSet([self])
@@ -519,7 +531,7 @@ class PartialMethodObject(PartialObject):
     def py__get__(self, instance, class_value):
         if instance is None:
             return ValueSet([self])
-        return ValueSet([PartialObject(self._actual_value, self._arguments, instance)])
+        return ValueSet([PartialObject(self._wrapped_value, self._arguments, instance)])
 
 
 class PartialSignature(SignatureWrapper):
