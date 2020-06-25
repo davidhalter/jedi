@@ -35,6 +35,7 @@ operator_to_magic_method = {
     '+': '__add__',
     '-': '__sub__',
     '*': '__mul__',
+    '@': '__matmul__',
     '/': '__truediv__',
     '//': '__floordiv__',
     '%': '__mod__',
