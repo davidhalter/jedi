@@ -150,6 +150,13 @@ class Project(object):
 
         py2_comp(path, **kwargs)
 
+    @property
+    def path(self):
+        """
+        The base path for this project.
+        """
+        return self._path
+
     @inference_state_as_method_param_cache()
     def _get_base_sys_path(self, inference_state):
         # The sys path has not been set explicitly.

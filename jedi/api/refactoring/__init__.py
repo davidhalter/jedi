@@ -39,7 +39,7 @@ class ChangedFile(object):
         if new_lines[-1] != '':
             new_lines[-1] += '\n'
 
-        project_path = self._inference_state.project._path
+        project_path = self._inference_state.project.path
         if self._from_path is None:
             from_p = ''
         else:
@@ -112,7 +112,7 @@ class Refactoring(object):
 
     def get_diff(self):
         text = ''
-        project_path = self._inference_state.project._path
+        project_path = self._inference_state.project.path
         for from_, to in self.get_renames():
             text += 'rename from %s\nrename to %s\n' \
                 % (relpath(from_, project_path), relpath(to, project_path))

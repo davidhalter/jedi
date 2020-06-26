@@ -36,7 +36,7 @@ def complete_file_name(inference_state, module_context, start_leaf, quote, strin
             is_in_os_path_join = False
         else:
             string = to_be_added + string
-    base_path = os.path.join(inference_state.project._path, string)
+    base_path = os.path.join(inference_state.project.path, string)
     try:
         listed = sorted(scandir(base_path), key=lambda e: e.name)
         # OSError: [Errno 36] File name too long: '...'

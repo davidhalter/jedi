@@ -7,6 +7,7 @@ Unreleased
 ++++++++++
 
 - Added an option to pass environment variables to ``Environment``
+- ``Project(...).path`` exists now
 
 0.17.1 (2020-06-20)
 +++++++++++++++++++

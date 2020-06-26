@@ -192,7 +192,7 @@ class Importer(object):
                 import_path = base + tuple(import_path)
             else:
                 path = module_context.py__file__()
-                project_path = self._inference_state.project._path
+                project_path = self._inference_state.project.path
                 import_path = list(import_path)
                 if path is None:
                     # If no path is defined, our best guess is that the current
