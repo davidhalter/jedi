@@ -14,7 +14,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBaseClass, GenericClass
 from jedi.inference.gradual.generics import TupleGenericManager
-from jedi.inference.gradual.type_var import TypeVar, TypeVarWrapper
+from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.param import get_executed_param_names
@@ -281,7 +281,7 @@ def infer_return_for_callable(arguments, param_values, result_values):
 
     return ValueSet.from_sets(
         v.define_generics(all_type_vars)
-        if isinstance(v, (DefineGenericBaseClass, TypeVar, TypeVarWrapper))
+        if isinstance(v, (DefineGenericBaseClass, TypeVar))
         else ValueSet({v})
         for v in result_values
     ).execute_annotation()
