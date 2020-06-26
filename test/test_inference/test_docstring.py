@@ -422,6 +422,27 @@ def test_decorator(Script):
     assert d.docstring(raw=True) == 'Nice docstring'
 
 
+def test_method_decorator(Script):
+    code = dedent('''
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                """wrapper docstring"""
+                return func(*args, **kwargs)
+            return wrapper
+
+        class Foo():
+            @decorator
+            def check_user(self, f):
+                """Nice docstring"""
+                pass
+
+        Foo().check_user''')
+
+    d, = Script(code).infer()
+    assert d.docstring() == 'check_user(f)\n\nNice docstring'
+
+
 def test_partial(Script):
     code = dedent('''
         def foo():

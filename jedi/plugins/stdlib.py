@@ -119,7 +119,9 @@ def execute(callback):
             else:
                 return call()
 
-            if value.is_bound_method():
+            if value.is_bound_method() or value.is_instance():
+                # value can be an instance for example if it is a partial
+                # object.
                 return call()
 
             # for now we just support builtin functions.
