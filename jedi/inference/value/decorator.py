@@ -19,3 +19,7 @@ class Decoratee(ValueWrapper):
             Decoratee(v, self._original_value)
             for v in self._wrapped_value.py__get__(instance, class_value)
         )
+
+    @property
+    def name(self):
+        return self._original_value.name
