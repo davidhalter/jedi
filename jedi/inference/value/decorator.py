@@ -4,6 +4,7 @@ docstrings and other things around decorators.
 '''
 
 from jedi.inference.base_value import ValueWrapper, ValueSet
+from jedi.inference.names import ValueName
 
 
 class Decoratee(ValueWrapper):
@@ -26,5 +27,10 @@ class Decoratee(ValueWrapper):
             # If a function is returned, the name that we want is usually the
             # original one. This is obviously a bit weird, but it works pretty
             # well, since users don't pass around functions randomly.
-            return self._original_value.name
+            val = self._original_value
+        else:
+            val = self._wrapped_value
+
+        if val.name.tree_name is not None:
+            return ValueName(self, val.name.tree_name)
         return self._wrapped_value.name
