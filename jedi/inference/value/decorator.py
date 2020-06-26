@@ -22,4 +22,9 @@ class Decoratee(ValueWrapper):
 
     @property
     def name(self):
-        return self._original_value.name
+        if self._wrapped_value.is_function():
+            # If a function is returned, the name that we want is usually the
+            # original one. This is obviously a bit weird, but it works pretty
+            # well, since users don't pass around functions randomly.
+            return self._original_value.name
+        return self._wrapped_value.name
