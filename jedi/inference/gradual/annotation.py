@@ -281,7 +281,8 @@ def infer_return_for_callable(arguments, param_values, result_values):
 
     return ValueSet.from_sets(
         v.define_generics(all_type_vars)
-        if isinstance(v, (DefineGenericBaseClass, TypeVar)) else ValueSet({v})
+        if isinstance(v, (DefineGenericBaseClass, TypeVar))
+        else ValueSet({v})
         for v in result_values
     ).execute_annotation()
 
