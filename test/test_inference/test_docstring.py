@@ -440,7 +440,7 @@ def test_method_decorator(Script):
         Foo().check_user''')
 
     d, = Script(code).infer()
-    assert d.docstring() == 'check_user(f)\n\nNice docstring'
+    assert d.docstring() == 'wrapper(f)\n\nNice docstring'
 
 
 def test_partial(Script):
