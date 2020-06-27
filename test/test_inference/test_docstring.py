@@ -422,7 +422,7 @@ def test_decorator(Script):
     assert d.docstring(raw=True) == 'Nice docstring'
 
 
-def test_method_decorator(Script):
+def test_method_decorator(Script, skip_pre_python35):
     code = dedent('''
         def decorator(func):
             @wraps(func)
@@ -443,7 +443,7 @@ def test_method_decorator(Script):
     assert d.docstring() == 'wrapper(f)\n\nNice docstring'
 
 
-def test_partial(Script):
+def test_partial(Script, skip_pre_python36):
     code = dedent('''
         def foo():
             'x y z'
@@ -451,9 +451,8 @@ def test_partial(Script):
         x = partial(foo)
         x''')
 
-    p1, p2 = Script(code).infer()
-    assert p1.docstring(raw=True) == 'x y z'
-    assert p2.docstring(raw=True) == 'x y z'
+    for p in Script(code).infer():
+        assert p.docstring(raw=True) == 'x y z'
 
 
 def test_basic_str_init_signature(Script, disable_typeshed):
