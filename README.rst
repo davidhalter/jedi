@@ -22,6 +22,10 @@ Jedi - an awesome autocompletion, static analysis and refactoring library for Py
     :target: https://coveralls.io/r/davidhalter/jedi
     :alt: Coverage status
 
+.. image:: https://pepy.tech/badge/jedi
+    :target: https://pepy.tech/project/jedi
+    :alt: PyPI Downloads
+
 
 Jedi is a static analysis tool for Python that is typically used in
 IDEs/editors plugins. Jedi has a focus on autocompletion and goto

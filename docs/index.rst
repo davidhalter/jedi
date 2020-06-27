@@ -30,6 +30,10 @@ Jedi - an awesome autocompletion, static analysis and refactoring library for Py
     :target: https://coveralls.io/r/davidhalter/jedi
     :alt: Coverage status
 
+.. image:: https://pepy.tech/badge/jedi
+    :target: https://pepy.tech/project/jedi
+    :alt: PyPI Downloads
+
 `Github Repository <https://github.com/davidhalter/jedi>`_
 
 .. automodule:: jedi
