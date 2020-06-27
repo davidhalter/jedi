@@ -5,6 +5,7 @@ docstrings and other things around decorators.
 
 from jedi.inference.base_value import ValueWrapper, ValueSet
 from jedi.inference.names import ValueName
+from jedi.inference.signature import SignatureWrapper
 
 
 class Decoratee(ValueWrapper):
@@ -34,3 +35,13 @@ class Decoratee(ValueWrapper):
         if val.name.tree_name is not None:
             return ValueName(self, val.name.tree_name)
         return self._wrapped_value.name
+
+    def get_signatures(self):
+        return [DecorateeSignature(sig, self.name)
+                for sig in self._wrapped_value.get_signatures()]
+
+
+class DecorateeSignature(SignatureWrapper):
+    def __init__(self, signature, name):
+        super(DecorateeSignature, self).__init__(signature)
+        self.name = name

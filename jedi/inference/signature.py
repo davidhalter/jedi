@@ -90,10 +90,12 @@ class TreeSignature(AbstractSignature):
 
     @memoize_method
     def get_param_names(self, resolve_stars=False):
-        params = super(TreeSignature, self).get_param_names(resolve_stars=False)
+        params = self._function_value.get_param_names()
         if resolve_stars:
             from jedi.inference.star_args import process_params
             params = process_params(params)
+        if self.is_bound:
+            return params[1:]
         return params
 
     def matches_signature(self, arguments):
