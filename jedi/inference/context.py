@@ -439,7 +439,7 @@ def get_global_filters(context, until_position, origin_scope):
     For global name lookups. The filters will handle name resolution
     themselves, but here we gather possible filters downwards.
 
-    >>> from jedi._compatibility import u, no_unicode_pprint
+    >>> from jedi._compatibility import u
     >>> from jedi import Script
     >>> script = Script(u('''
     ... x = ['a', 'b', 'c']
@@ -455,7 +455,7 @@ def get_global_filters(context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
+    >>> print(filters[0])  # doctest: +ELLIPSIS
     MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
     >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
     ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',

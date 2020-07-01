@@ -128,7 +128,6 @@ class BaseName(object):
         to Jedi, :meth:`jedi.Script.infer` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
-        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... import keyword
@@ -154,7 +153,7 @@ class BaseName(object):
         so that it is easy to relate the result to the source code.
 
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Name full_name='keyword', description='module keyword'>,
          <Name full_name='__main__.C', description='class C'>,
          <Name full_name='__main__.D', description='instance D'>,
@@ -323,7 +322,6 @@ class BaseName(object):
 
         Example:
 
-        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... def f():
@@ -336,7 +334,7 @@ class BaseName(object):
         >>> script = Script(source)  # line is maximum by default
         >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Name full_name='__main__.f', description='def f'>,
          <Name full_name='__main__.C', description='class C'>]
         >>> str(defs[0].description)  # strip literals in python2

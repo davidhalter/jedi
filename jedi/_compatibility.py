@@ -325,18 +325,6 @@ except NameError:
         pass
 
 
-def no_unicode_pprint(dct):
-    """
-    Python 2/3 dict __repr__ may be different, because of unicode differens
-    (with or without a `u` prefix). Normally in doctests we could use `pprint`
-    to sort dicts and check for equality, but here we have to write a separate
-    function to do that.
-    """
-    import pprint
-    s = pprint.pformat(dct)
-    print(re.sub("u'", "'", s))
-
-
 def utf8_repr(func):
     """
     ``__repr__`` methods in Python 2 don't allow unicode objects to be
