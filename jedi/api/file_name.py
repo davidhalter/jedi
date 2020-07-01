@@ -93,7 +93,7 @@ def _add_strings(context, nodes, add_slash=False):
             return None
         if not first and add_slash:
             string += os.path.sep
-        string += str(s, errors='replace')
+        string += s
         first = False
     return string
 

@@ -144,7 +144,7 @@ def get_int_or_none(value):
 
 
 def get_str_or_none(value):
-    return _get_safe_value_or_none(value, (bytes, unicode))
+    return _get_safe_value_or_none(value, str)
 
 
 def is_number(value):
