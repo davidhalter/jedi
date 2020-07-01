@@ -6,8 +6,6 @@ from __future__ import print_function
 import errno
 import sys
 import os
-import re
-import pkgutil
 import warnings
 import subprocess
 import pickle
@@ -25,7 +23,16 @@ is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
-def find_module_py34(string, path=None, full_name=None, is_global_search=True):
+def find_module(string, path=None, full_name=None, is_global_search=True):
+    """
+    Provides information about a module.
+
+    This function isolates the differences in importing libraries introduced with
+    python 3.3 on; it gets a module name and optionally a path. It will return a
+    tuple containin an open file for the module (if not builtin), the filename
+    or the name of the module if it is a builtin one and a boolean indicating
+    if the module is contained in a package.
+    """
     spec = None
     loader = None
 
@@ -127,60 +134,6 @@ def _get_source(loader, fullname):
     except OSError:
         raise ImportError('source not available through get_data()',
                           name=fullname)
-
-
-def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True):
-    # This import is here, because in other places it will raise a
-    # DeprecationWarning.
-    import imp
-    try:
-        module_file, module_path, description = imp.find_module(string, path)
-        module_type = description[2]
-        is_package = module_type is imp.PKG_DIRECTORY
-        if is_package:
-            # In Python 2 directory package imports are returned as folder
-            # paths, not __init__.py paths.
-            p = os.path.join(module_path, '__init__.py')
-            try:
-                module_file = open(p)
-                module_path = p
-            except FileNotFoundError:
-                pass
-        elif module_type != imp.PY_SOURCE:
-            if module_file is not None:
-                module_file.close()
-            module_file = None
-
-        if module_file is None:
-            return None, is_package
-
-        with module_file:
-            code = module_file.read()
-        return KnownContentFileIO(cast_path(module_path), code), is_package
-    except ImportError:
-        pass
-
-    if path is None:
-        path = sys.path
-    for item in path:
-        loader = pkgutil.get_importer(item)
-        if loader:
-            loader = loader.find_module(string)
-            if loader is not None:
-                return _from_loader(loader, string)
-    raise ImportError("No module named {}".format(string))
-
-
-find_module = find_module_py34 if is_py3 else find_module_pre_py3
-find_module.__doc__ = """
-Provides information about a module.
-
-This function isolates the differences in importing libraries introduced with
-python 3.3 on; it gets a module name and optionally a path. It will return a
-tuple containin an open file for the module (if not builtin), the filename
-or the name of the module if it is a builtin one and a boolean indicating
-if the module is contained in a package.
-"""
 
 
 class ImplicitNSInfo(object):
