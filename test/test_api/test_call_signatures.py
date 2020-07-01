@@ -1,10 +1,10 @@
 import sys
 from textwrap import dedent
 import inspect
+from unittest import TestCase
 
 import pytest
 
-from ..helpers import TestCase
 from jedi import cache
 from jedi.parser_utils import get_signature
 from jedi import Interpreter

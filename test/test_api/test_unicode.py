@@ -2,26 +2,25 @@
 """
 All character set and unicode related tests.
 """
-from jedi._compatibility import u, unicode
+from jedi._compatibility import u
 from jedi import Project
 
 
 def test_unicode_script(Script):
-    """ normally no unicode objects are being used. (<=2.7) """
-    s = unicode("import datetime; datetime.timedelta")
+    s = "import datetime; datetime.timedelta"
     completions = Script(s).complete()
     assert len(completions)
-    assert type(completions[0].description) is unicode
+    assert type(completions[0].description) is str
 
     s = u("author='öä'; author")
     completions = Script(s).complete()
     x = completions[0].description
-    assert type(x) is unicode
+    assert type(x) is str
 
     s = u("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
     s = s.encode('latin-1')
     completions = Script(s).complete()
-    assert type(completions[0].description) is unicode
+    assert type(completions[0].description) is str
 
 
 def test_unicode_attribute(Script):

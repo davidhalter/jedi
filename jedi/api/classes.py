@@ -94,7 +94,7 @@ class BaseName(object):
     @property
     def module_path(self):
         """
-        Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``
+        Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
 
         :rtype: str or None
         """

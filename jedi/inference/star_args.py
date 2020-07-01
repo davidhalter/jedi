@@ -32,8 +32,6 @@ def _iter_nodes_for_param(param_name):
             argument = name.parent
             if argument.type == 'argument' \
                     and argument.children[0] == '*' * param_name.star_count:
-                # No support for Python 2.7 here, but they are end-of-life
-                # anyway
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
                     context = execution_context.create_context(trailer)

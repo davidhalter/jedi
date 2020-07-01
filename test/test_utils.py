@@ -2,10 +2,9 @@ try:
     import readline
 except ImportError:
     readline = False
+import unittest
 
 from jedi import utils
-
-from .helpers import unittest
 
 
 @unittest.skipIf(not readline, "readline not found")

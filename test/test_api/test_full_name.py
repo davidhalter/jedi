@@ -14,11 +14,11 @@ There are three kinds of test:
 """
 
 import textwrap
+from unittest import TestCase
 
 import pytest
 
 import jedi
-from ..helpers import TestCase
 
 
 class MixinTestFullName(object):

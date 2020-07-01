@@ -312,9 +312,6 @@ def infer_atom(context, atom):
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
             return ValueSet([compiled.builtin_from_name(state, atom.value)])
-        elif atom.value == 'print':
-            # print e.g. could be inferred like this in Python 2.7
-            return NO_VALUES
         elif atom.value == 'yield':
             # Contrary to yield from, yield can just appear alone to return a
             # value when used with `.send()`.

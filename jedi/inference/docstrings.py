@@ -201,11 +201,8 @@ def _infer_for_statement_string(module_context, string):
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
 
-    # Take the default grammar here, if we load the Python 2.7 grammar here, it
-    # will be impossible to use `...` (Ellipsis) as a token. Docstring types
-    # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_context.inference_state.latest_grammar
+    grammar = module_context.inference_state.grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:

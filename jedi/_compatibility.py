@@ -1,6 +1,6 @@
 """
-To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
-created. Clearly there is huge need to use conforming syntax.
+This module is here to ensure compatibility of Windows/Linux/MacOS and
+different Python versions.
 """
 from __future__ import print_function
 import errno

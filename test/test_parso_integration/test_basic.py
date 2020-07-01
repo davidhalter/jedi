@@ -87,9 +87,6 @@ def test_tokenizer_with_string_literal_backslash(Script):
 
 
 def test_ellipsis_without_getitem(Script, environment):
-    if environment.version_info.major == 2:
-        pytest.skip('In 2.7 Ellipsis can only be used like x[...]')
-
     def_, = Script('x=...;x').infer()
 
     assert def_.name == 'ellipsis'
