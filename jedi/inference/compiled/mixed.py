@@ -8,7 +8,6 @@ import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
-from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.cache import memoize_method
 from jedi.inference import compiled
@@ -155,7 +154,7 @@ def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
     if sys.version_info[0] > 2:
         try:
-            python_object = unwrap(python_object)
+            python_object = inspect.unwrap(python_object)
         except ValueError:
             # Can return a ValueError when it wraps around
             pass
