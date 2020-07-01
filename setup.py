@@ -33,12 +33,12 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
-      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+      python_requires='>=3.6',
       install_requires=install_requires,
       extras_require={
           'testing': [
               # Pytest 5 doesn't support Python 2 anymore.
-              'pytest>=3.9.0,<5.0.0',
+              'pytest<6.0.0',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
@@ -58,10 +58,7 @@ setup(name='jedi',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: MIT License',
           'Operating System :: OS Independent',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
