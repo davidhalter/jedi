@@ -241,20 +241,6 @@ def pickle_dump(data, file, protocol):
         raise
 
 
-# Determine the highest protocol version compatible for a given list of Python
-# versions.
-def highest_pickle_protocol(python_versions):
-    protocol = 4
-    for version in python_versions:
-        if version[0] == 2:
-            # The minimum protocol version for the versions of Python that we
-            # support (2.7 and 3.3+) is 2.
-            return 2
-        if version[1] < 4:
-            protocol = 3
-    return protocol
-
-
 class GeneralizedPopen(subprocess.Popen):
     def __init__(self, *args, **kwargs):
         if os.name == 'nt':

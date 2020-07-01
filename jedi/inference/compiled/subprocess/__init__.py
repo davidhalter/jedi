@@ -29,6 +29,7 @@ from jedi.api.exceptions import InternalError
 
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
+PICKLE_PROTOCOL = 4
 
 
 def _enqueue_output(out, queue_):
@@ -151,8 +152,6 @@ class InferenceStateSubprocess(_InferenceStateProcess):
 
 class CompiledSubprocess(object):
     is_crashed = False
-    # Start with 2, gets set after _get_info.
-    _pickle_protocol = 2
 
     def __init__(self, executable, env_vars={}):
         self._executable = executable
@@ -171,10 +170,9 @@ class CompiledSubprocess(object):
 
     def __repr__(self):
         pid = os.getpid()
-        return '<%s _executable=%r, _pickle_protocol=%r, is_crashed=%r, pid=%r>' % (
+        return '<%s _executable=%r, is_crashed=%r, pid=%r>' % (
             self.__class__.__name__,
             self._executable,
-            self._pickle_protocol,
             self.is_crashed,
             pid,
         )
@@ -244,7 +242,7 @@ class CompiledSubprocess(object):
 
         data = inference_state_id, function, args, kwargs
         try:
-            pickle_dump(data, self._get_process().stdin, self._pickle_protocol)
+            pickle_dump(data, self._get_process().stdin, PICKLE_PROTOCOL)
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             # Also, somehow in windows it returns EINVAL instead of EPIPE if
@@ -293,12 +291,11 @@ class CompiledSubprocess(object):
 
 
 class Listener(object):
-    def __init__(self, pickle_protocol):
+    def __init__(self):
         self._inference_states = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
         self._process = _InferenceStateProcess(Listener)
-        self._pickle_protocol = pickle_protocol
 
     def _get_inference_state(self, function, inference_state_id):
         from jedi.inference import InferenceState
@@ -363,7 +360,7 @@ class Listener(object):
             except Exception as e:
                 result = True, traceback.format_exc(), e
 
-            pickle_dump(result, stdout, self._pickle_protocol)
+            pickle_dump(result, stdout, PICKLE_PROTOCOL)
 
 
 class AccessHandle(object):

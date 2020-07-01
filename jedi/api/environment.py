@@ -9,7 +9,6 @@ import filecmp
 from collections import namedtuple
 from shutil import which
 
-from jedi._compatibility import highest_pickle_protocol
 from jedi.cache import memoize_method, time_cache
 from jedi.inference.compiled.subprocess import CompiledSubprocess, \
     InferenceStateSameProcess, InferenceStateSubprocess
@@ -97,16 +96,6 @@ class Environment(_BaseEnvironment):
         Like :data:`sys.version_info`: a tuple to show the current
         Environment's Python version.
         """
-
-        # py2 sends bytes via pickle apparently?!
-        if self.version_info.major == 2:
-            self.executable = self.executable.decode()
-            self.path = self.path.decode()
-
-        # Adjust pickle protocol according to host and client version.
-        self._subprocess._pickle_protocol = highest_pickle_protocol([
-            sys.version_info, self.version_info])
-
         return self._subprocess
 
     def __repr__(self):

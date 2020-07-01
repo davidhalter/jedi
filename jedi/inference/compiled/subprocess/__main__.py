@@ -30,14 +30,10 @@ class _ExactImporter(object):
 
 # Try to import jedi/parso.
 sys.meta_path.insert(0, _ExactImporter(_get_paths()))
-from jedi.inference.compiled import subprocess  # NOQA
+from jedi.inference.compiled import subprocess  # noqa: E402
 sys.meta_path.pop(0)
-
-from jedi._compatibility import highest_pickle_protocol  # noqa: E402
-
 
 # Retrieve the pickle protocol.
 host_sys_version = [int(x) for x in sys.argv[2].split('.')]
-pickle_protocol = highest_pickle_protocol([sys.version_info, host_sys_version])
 # And finally start the client.
-subprocess.Listener(pickle_protocol=pickle_protocol).listen()
+subprocess.Listener().listen()
