@@ -133,17 +133,6 @@ def goto_or_help_or_infer(request, Script):
 
 
 @pytest.fixture(scope='session')
-def has_typing(environment):
-    if environment.version_info >= (3, 5, 0):
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        return True
-
-    script = jedi.Script('import typing', environment=environment)
-    return bool(script.infer())
-
-
-@pytest.fixture(scope='session')
 def has_django(environment):
     script = jedi.Script('import django', environment=environment)
     return bool(script.infer())
