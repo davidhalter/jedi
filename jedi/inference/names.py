@@ -1,8 +1,8 @@
 from abc import abstractmethod
+from inspect import Parameter
 
 from parso.tree import search_ancestor
 
-from jedi._compatibility import Parameter
 from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES

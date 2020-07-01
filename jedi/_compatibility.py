@@ -426,17 +426,6 @@ def highest_pickle_protocol(python_versions):
     return protocol
 
 
-try:
-    from inspect import Parameter
-except ImportError:
-    class Parameter(object):
-        POSITIONAL_ONLY = object()
-        POSITIONAL_OR_KEYWORD = object()
-        VAR_POSITIONAL = object()
-        KEYWORD_ONLY = object()
-        VAR_KEYWORD = object()
-
-
 class GeneralizedPopen(subprocess.Popen):
     def __init__(self, *args, **kwargs):
         if os.name == 'nt':

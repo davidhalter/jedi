@@ -10,8 +10,8 @@ This means for example in this case::
 
 The signature here for bar should be `bar(b, c)` instead of bar(*args).
 """
+from inspect import Parameter
 
-from jedi._compatibility import Parameter
 from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
 from jedi.inference.helpers import is_big_annoying_library

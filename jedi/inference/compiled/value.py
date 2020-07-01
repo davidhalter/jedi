@@ -3,10 +3,11 @@ Imitate the parser representation.
 """
 import re
 from functools import partial
+from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import to_list
-from jedi._compatibility import force_unicode, Parameter, cast_path
+from jedi._compatibility import force_unicode, cast_path
 from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \

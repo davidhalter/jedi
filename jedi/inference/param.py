@@ -1,4 +1,5 @@
 from collections import defaultdict
+from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
@@ -6,7 +7,6 @@ from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, \
     LazyTreeValue, LazyUnknownValue
 from jedi.inference.value import iterable
-from jedi._compatibility import Parameter
 from jedi.inference.names import ParamName
 
 

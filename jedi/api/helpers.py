@@ -6,11 +6,12 @@ from collections import namedtuple
 from textwrap import dedent
 from itertools import chain
 from functools import wraps
+from inspect import Parameter
 
 from parso.python.parser import Parser
 from parso.python import tree
 
-from jedi._compatibility import u, Parameter
+from jedi._compatibility import u
 from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf

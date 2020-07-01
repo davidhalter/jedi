@@ -1,7 +1,8 @@
 """
 Module is used to infer Django model fields.
 """
-from jedi._compatibility import Parameter
+from inspect import Parameter
+
 from jedi import debug
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, ValueWrapper

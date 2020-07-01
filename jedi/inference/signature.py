@@ -1,4 +1,5 @@
-from jedi._compatibility import Parameter
+from inspect import Parameter
+
 from jedi.cache import memoize_method
 from jedi import debug
 from jedi import parser_utils

@@ -11,8 +11,9 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 import os
+from inspect import Parameter
 
-from jedi._compatibility import force_unicode, Parameter
+from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
