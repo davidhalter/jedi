@@ -192,12 +192,6 @@ def cast_path(obj):
     return u(obj, errors='replace')
 
 
-def force_unicode(obj):
-    # Intentionally don't mix those two up, because those two code paths might
-    # be different in the future (maybe windows?).
-    return cast_path(obj)
-
-
 def pickle_load(file):
     try:
         return pickle.load(file)

@@ -15,7 +15,7 @@ from functools import wraps
 import parso
 from parso.python import tree
 
-from jedi._compatibility import force_unicode, cast_path, is_py3
+from jedi._compatibility import cast_path
 from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
@@ -162,9 +162,6 @@ class Script(object):
             # TODO add a better warning than the traceback!
             with open(path, 'rb') as f:
                 code = f.read()
-
-        if sys_path is not None and not is_py3:
-            sys_path = list(map(force_unicode, sys_path))
 
         if project is None:
             # Load the Python grammar of the current interpreter.

@@ -4,7 +4,7 @@ import os
 import re
 import inspect
 
-from jedi._compatibility import find_module, cast_path, force_unicode, \
+from jedi._compatibility import find_module, cast_path, \
     all_suffixes
 from jedi.inference.compiled import access
 from jedi import debug
@@ -44,7 +44,7 @@ def get_module_info(inference_state, sys_path=None, full_name=None, **kwargs):
 
 
 def get_builtin_module_names(inference_state):
-    return list(map(force_unicode, sys.builtin_module_names))
+    return sys.builtin_module_names
 
 
 def _test_raise_error(inference_state, exception_type):

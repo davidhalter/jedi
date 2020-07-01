@@ -5,7 +5,7 @@ import copy
 
 from parso.python import tree
 
-from jedi._compatibility import force_unicode, unicode
+from jedi._compatibility import unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
@@ -567,7 +567,7 @@ def _is_tuple(value):
 
 
 def _bool_to_value(inference_state, bool_):
-    return compiled.builtin_from_name(inference_state, force_unicode(str(bool_)))
+    return compiled.builtin_from_name(inference_state, str(bool_))
 
 
 def _get_tuple_ints(value):
@@ -593,7 +593,7 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     if isinstance(operator, unicode):
         str_operator = operator
     else:
-        str_operator = force_unicode(str(operator.value))
+        str_operator = str(operator.value)
 
     if str_operator == '*':
         # for iterables, ignore * operations

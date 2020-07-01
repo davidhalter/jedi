@@ -7,7 +7,7 @@ from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import to_list
-from jedi._compatibility import force_unicode, cast_path
+from jedi._compatibility import cast_path
 from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
@@ -30,7 +30,7 @@ class CheckAttribute(object):
     def __call__(self, func):
         self.func = func
         if self.check_name is None:
-            self.check_name = force_unicode(func.__name__[2:])
+            self.check_name = func.__name__[2:]
         return self
 
     def __get__(self, instance, owner):
@@ -457,9 +457,6 @@ class CompiledValueFilter(AbstractFilter):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        # Always use unicode objects in Python 2 from here.
-        name = force_unicode(name)
-
         if self._inference_state.allow_descriptor_getattr:
             pass
 
@@ -535,7 +532,6 @@ def _parse_function_doc(doc):
     TODO docstrings like utime(path, (atime, mtime)) and a(b [, b]) -> None
     TODO docstrings like 'tuple of integers'
     """
-    doc = force_unicode(doc)
     # parse round parentheses: def func(a, (b,c))
     try:
         count = 0

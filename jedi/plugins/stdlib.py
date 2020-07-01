@@ -13,7 +13,6 @@ import parso
 import os
 from inspect import Parameter
 
-from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
@@ -209,7 +208,7 @@ def builtins_getattr(objects, names, defaults=None):
                 debug.warning('getattr called without str')
                 continue
             else:
-                return value.py__getattribute__(force_unicode(string))
+                return value.py__getattribute__(string)
     return NO_VALUES
 
 
@@ -330,7 +329,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
                     analysis.add(lazy_value.context, 'type-error-isinstance', node, message)
 
     return ValueSet(
-        compiled.builtin_from_name(inference_state, force_unicode(str(b)))
+        compiled.builtin_from_name(inference_state, str(b))
         for b in bool_results
     )
 
@@ -431,7 +430,7 @@ def collections_namedtuple(value, arguments, callback):
     for c in _follow_param(inference_state, arguments, 0):
         x = get_str_or_none(c)
         if x is not None:
-            name = force_unicode(x)
+            name = x
             break
 
     # TODO here we only use one of the types, we should use all.
@@ -441,10 +440,10 @@ def collections_namedtuple(value, arguments, callback):
     _fields = list(param_values)[0]
     string = get_str_or_none(_fields)
     if string is not None:
-        fields = force_unicode(string).replace(',', ' ').split()
+        fields = string.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
-            force_unicode(get_str_or_none(v))
+            get_str_or_none(v)
             for lazy_value in _fields.py__iter__()
             for v in lazy_value.infer()
         ]
@@ -745,7 +744,7 @@ def _os_path_join(args_set, callback):
                 break
             if not is_first:
                 string += os.path.sep
-            string += force_unicode(s)
+            string += s
             is_first = False
         else:
             return ValueSet([compiled.create_simple_object(sequence.inference_state, string)])

@@ -1,7 +1,6 @@
 import os
 from textwrap import dedent
 
-from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import _get_parent_dir_with_file, \
     _get_buildout_script_paths, check_sys_path_modifications
 
@@ -79,6 +78,5 @@ def test_path_from_sys_path_assignment(Script):
             sys.exit(important_package.main())""")
 
     paths = check_module_test(Script, code)
-    paths = list(map(force_unicode, paths))
     assert 1 not in paths
     assert '/home/test/.buildout/eggs/important_package.egg' in paths

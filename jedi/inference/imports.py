@@ -13,7 +13,7 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 
-from jedi._compatibility import ImplicitNSInfo, force_unicode
+from jedi._compatibility import ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.file_io import FolderIO
@@ -208,7 +208,7 @@ class Importer(object):
                     # somewhere out of the filesystem.
                     self._infer_possible = False
                 else:
-                    self._fixed_sys_path = [force_unicode(base_directory)]
+                    self._fixed_sys_path = [base_directory]
 
                 if base_import_path is None:
                     if import_path:
@@ -329,7 +329,7 @@ def import_module_by_names(inference_state, import_names, sys_path=None,
         sys_path = inference_state.get_sys_path()
 
     str_import_names = tuple(
-        force_unicode(i.value if isinstance(i, tree.Name) else i)
+        i.value if isinstance(i, tree.Name) else i
         for i in import_names
     )
     value_set = [None]

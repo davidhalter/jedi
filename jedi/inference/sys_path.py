@@ -1,7 +1,7 @@
 import os
 import re
 
-from jedi._compatibility import unicode, force_unicode, all_suffixes
+from jedi._compatibility import unicode, all_suffixes
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string, get_str_or_none
@@ -25,7 +25,6 @@ def _abs_path(module_context, path):
         return None
 
     base_dir = os.path.dirname(module_path)
-    path = force_unicode(path)
     return os.path.abspath(os.path.join(base_dir, path))
 
 

@@ -8,7 +8,7 @@ import warnings
 import re
 import builtins
 
-from jedi._compatibility import unicode, is_py3, py_version, force_unicode
+from jedi._compatibility import unicode, is_py3, py_version
 from jedi.inference.compiled.getattr_static import getattr_static
 
 ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
@@ -159,10 +159,6 @@ def create_access_path(inference_state, obj):
     return AccessPath(access.get_access_path_tuples())
 
 
-def _force_unicode_decorator(func):
-    return lambda *args, **kwargs: force_unicode(func(*args, **kwargs))
-
-
 def get_api_type(obj):
     if inspect.isclass(obj):
         return u'class'
@@ -199,7 +195,7 @@ class DirectObjectAccess(object):
             return None
 
     def py__doc__(self):
-        return force_unicode(inspect.getdoc(self._obj)) or u''
+        return inspect.getdoc(self._obj) or ''
 
     def py__name__(self):
         if not _is_class_instance(self._obj) or \
@@ -214,7 +210,7 @@ class DirectObjectAccess(object):
                 return None
 
         try:
-            return force_unicode(cls.__name__)
+            return cls.__name__
         except AttributeError:
             return None
 
@@ -264,7 +260,6 @@ class DirectObjectAccess(object):
             return None
         return paths
 
-    @_force_unicode_decorator
     @shorten_repr
     def get_repr(self):
         if inspect.ismodule(self._obj):
@@ -308,10 +303,10 @@ class DirectObjectAccess(object):
             name = try_to_get_name(type(self._obj))
             if name is None:
                 return ()
-        return tuple(force_unicode(n) for n in name.split('.'))
+        return tuple(name.split('.'))
 
     def dir(self):
-        return list(map(force_unicode, dir(self._obj)))
+        return dir(self._obj)
 
     def has_iter(self):
         try:
@@ -539,7 +534,7 @@ class DirectObjectAccess(object):
         objects of an objects
         """
         tuples = dict(
-            (force_unicode(name), self.is_allowed_getattr(name))
+            (name, self.is_allowed_getattr(name))
             for name in self.dir()
         )
         return self.needs_type_completions(), tuples

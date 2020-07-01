@@ -10,7 +10,6 @@ from inspect import Parameter
 
 from parso import ParserSyntaxError, parse
 
-from jedi._compatibility import force_unicode
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBaseClass, GenericClass
@@ -63,7 +62,7 @@ def _infer_annotation_string(context, string, index=None):
 def _get_forward_reference_node(context, string):
     try:
         new_node = context.inference_state.grammar.parse(
-            force_unicode(string),
+            string,
             start_symbol='eval_input',
             error_recovery=False
         )

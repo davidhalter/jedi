@@ -17,7 +17,6 @@ from jedi.api.environment import get_cached_default_environment, create_environm
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
 from jedi.api.helpers import split_search_string, get_module_names
-from jedi._compatibility import force_unicode
 from jedi.inference.imports import load_module_from_path, \
     load_namespace_from_path, iter_module_names
 from jedi.inference.sys_path import discover_buildout_paths
@@ -57,10 +56,6 @@ def _remove_duplicates_from_path(path):
             continue
         used.add(p)
         yield p
-
-
-def _force_unicode_list(lst):
-    return list(map(force_unicode, lst))
 
 
 class Project(object):
@@ -207,7 +202,7 @@ class Project(object):
             prefixed.append(self._path)
 
         path = prefixed + sys_path + suffixed
-        return list(_force_unicode_list(_remove_duplicates_from_path(path)))
+        return list(_remove_duplicates_from_path(path))
 
     def get_environment(self):
         if self._environment is None:

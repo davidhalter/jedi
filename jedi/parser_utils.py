@@ -8,8 +8,6 @@ from parso.python import tree
 from parso.cache import parser_cache
 from parso import split_lines
 
-from jedi._compatibility import force_unicode
-
 _EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
                   'or_test', 'and_test', 'not_test', 'comparison', 'expr',
                   'xor_expr', 'and_expr', 'shift_expr', 'arith_expr',
@@ -103,10 +101,7 @@ def clean_scope_docstring(scope_node):
         # leaves anymore that might be part of the docstring. A
         # docstring can also look like this: ``'foo' 'bar'
         # Returns a literal cleaned version of the ``Token``.
-        cleaned = cleandoc(safe_literal_eval(node.value))
-        # Since we want the docstr output to be always unicode, just
-        # force it.
-        return force_unicode(cleaned)
+        return cleandoc(safe_literal_eval(node.value))
     return ''
 
 
@@ -118,10 +113,7 @@ def find_statement_documentation(tree_node):
             if maybe_string.type == 'simple_stmt':
                 maybe_string = maybe_string.children[0]
                 if maybe_string.type == 'string':
-                    cleaned = cleandoc(safe_literal_eval(maybe_string.value))
-                    # Since we want the docstr output to be always unicode, just
-                    # force it.
-                    return force_unicode(cleaned)
+                    return cleandoc(safe_literal_eval(maybe_string.value))
     return ''
 
 

@@ -18,7 +18,7 @@ import weakref
 from functools import partial
 from threading import Thread
 
-from jedi._compatibility import is_py3, force_unicode, \
+from jedi._compatibility import is_py3, \
     pickle_dump, pickle_load, GeneralizedPopen
 from jedi import debug
 from jedi.cache import memoize_method
@@ -236,10 +236,6 @@ class CompiledSubprocess(object):
         if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
-        if not is_py3:
-            # Python 2 compatibility
-            kwargs = {force_unicode(key): value for key, value in kwargs.items()}
-
         data = inference_state_id, function, args, kwargs
         try:
             pickle_dump(data, self._get_process().stdin, PICKLE_PROTOCOL)
@@ -389,9 +385,8 @@ class AccessHandle(object):
         if name in ('id', 'access') or name.startswith('_'):
             raise AttributeError("Something went wrong with unpickling")
 
-        # if not is_py3: print >> sys.stderr, name
         # print('getattr', name, file=sys.stderr)
-        return partial(self._workaround, force_unicode(name))
+        return partial(self._workaround, name)
 
     def _workaround(self, name, *args, **kwargs):
         """

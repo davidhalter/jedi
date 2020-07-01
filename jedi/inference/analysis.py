@@ -3,7 +3,6 @@ Module for statical analysis.
 """
 from parso.python import tree
 
-from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi.inference.helpers import is_string
 
@@ -193,7 +192,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             key, lazy_value = unpacked_args[1]
             names = list(lazy_value.infer())
             assert len(names) == 1 and is_string(names[0])
-            assert force_unicode(names[0].get_safe_value()) == payload[1].value
+            assert names[0].get_safe_value() == payload[1].value
 
             # Check objects
             key, lazy_value = unpacked_args[0]

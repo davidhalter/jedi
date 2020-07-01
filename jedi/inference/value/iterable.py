@@ -4,7 +4,7 @@ iterators in general.
 """
 import sys
 
-from jedi._compatibility import force_unicode, is_py3
+from jedi._compatibility import is_py3
 from jedi.inference import compiled
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
@@ -532,21 +532,6 @@ class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
             yield LazyKnownValue(compiled.create_simple_object(self.inference_state, key))
 
     def py__simple_getitem__(self, index):
-        if is_py3 and self.inference_state.environment.version_info.major == 2:
-            # In Python 2 bytes and unicode compare.
-            if isinstance(index, bytes):
-                index_unicode = force_unicode(index)
-                try:
-                    return self._dct[index_unicode].infer()
-                except KeyError:
-                    pass
-            elif isinstance(index, str):
-                index_bytes = index.encode('utf-8')
-                try:
-                    return self._dct[index_bytes].infer()
-                except KeyError:
-                    pass
-
         with reraise_getitem_errors(KeyError, TypeError):
             lazy_value = self._dct[index]
         return lazy_value.infer()
