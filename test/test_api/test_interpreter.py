@@ -307,7 +307,6 @@ def test_endless_yield():
     _assert_interpreter_complete('list(lst)[9000].rea', locals(), ['real'])
 
 
-@pytest.mark.skipif('py_version < 33', reason='inspect.signature was created in 3.3.')
 def test_completion_params():
     foo = lambda a, b=3: None
 
@@ -320,7 +319,6 @@ def test_completion_params():
     assert t.name == 'int'
 
 
-@pytest.mark.skipif('py_version < 33', reason='inspect.signature was created in 3.3.')
 def test_completion_param_annotations():
     # Need to define this function not directly in Python. Otherwise Jedi is too
     # clever and uses the Python code instead of the signature object.

@@ -80,9 +80,6 @@ def test_relative_import(Script, environment, tmpdir):
     """
     Attempt a relative import in a very simple namespace package.
     """
-    if environment.version_info < (3, 5):
-        pytest.skip()
-
     directory = get_example_dir('namespace_package_relative_import')
     # Need to copy the content in a directory where there's no __init__.py.
     py.path.local(directory).copy(tmpdir)

@@ -144,9 +144,6 @@ def test_in_comment_before_string(Script):
 
 
 def test_async(Script, environment):
-    if environment.version_info < (3, 5):
-        pytest.skip()
-
     code = dedent('''
         foo = 3
         async def x():
