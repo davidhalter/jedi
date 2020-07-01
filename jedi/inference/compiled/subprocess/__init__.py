@@ -9,6 +9,7 @@ goals:
 
 import os
 import sys
+import queue
 import subprocess
 import socket
 import errno
@@ -16,12 +17,8 @@ import traceback
 import weakref
 from functools import partial
 from threading import Thread
-try:
-    from queue import Queue, Empty
-except ImportError:
-    from Queue import Queue, Empty  # python 2.7
 
-from jedi._compatibility import queue, is_py3, force_unicode, \
+from jedi._compatibility import is_py3, force_unicode, \
     pickle_dump, pickle_load, GeneralizedPopen
 from jedi import debug
 from jedi.cache import memoize_method
@@ -34,9 +31,9 @@ from jedi.api.exceptions import InternalError
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 
 
-def _enqueue_output(out, queue):
+def _enqueue_output(out, queue_):
     for line in iter(out.readline, b''):
-        queue.put(line)
+        queue_.put(line)
 
 
 def _add_stderr_to_debug(stderr_queue):
@@ -47,7 +44,7 @@ def _add_stderr_to_debug(stderr_queue):
             line = stderr_queue.get_nowait()
             line = line.decode('utf-8', 'replace')
             debug.warning('stderr output: %s' % line.rstrip('\n'))
-        except Empty:
+        except queue.Empty:
             break
 
 
@@ -202,7 +199,7 @@ class CompiledSubprocess(object):
             bufsize=-1,
             env=self._env_vars
         )
-        self._stderr_queue = Queue()
+        self._stderr_queue = queue.Queue()
         self._stderr_thread = t = Thread(
             target=_enqueue_output,
             args=(process.stderr, self._stderr_queue)

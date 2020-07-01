@@ -355,12 +355,6 @@ def utf8_repr(func):
         return wrapper
 
 
-if is_py3:
-    import queue
-else:
-    import Queue as queue  # noqa: F401
-
-
 def pickle_load(file):
     try:
         return pickle.load(file)
