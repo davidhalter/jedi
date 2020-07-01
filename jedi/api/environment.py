@@ -7,8 +7,9 @@ import sys
 import hashlib
 import filecmp
 from collections import namedtuple
+from shutil import which
 
-from jedi._compatibility import highest_pickle_protocol, which
+from jedi._compatibility import highest_pickle_protocol
 from jedi.cache import memoize_method, time_cache
 from jedi.inference.compiled.subprocess import CompiledSubprocess, \
     InferenceStateSameProcess, InferenceStateSubprocess
