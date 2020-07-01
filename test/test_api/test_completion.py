@@ -7,7 +7,6 @@ import pytest
 
 from ..helpers import root_dir
 from jedi.api.helpers import _start_match, _fuzzy_match
-from jedi._compatibility import scandir
 
 
 def test_in_whitespace(Script):
@@ -88,7 +87,7 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
 
 
 def test_complete_expanduser(Script):
-    possibilities = scandir(expanduser('~'))
+    possibilities = os.scandir(expanduser('~'))
     non_dots = [p for p in possibilities if not p.name.startswith('.') and len(p.name) > 1]
     item = non_dots[0]
     line = "'~%s%s'" % (os.sep, item.name)

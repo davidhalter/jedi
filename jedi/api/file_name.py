@@ -1,6 +1,6 @@
 import os
 
-from jedi._compatibility import FileNotFoundError, force_unicode, scandir
+from jedi._compatibility import FileNotFoundError, force_unicode
 from jedi.api import classes
 from jedi.api.strings import StringName, get_quote_ending
 from jedi.api.helpers import match
@@ -38,7 +38,7 @@ def complete_file_name(inference_state, module_context, start_leaf, quote, strin
             string = to_be_added + string
     base_path = os.path.join(inference_state.project.path, string)
     try:
-        listed = sorted(scandir(base_path), key=lambda e: e.name)
+        listed = sorted(os.scandir(base_path), key=lambda e: e.name)
         # OSError: [Errno 36] File name too long: '...'
     except (FileNotFoundError, OSError):
         return

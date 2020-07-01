@@ -5,7 +5,7 @@ import re
 import inspect
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    all_suffixes, scandir
+    all_suffixes
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
@@ -90,7 +90,7 @@ def _iter_module_names(inference_state, paths):
     # Python modules/packages
     for path in paths:
         try:
-            dirs = scandir(path)
+            dirs = os.scandir(path)
         except OSError:
             # The file might not exist or reading it might lead to an error.
             debug.warning("Not possible to list directory: %s", path)
