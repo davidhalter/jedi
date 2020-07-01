@@ -18,7 +18,7 @@ import weakref
 from functools import partial
 from threading import Thread
 
-from jedi._compatibility import is_py3, \
+from jedi._compatibility import \
     pickle_dump, pickle_load, GeneralizedPopen
 from jedi import debug
 from jedi.cache import memoize_method
