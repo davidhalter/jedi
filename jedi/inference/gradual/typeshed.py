@@ -38,7 +38,7 @@ def _create_stub_map(directory_path_info):
     def generate():
         try:
             listed = os.listdir(directory_path_info.path)
-        except FileNotFoundError:
+        except (FileNotFoundError, NotADirectoryError):
             return
 
         for entry in listed:

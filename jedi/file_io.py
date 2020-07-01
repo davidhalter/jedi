@@ -71,7 +71,7 @@ class ZipFileIO(file_io.KnownContentFileIO, FileIOFolderMixin):
     def get_last_modified(self):
         try:
             return os.path.getmtime(self._zip_path)
-        except (FileNotFoundError, PermissionError):
+        except (FileNotFoundError, PermissionError, NotADirectoryError):
             return None
 
 
