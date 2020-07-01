@@ -330,8 +330,6 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
 
         if is_coroutine:
             if self.is_generator():
-                if inference_state.environment.version_info < (3, 6):
-                    return NO_VALUES
                 async_generator_classes = inference_state.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
@@ -339,13 +337,10 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 # The contravariant doesn't seem to be defined.
                 generics = (yield_values.py__class__(), NO_VALUES)
                 return ValueSet(
-                    # In Python 3.6 AsyncGenerator is still a class.
                     GenericClass(c, TupleGenericManager(generics))
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
-                if inference_state.environment.version_info < (3, 5):
-                    return NO_VALUES
                 async_classes = inference_state.typing_module.py__getattribute__('Coroutine')
                 return_values = self.get_return_values()
                 # Only the first generic is relevant.

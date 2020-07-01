@@ -5,9 +5,6 @@ not any actual importing done. This module is about finding modules in the
 filesystem. This can be quite tricky sometimes, because Python imports are not
 always that simple.
 
-This module uses imp for python up to 3.2 and importlib for python 3.3 on; the
-correct implementation is delegated to _compatibility.
-
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """

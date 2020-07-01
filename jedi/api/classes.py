@@ -14,7 +14,6 @@ These classes are the much biggest part of the API, because they contain
 the interesting information about all operations.
 """
 import re
-import sys
 import warnings
 
 from parso.python.tree import search_ancestor
@@ -918,8 +917,4 @@ class ParamName(Name):
 
         :rtype: :py:attr:`inspect.Parameter.kind`
         """
-        if sys.version_info < (3, 5):
-            raise NotImplementedError(
-                'Python 2 is end-of-life, the new feature is not available for it'
-            )
         return self._name.get_kind()

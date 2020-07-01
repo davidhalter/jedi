@@ -1,4 +1,3 @@
-# python >= 3.4
 import typing
 from typing import (
     Callable,

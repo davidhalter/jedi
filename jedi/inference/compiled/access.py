@@ -464,9 +464,6 @@ class DirectObjectAccess(object):
         """
         Returns Tuple[Optional[str], Tuple[AccessPath, ...]]
         """
-        if sys.version_info < (3, 5):
-            return None, ()
-
         name = None
         args = ()
         if safe_getattr(self._obj, '__module__', default='') == 'typing':
@@ -505,8 +502,6 @@ class DirectObjectAccess(object):
 
     def _get_signature(self):
         obj = self._obj
-        if py_version < 33:
-            raise ValueError("inspect.signature was introduced in 3.3")
         try:
             return inspect.signature(obj)
         except (RuntimeError, TypeError):

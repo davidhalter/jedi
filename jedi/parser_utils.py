@@ -131,15 +131,7 @@ def safe_literal_eval(value):
         # manually, but that's right now not implemented.
         return ''
 
-    try:
-        return literal_eval(value)
-    except SyntaxError:
-        # It's possible to create syntax errors with literals like rb'' in
-        # Python 2. This should not be possible and in that case just return an
-        # empty string.
-        # Before Python 3.3 there was a more strict definition in which order
-        # you could define literals.
-        return ''
+    return literal_eval(value)
 
 
 def get_signature(funcdef, width=72, call_string=None,
