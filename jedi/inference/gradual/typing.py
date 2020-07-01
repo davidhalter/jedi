@@ -263,8 +263,6 @@ class TypeAlias(LazyValueWrapper):
 
     def _get_wrapped_value(self):
         module_name, class_name = self._actual.split('.')
-        if self.inference_state.environment.version_info.major == 2 and module_name == 'builtins':
-            module_name = '__builtin__'
 
         # TODO use inference_state.import_module?
         from jedi.inference.imports import Importer

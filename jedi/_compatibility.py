@@ -198,12 +198,6 @@ def force_unicode(obj):
     return cast_path(obj)
 
 
-try:
-    import builtins  # module name in python 3
-except ImportError:
-    import __builtin__ as builtins  # noqa: F401
-
-
 def utf8_repr(func):
     """
     ``__repr__`` methods in Python 2 don't allow unicode objects to be

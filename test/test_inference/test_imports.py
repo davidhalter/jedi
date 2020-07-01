@@ -432,9 +432,6 @@ def test_import_name_calculation(Script):
 
 @pytest.mark.parametrize('name', ('builtins', 'typing'))
 def test_pre_defined_imports_module(Script, environment, name):
-    if environment.version_info.major < 3 and name == 'builtins':
-        name = '__builtin__'
-
     path = os.path.join(root_dir, name + '.py')
     module = Script('', path=path)._get_module_context()
     assert module.string_names == (name,)
@@ -445,9 +442,6 @@ def test_pre_defined_imports_module(Script, environment, name):
 
 @pytest.mark.parametrize('name', ('builtins', 'typing'))
 def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
-    if environment.version_info.major < 3 and name == 'builtins':
-        name = '__builtin__'
-
     module_path = tmpdir.join(name + '.py')
     module_path.write('int = ...')
     script = Script(

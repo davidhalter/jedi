@@ -6,9 +6,9 @@ import operator as op
 from collections import namedtuple
 import warnings
 import re
+import builtins
 
-from jedi._compatibility import unicode, is_py3, builtins, \
-    py_version, force_unicode
+from jedi._compatibility import unicode, is_py3, py_version, force_unicode
 from jedi.inference.compiled.getattr_static import getattr_static
 
 ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
@@ -267,19 +267,17 @@ class DirectObjectAccess(object):
     @_force_unicode_decorator
     @shorten_repr
     def get_repr(self):
-        builtins = 'builtins', '__builtin__'
-
         if inspect.ismodule(self._obj):
             return repr(self._obj)
         # Try to avoid execution of the property.
-        if safe_getattr(self._obj, '__module__', default='') in builtins:
+        if safe_getattr(self._obj, '__module__', default='') == 'builtins':
             return repr(self._obj)
 
         type_ = type(self._obj)
         if type_ == type:
             return type.__repr__(self._obj)
 
-        if safe_getattr(type_, '__module__', default='') in builtins:
+        if safe_getattr(type_, '__module__', default='') == 'builtins':
             # Allow direct execution of repr for builtins.
             return repr(self._obj)
         return object.__repr__(self._obj)

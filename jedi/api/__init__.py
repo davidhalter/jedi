@@ -242,7 +242,7 @@ class Script(object):
             code_lines=self._code_lines,
             is_package=is_package,
         )
-        if names[0] not in ('builtins', '__builtin__', 'typing'):
+        if names[0] not in ('builtins', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
             self._inference_state.module_cache.add(names, ValueSet([module]))
         return module

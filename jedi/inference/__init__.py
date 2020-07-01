@@ -124,8 +124,6 @@ class InferenceState(object):
     @inference_state_function_cache()
     def builtins_module(self):
         module_name = u'builtins'
-        if self.environment.version_info.major == 2:
-            module_name = u'__builtin__'
         builtins_module, = self.import_module((module_name,), sys_path=())
         return builtins_module
 

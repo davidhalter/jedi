@@ -70,7 +70,6 @@ class BaseName(object):
         '_collections': 'collections',
         '_socket': 'socket',
         '_sqlite3': 'sqlite3',
-        '__builtin__': 'builtins',
     }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {

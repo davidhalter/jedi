@@ -142,8 +142,6 @@ def test_parent_context(same_process_inference_state, attribute, expected_name, 
     x, = o.py__getattribute__(attribute)
     assert x.py__name__() == expected_name
     module_name = x.parent_context.py__name__()
-    if module_name == '__builtin__':
-        module_name = 'builtins'  # Python 2
     assert module_name == expected_parent
     assert x.parent_context.parent_context is None
 
