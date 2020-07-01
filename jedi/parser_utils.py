@@ -1,5 +1,6 @@
 import re
 import textwrap
+from ast import literal_eval
 from inspect import cleandoc
 from weakref import WeakKeyDictionary
 
@@ -7,7 +8,7 @@ from parso.python import tree
 from parso.cache import parser_cache
 from parso import split_lines
 
-from jedi._compatibility import literal_eval, force_unicode
+from jedi._compatibility import force_unicode
 
 _EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
                   'or_test', 'and_test', 'not_test', 'comparison', 'expr',
