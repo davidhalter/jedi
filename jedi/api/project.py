@@ -12,8 +12,6 @@ import errno
 import json
 import sys
 
-from jedi._compatibility import PermissionError, \
-    IsADirectoryError, NotADirectoryError
 from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion

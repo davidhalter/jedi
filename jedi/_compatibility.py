@@ -216,23 +216,6 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2  # noqa: F401
 
-try:
-    IsADirectoryError = IsADirectoryError
-except NameError:
-    IsADirectoryError = IOError
-
-try:
-    PermissionError = PermissionError
-except NameError:
-    PermissionError = IOError
-
-try:
-    NotADirectoryError = NotADirectoryError
-except NameError:
-    class NotADirectoryError(Exception):
-        # Don't implement this for Python 2 anymore.
-        pass
-
 
 def utf8_repr(func):
     """
