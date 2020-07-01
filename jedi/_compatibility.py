@@ -25,18 +25,6 @@ is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
-class DummyFile(object):
-    def __init__(self, loader, string):
-        self.loader = loader
-        self.string = string
-
-    def read(self):
-        return self.loader.get_source(self.string)
-
-    def close(self):
-        del self.loader
-
-
 def find_module_py34(string, path=None, full_name=None, is_global_search=True):
     spec = None
     loader = None
