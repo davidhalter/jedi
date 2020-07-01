@@ -1,6 +1,6 @@
 import os
 
-from jedi._compatibility import FileNotFoundError, force_unicode
+from jedi._compatibility import force_unicode
 from jedi.api import classes
 from jedi.api.strings import StringName, get_quote_ending
 from jedi.api.helpers import match

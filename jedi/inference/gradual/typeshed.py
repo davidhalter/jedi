@@ -5,7 +5,7 @@ from collections import namedtuple
 
 from jedi import settings
 from jedi.file_io import FileIO
-from jedi._compatibility import FileNotFoundError, cast_path
+from jedi._compatibility import cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
@@ -38,8 +38,7 @@ def _create_stub_map(directory_path_info):
     def generate():
         try:
             listed = os.listdir(directory_path_info.path)
-        except (FileNotFoundError, OSError):
-            # OSError is Python 2
+        except FileNotFoundError:
             return
 
         for entry in listed:

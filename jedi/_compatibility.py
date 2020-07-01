@@ -217,11 +217,6 @@ except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2  # noqa: F401
 
 try:
-    FileNotFoundError = FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
-
-try:
     IsADirectoryError = IsADirectoryError
 except NameError:
     IsADirectoryError = IOError
