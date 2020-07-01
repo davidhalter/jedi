@@ -10,6 +10,7 @@ from inspect import Parameter
 
 from parso import ParserSyntaxError, parse
 
+from jedi._compatibility import force_unicode
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBaseClass, GenericClass

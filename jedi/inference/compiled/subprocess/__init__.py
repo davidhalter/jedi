@@ -13,6 +13,7 @@ import subprocess
 import socket
 import errno
 import traceback
+import weakref
 from functools import partial
 from threading import Thread
 try:
@@ -21,7 +22,7 @@ except ImportError:
     from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, GeneralizedPopen, weakref
+    pickle_dump, pickle_load, GeneralizedPopen
 from jedi import debug
 from jedi.cache import memoize_method
 from jedi.inference.compiled.subprocess import functions

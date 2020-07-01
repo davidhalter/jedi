@@ -3,16 +3,15 @@ To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
 from __future__ import print_function
-import atexit
 import errno
-import functools
 import sys
 import os
 import re
 import pkgutil
 import warnings
 import subprocess
-import weakref
+import pickle
+
 try:
     import importlib
 except ImportError:
@@ -361,18 +360,9 @@ if is_py3:
 else:
     import Queue as queue  # noqa: F401
 
-try:
-    # Attempt to load the C implementation of pickle on Python 2 as it is way
-    # faster.
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
 
 def pickle_load(file):
     try:
-        if is_py3:
-            return pickle.load(file, encoding='bytes')
         return pickle.load(file)
     # Python on Windows don't throw EOF errors for pipes. So reraise them with
     # the correct type, which is caught upwards.
@@ -382,24 +372,8 @@ def pickle_load(file):
         raise
 
 
-def _python2_dct_keys_to_unicode(data):
-    """
-    Python 2 stores object __dict__ entries as bytes, not unicode, correct it
-    here. Python 2 can deal with both, Python 3 expects unicode.
-    """
-    if isinstance(data, tuple):
-        return tuple(_python2_dct_keys_to_unicode(x) for x in data)
-    elif isinstance(data, list):
-        return list(_python2_dct_keys_to_unicode(x) for x in data)
-    elif hasattr(data, '__dict__') and type(data.__dict__) == dict:
-        data.__dict__ = {unicode(k): v for k, v in data.__dict__.items()}
-    return data
-
-
 def pickle_dump(data, file, protocol):
     try:
-        if not is_py3:
-            data = _python2_dct_keys_to_unicode(data)
         pickle.dump(data, file, protocol)
         # On Python 3.3 flush throws sometimes an error even though the writing
         # operation should be completed.
