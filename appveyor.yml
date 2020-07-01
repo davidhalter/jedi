@@ -12,13 +12,6 @@ environment:
     JEDI_TEST_ENVIRONMENT: 37
   - TOXENV: py36
     PYTHON_PATH: C:\Python36
-
-  - TOXENV: py35
-    PYTHON_PATH: C:\Python35
-    JEDI_TEST_ENVIRONMENT: 37
-  - TOXENV: py35
-    PYTHON_PATH: C:\Python35
-    JEDI_TEST_ENVIRONMENT: 36
 install:
   - git submodule update --init --recursive
   - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
