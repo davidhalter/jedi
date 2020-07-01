@@ -68,7 +68,7 @@ def test_hex_values_in_docstring():
         ('lambda x, y, z: x + y * z\n', '<lambda>(x, y, z)')
     ])
 def test_get_signature(code, signature):
-    node = parse(code, version='3.5').children[0]
+    node = parse(code, version='3.8').children[0]
     if node.type == 'simple_stmt':
         node = node.children[0]
     assert parser_utils.get_signature(node) == signature

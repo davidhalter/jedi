@@ -431,7 +431,7 @@ Options:
     --pdb           Enable pdb debugging on fail.
     -d, --debug     Enable text output debugging (please install ``colorama``).
     --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
-    --env <dotted>  A Python version, like 2.7, 3.8, etc.
+    --env <dotted>  A Python version, like 3.9, 3.8, etc.
 """
 if __name__ == '__main__':
     import docopt

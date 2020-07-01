@@ -1,16 +1,9 @@
 import os
-import sys
 from textwrap import dedent
 
 import pytest
 
 import jedi
-
-
-@pytest.fixture(autouse=True)
-def skip_old_python(skip_pre_python36):
-    if sys.version_info < (3, 6):
-        pytest.skip()
 
 
 @pytest.fixture()

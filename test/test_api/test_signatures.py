@@ -51,7 +51,6 @@ def test_param_default(Script, code, expected_params):
             assert annotation.description == expected
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="Python <3.5 doesn't support __signature__")
 @pytest.mark.parametrize(
     'code, index, param_code, kind', [
         ('def f(x=1): pass\nf', 0, 'x=1', 'POSITIONAL_OR_KEYWORD'),

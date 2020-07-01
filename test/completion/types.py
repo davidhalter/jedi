@@ -135,7 +135,6 @@ set_t2.c
 # -----------------
 # pep 448 unpacking generalizations
 # -----------------
-# python >= 3.5
 
 d = {'a': 3}
 dc = {v: 3 for v in ['a']}

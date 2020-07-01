@@ -388,7 +388,6 @@ k = 'a'
 #? int()
 some_dct[k]
 
-# python > 3.5
 some_other_dct = dict(some_dct, c=set)
 #? int()
 some_other_dct['a']

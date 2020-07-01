@@ -56,7 +56,7 @@ def test_goto_on_file(Script):
     assert d2.name == 'Bar'
 
 
-def test_goto_import(Script, skip_pre_python35):
+def test_goto_import(Script):
     code = 'from abc import ABC; ABC'
     d, = Script(code).goto(only_stubs=True)
     assert d.is_stub()

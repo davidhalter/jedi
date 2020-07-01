@@ -62,7 +62,7 @@ def test_static_analysis(static_analysis_case, environment):
         static_analysis_case.run(assert_static_analysis, environment)
 
 
-def test_refactor(refactor_case, skip_pre_python36, environment):
+def test_refactor(refactor_case, environment):
     """
     Run refactoring test case.
 

@@ -163,7 +163,7 @@ def test_docstring_params_formatting(Script):
     assert defs[0].docstring() == 'func(param1, param2, param3)'
 
 
-def test_import_function_docstring(Script, skip_pre_python35):
+def test_import_function_docstring(Script):
     code = "from stub_folder import with_stub; with_stub.stub_function"
     path = os.path.join(test_dir, 'completion', 'import_function_docstring.py')
     c, = Script(code, path=path).complete()
@@ -422,7 +422,7 @@ def test_decorator(Script):
     assert d.docstring(raw=True) == 'Nice docstring'
 
 
-def test_method_decorator(Script, skip_pre_python35):
+def test_method_decorator(Script):
     code = dedent('''
         def decorator(func):
             @wraps(func)
@@ -443,7 +443,7 @@ def test_method_decorator(Script, skip_pre_python35):
     assert d.docstring() == 'wrapper(f)\n\nNice docstring'
 
 
-def test_partial(Script, skip_pre_python36):
+def test_partial(Script):
     code = dedent('''
         def foo():
             'x y z'

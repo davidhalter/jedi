@@ -382,7 +382,7 @@ _dict_keys_completion_tests = [
 @pytest.mark.parametrize(
     'added_code, column, expected', _dict_keys_completion_tests
 )
-def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python36):
+def test_dict_keys_completions(Script, added_code, column, expected):
     code = dedent(r'''
         ints = {1: ''}
         ints[50] = 3.0
@@ -405,7 +405,7 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
-def test_dict_keys_in_weird_case(Script, skip_pre_python36):
+def test_dict_keys_in_weird_case(Script):
     assert Script('a[\n# foo\nx]').complete(line=2, column=0)
 
 

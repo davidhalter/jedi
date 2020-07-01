@@ -134,7 +134,7 @@ def test_load_save_project(tmpdir):
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
-def test_search(string, full_names, kwargs, skip_pre_python36):
+def test_search(string, full_names, kwargs):
     some_search_test_var = 1.0
     project = Project(test_dir)
     if kwargs.pop('complete', False) is True:
@@ -153,7 +153,7 @@ def test_search(string, full_names, kwargs, skip_pre_python36):
     ]
 )
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
-def test_complete_search(Script, string, completions, all_scopes, skip_pre_python36):
+def test_complete_search(Script, string, completions, all_scopes):
     project = Project(test_dir)
     defs = project.complete_search(string, all_scopes=all_scopes)
     assert [d.complete for d in defs] == completions

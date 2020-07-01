@@ -382,7 +382,6 @@ getattr(getattr, 1)
 getattr(str, [])
 
 
-# python >= 3.5
 class Base():
     def ret(self, b):
         return b

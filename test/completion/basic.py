@@ -344,8 +344,6 @@ def foo(my_t=some_defa
 #? ['some_default']
 def foo(my_t=some_defa, my_t2=some_defa
 
-# python > 2.7
-
 #? ['my_type']
 def foo(my_t: lala=some_defa, my_t2: my_typ
 #? ['my_type']

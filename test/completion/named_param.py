@@ -97,7 +97,6 @@ def x(): pass
 # -----------------
 # Only keyword arguments are valid
 # -----------------
-# python >= 3.5
 
 def x(bam, *, bar, baz):
     pass
