@@ -7,7 +7,6 @@ import weakref
 
 from parso.tree import search_ancestor
 
-from jedi._compatibility import use_metaclass
 from jedi.inference import flow_analysis
 from jedi.inference.base_value import ValueSet, ValueWrapper, \
     LazyValueWrapper
@@ -334,14 +333,14 @@ class _AttributeOverwriteMixin(object):
             yield filter
 
 
-class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                           LazyValueWrapper)):
+class LazyAttributeOverwrite(_AttributeOverwriteMixin, LazyValueWrapper,
+                             metaclass=_OverwriteMeta):
     def __init__(self, inference_state):
         self.inference_state = inference_state
 
 
-class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                       ValueWrapper)):
+class AttributeOverwrite(_AttributeOverwriteMixin, ValueWrapper,
+                         metaclass=_OverwriteMeta):
     pass
 
 

@@ -37,7 +37,6 @@ py__doc__()                            Returns the docstring for a value.
 
 """
 from jedi import debug
-from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
     inference_state_method_generator_cache
@@ -321,7 +320,7 @@ class ClassMixin(object):
         return ValueSet({self})
 
 
-class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
+class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
     api_type = u'class'
 
     @inference_state_method_cache()

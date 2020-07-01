@@ -218,13 +218,6 @@ except NameError:
     unicode = str
 
 
-def use_metaclass(meta, *bases):
-    """ Create a class with a metaclass. """
-    if not bases:
-        bases = (object,)
-    return meta("Py2CompatibilityMetaClass", bases, {})
-
-
 try:
     encoding = sys.stdout.encoding
     if encoding is None:

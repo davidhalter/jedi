@@ -1,6 +1,5 @@
 from parso.python import tree
 
-from jedi._compatibility import use_metaclass
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass
 from jedi.inference import compiled
@@ -126,7 +125,7 @@ class FunctionMixin(object):
         return [TreeSignature(f) for f in self.get_signature_functions()]
 
 
-class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
+class FunctionValue(FunctionMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
