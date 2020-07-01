@@ -8,10 +8,12 @@ just one.
 """
 from functools import reduce
 from operator import add
+from itertools import zip_longest
+
 from parso.python.tree import Name
 
 from jedi import debug
-from jedi._compatibility import zip_longest, unicode
+from jedi._compatibility import unicode
 from jedi.parser_utils import clean_scope_docstring
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.utils import safe_property

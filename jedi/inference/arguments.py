@@ -1,8 +1,8 @@
 import re
+from itertools import zip_longest
 
 from parso.python import tree
 
-from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
@@ -189,8 +189,6 @@ class TreeArguments(AbstractArguments):
                 iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
                 for values in list(zip_longest(*iterators)):
-                    # TODO zip_longest yields None, that means this would raise
-                    # an exception?
                     yield None, get_merged_lazy_value(
                         [v for v in values if v is not None]
                     )

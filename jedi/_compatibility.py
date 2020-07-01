@@ -211,12 +211,6 @@ def literal_eval(string):
     return ast.literal_eval(string)
 
 
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest  # Python 2  # noqa: F401
-
-
 def utf8_repr(func):
     """
     ``__repr__`` methods in Python 2 don't allow unicode objects to be
