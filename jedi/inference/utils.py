@@ -5,8 +5,6 @@ import functools
 import re
 import os
 
-from jedi._compatibility import reraise
-
 
 _sep = os.path.sep
 if os.path.altsep is not None:
@@ -75,7 +73,7 @@ def reraise_uncaught(func):
             return func(*args, **kwds)
         except AttributeError:
             exc_info = sys.exc_info()
-            reraise(UncaughtAttributeError(exc_info[1]), exc_info[2])
+            UncaughtAttributeError(exc_info[1]).with_traceback(exc_info[2])
     return wrapper
 
 

@@ -218,26 +218,6 @@ except NameError:
     unicode = str
 
 
-# re-raise function
-if is_py3:
-    def reraise(exception, traceback):
-        raise exception.with_traceback(traceback)
-else:
-    eval(compile("""
-def reraise(exception, traceback):
-    raise exception, None, traceback
-""", 'blub', 'exec'))
-
-reraise.__doc__ = """
-Re-raise `exception` with a `traceback` object.
-
-Usage::
-
-    reraise(Exception, sys.exc_info()[2])
-
-"""
-
-
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
