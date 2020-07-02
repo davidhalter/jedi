@@ -114,7 +114,6 @@ import pytest
 
 import jedi
 from jedi import debug
-from jedi._compatibility import unicode
 from jedi.api.classes import Name
 from jedi.api.completion import get_user_context
 from jedi import parser_utils
