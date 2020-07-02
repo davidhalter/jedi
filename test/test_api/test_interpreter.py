@@ -7,7 +7,7 @@ import warnings
 import pytest
 
 import jedi
-from jedi._compatibility import is_py3, py_version
+from jedi._compatibility import py_version
 from jedi.inference.compiled import mixed
 from importlib import import_module
 
@@ -139,9 +139,7 @@ def test_complete_raw_module():
 def test_complete_raw_instance():
     import datetime
     dt = datetime.datetime(2013, 1, 1)
-    completions = ['time', 'timetz', 'timetuple']
-    if is_py3:
-        completions += ['timestamp']
+    completions = ['time', 'timetz', 'timetuple', 'timestamp']
     _assert_interpreter_complete('(dt - dt).ti', locals(), completions)
 
 
@@ -349,12 +347,10 @@ def test_keyword_argument():
     assert c.name == 'some_keyword_argument='
     assert c.complete == 'ord_argument='
 
-    # This needs inspect.signature to work.
-    if is_py3:
-        # Make it impossible for jedi to find the source of the function.
-        f.__name__ = 'xSOMETHING'
-        c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).complete()
-        assert c.name == 'some_keyword_argument='
+    # Make it impossible for jedi to find the source of the function.
+    f.__name__ = 'xSOMETHING'
+    c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).complete()
+    assert c.name == 'some_keyword_argument='
 
 
 def test_more_complex_instances():
@@ -403,16 +399,12 @@ def test_dir_magic_method(allow_unsafe_getattr):
             raise AttributeError(name)
 
         def __dir__(self):
-            if is_py3:
-                names = object.__dir__(self)
-            else:
-                names = dir(object())
-            return ['foo', 'bar'] + names
+            return ['foo', 'bar'] + object.__dir__(self)
 
     itp = jedi.Interpreter("ca.", [{'ca': CompleteAttrs()}])
     completions = itp.complete()
     names = [c.name for c in completions]
-    assert ('__dir__' in names) == is_py3
+    assert ('__dir__' in names) is True
     assert '__class__' in names
     assert 'foo' in names
     assert 'bar' in names

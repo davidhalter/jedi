@@ -18,8 +18,6 @@ from zipimport import zipimporter
 
 from jedi.file_io import KnownContentFileIO, ZipFileIO
 
-is_py3 = sys.version_info[0] >= 3
-is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
@@ -105,7 +103,7 @@ def _from_loader(loader, string):
     except AttributeError:
         raise ImportError("get_source was not defined on loader")
 
-    if is_py3 and f is not importlib.machinery.SourceFileLoader.get_source:
+    if f is not importlib.machinery.SourceFileLoader.get_source:
         # Unfortunately we are reading unicode here, not bytes.
         # It seems hard to get bytes, because the zip importer
         # logic just unpacks the zip file and returns a file descriptor
@@ -143,7 +141,7 @@ class ImplicitNSInfo(object):
         self.paths = paths
 
 
-if is_py3:
+if True:
     all_suffixes = importlib.machinery.all_suffixes
 else:
     def all_suffixes():

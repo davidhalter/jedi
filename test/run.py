@@ -114,7 +114,7 @@ import pytest
 
 import jedi
 from jedi import debug
-from jedi._compatibility import unicode, is_py3
+from jedi._compatibility import unicode
 from jedi.api.classes import Name
 from jedi.api.completion import get_user_context
 from jedi import parser_utils
@@ -401,12 +401,8 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
 
             path = os.path.join(base_dir, f_name)
 
-            if is_py3:
-                with open(path, encoding='utf-8', newline='') as f:
-                    source = f.read()
-            else:
-                with open(path) as f:
-                    source = unicode(f.read(), 'UTF-8')
+            with open(path, encoding='utf-8', newline='') as f:
+                source = f.read()
 
             for case in collect_file_tests(path, StringIO(source),
                                            lines_to_execute):

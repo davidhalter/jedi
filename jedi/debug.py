@@ -2,7 +2,7 @@ import os
 import time
 from contextlib import contextmanager
 
-from jedi._compatibility import encoding, is_py3, u
+from jedi._compatibility import u
 
 _inited = False
 
@@ -135,9 +135,4 @@ def print_to_stdout(color, str_out):
     """
     col = getattr(Fore, color)
     _lazy_colorama_init()
-    if not is_py3:
-        str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
-
-
-# debug_function = print_to_stdout
