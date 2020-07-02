@@ -11,8 +11,6 @@ import os
 import sys
 import queue
 import subprocess
-import socket
-import errno
 import traceback
 import weakref
 from functools import partial
@@ -206,9 +204,6 @@ class CompiledSubprocess(object):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            # Use system default buffering on Python 2 to improve performance
-            # (this is already the case on Python 3).
-            bufsize=-1,
             env=self._env_vars
         )
         self._stderr_queue = queue.Queue()
@@ -253,13 +248,7 @@ class CompiledSubprocess(object):
         data = inference_state_id, function, args, kwargs
         try:
             pickle_dump(data, self._get_process().stdin, PICKLE_PROTOCOL)
-        except (socket.error, IOError) as e:
-            # Once Python2 will be removed we can just use `BrokenPipeError`.
-            # Also, somehow in windows it returns EINVAL instead of EPIPE if
-            # the subprocess dies.
-            if e.errno not in (errno.EPIPE, errno.EINVAL):
-                # Not a broken pipe
-                raise
+        except BrokenPipeError:
             self._kill()
             raise InternalError("The subprocess %s was killed. Maybe out of memory?"
                                 % self._executable)

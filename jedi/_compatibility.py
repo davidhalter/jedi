@@ -4,8 +4,6 @@ different Python versions.
 """
 import errno
 import sys
-import os
-import subprocess
 import pickle
 
 
