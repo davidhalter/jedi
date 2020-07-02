@@ -9,11 +9,7 @@ import os
 import warnings
 import subprocess
 import pickle
-
-try:
-    import importlib
-except ImportError:
-    pass
+import importlib
 from zipimport import zipimporter
 
 from jedi.file_io import KnownContentFileIO, ZipFileIO
