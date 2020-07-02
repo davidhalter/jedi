@@ -438,13 +438,12 @@ def get_global_filters(context, until_position, origin_scope):
     For global name lookups. The filters will handle name resolution
     themselves, but here we gather possible filters downwards.
 
-    >>> from jedi._compatibility import u
     >>> from jedi import Script
-    >>> script = Script(u('''
+    >>> script = Script('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None
-    ... '''))
+    ... ''')
     >>> module_node = script._module_node
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope

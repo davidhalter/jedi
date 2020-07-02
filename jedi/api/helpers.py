@@ -11,7 +11,6 @@ from inspect import Parameter
 from parso.python.parser import Parser
 from parso.python import tree
 
-from jedi._compatibility import u
 from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
@@ -85,18 +84,18 @@ def _get_code_for_stack(code_lines, leaf, position):
         # If we're not on a comment simply get the previous leaf and proceed.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
-            return u('')  # At the beginning of the file.
+            return ''  # At the beginning of the file.
 
     is_after_newline = leaf.type == 'newline'
     while leaf.type == 'newline':
         leaf = leaf.get_previous_leaf()
         if leaf is None:
-            return u('')
+            return ''
 
     if leaf.type == 'error_leaf' or leaf.type == 'string':
         if leaf.start_pos[0] < position[0]:
             # On a different line, we just begin anew.
-            return u('')
+            return ''
 
         # Error leafs cannot be parsed, completion in strings is also
         # impossible.
@@ -112,7 +111,7 @@ def _get_code_for_stack(code_lines, leaf, position):
             if user_stmt.start_pos[1] > position[1]:
                 # This means that it's actually a dedent and that means that we
                 # start without value (part of a suite).
-                return u('')
+                return ''
 
         # This is basically getting the relevant lines.
         return _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)

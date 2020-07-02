@@ -1,7 +1,6 @@
 """
 All character set and unicode related tests.
 """
-from jedi._compatibility import u
 from jedi import Project
 
 
@@ -11,12 +10,12 @@ def test_unicode_script(Script):
     assert len(completions)
     assert type(completions[0].description) is str
 
-    s = u("author='öä'; author")
+    s = "author='öä'; author"
     completions = Script(s).complete()
     x = completions[0].description
     assert type(x) is str
 
-    s = u("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
+    s = "#-*- coding: iso-8859-1 -*-\nauthor='öä'; author"
     s = s.encode('latin-1')
     completions = Script(s).complete()
     assert type(completions[0].description) is str
@@ -24,21 +23,21 @@ def test_unicode_script(Script):
 
 def test_unicode_attribute(Script):
     """ github jedi-vim issue #94 """
-    s1 = u('#-*- coding: utf-8 -*-\nclass Person():\n'
-           '    name = "e"\n\nPerson().name.')
+    s1 = ('#-*- coding: utf-8 -*-\nclass Person():\n'
+          '    name = "e"\n\nPerson().name.')
     completions1 = Script(s1).complete()
     assert 'strip' in [c.name for c in completions1]
-    s2 = u('#-*- coding: utf-8 -*-\nclass Person():\n'
-           '    name = "é"\n\nPerson().name.')
+    s2 = ('#-*- coding: utf-8 -*-\nclass Person():\n'
+          '    name = "é"\n\nPerson().name.')
     completions2 = Script(s2).complete()
     assert 'strip' in [c.name for c in completions2]
 
 
 def test_multibyte_script(Script):
     """ `jedi.Script` must accept multi-byte string source. """
-    code = u("import datetime; datetime.d")
-    comment = u("# multi-byte comment あいうえおä")
-    s = (u('%s\n%s') % (code, comment))
+    code = "import datetime; datetime.d"
+    comment = "# multi-byte comment あいうえおä"
+    s = ('%s\n%s') % (code, comment)
     assert len(Script(s).complete(1, len(code)))
 
 
@@ -63,7 +62,7 @@ def test_complete_at_zero(Script):
 def test_wrong_encoding(Script, tmpdir):
     x = tmpdir.join('x.py')
     # Use both latin-1 and utf-8 (a really broken file).
-    x.write_binary(u'foobar = 1\nä'.encode('latin-1') + u'ä'.encode('utf-8'))
+    x.write_binary('foobar = 1\nä'.encode('latin-1') + 'ä'.encode('utf-8'))
 
     project = Project('.', sys_path=[tmpdir.strpath])
     c, = Script('import x; x.foo', project=project).complete()

@@ -18,7 +18,6 @@ from docopt import docopt
 from jedi.parser.python import load_grammar
 from jedi.parser.diff import DiffParser
 from jedi.parser.python import ParserWithRecovery
-from jedi._compatibility import u
 from jedi.common import splitlines
 import jedi
 
@@ -37,13 +36,14 @@ def main(args):
     with open(args['<file>']) as f:
         code = f.read()
     grammar = load_grammar()
-    parser = ParserWithRecovery(grammar, u(code))
+    parser = ParserWithRecovery(grammar, code)
     # Make sure used_names is loaded
     parser.module.used_names
 
-    code =  code + '\na\n'  # Add something so the diff parser needs to run.
+    code = code + '\na\n'  # Add something so the diff parser needs to run.
     lines = splitlines(code, keepends=True)
     cProfile.runctx('run(parser, lines)', globals(), locals(), sort=args['-s'])
+
 
 if __name__ == '__main__':
     args = docopt(__doc__)

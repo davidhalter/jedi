@@ -21,7 +21,6 @@ from textwrap import dedent
 
 from parso import parse, ParserSyntaxError
 
-from jedi._compatibility import u
 from jedi import debug
 from jedi.common import indent_block
 from jedi.inference.cache import inference_state_method_cache
@@ -184,7 +183,7 @@ def _strip_rst_role(type_str):
 
 
 def _infer_for_statement_string(module_context, string):
-    code = dedent(u("""
+    code = dedent("""
     def pseudo_docstring_stuff():
         '''
         Create a pseudo function for docstring statements.
@@ -192,7 +191,7 @@ def _infer_for_statement_string(module_context, string):
         is still a function.
         '''
     {}
-    """))
+    """)
     if string is None:
         return []
 

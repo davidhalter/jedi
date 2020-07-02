@@ -2,8 +2,6 @@ import os
 import time
 from contextlib import contextmanager
 
-from jedi._compatibility import u
-
 _inited = False
 
 
@@ -104,7 +102,7 @@ def dbg(message, *args, color='GREEN'):
     if debug_function and enable_notice:
         i = ' ' * _debug_indent
         _lazy_colorama_init()
-        debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+        debug_function(color, i + 'dbg: ' + message % tuple(repr(a) for a in args))
 
 
 def warning(message, *args, **kwargs):
@@ -114,7 +112,7 @@ def warning(message, *args, **kwargs):
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
         if format:
-            message = message % tuple(u(repr(a)) for a in args)
+            message = message % tuple(repr(a) for a in args)
         debug_function('RED', i + 'warning: ' + message)
 
 
