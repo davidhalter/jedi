@@ -224,9 +224,7 @@ def _infer_node(context, element):
                 | context.infer_node(element.children[-1]))
     elif typ == 'operator':
         # Must be an ellipsis, other operators are not inferred.
-        # In Python 2 ellipsis is coded as three single dot tokens, not
-        # as one token 3 dot token.
-        if element.value not in ('.', '...'):
+        if element.value != '...':
             origin = element.parent
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
         return ValueSet([compiled.builtin_from_name(inference_state, u'Ellipsis')])
@@ -288,10 +286,6 @@ def infer_atom(context, atom):
     """
     state = context.inference_state
     if atom.type == 'name':
-        if atom.value in ('True', 'False', 'None'):
-            # Python 2...
-            return ValueSet([compiled.builtin_from_name(state, atom.value)])
-
         # This is the first global lookup.
         stmt = tree.search_ancestor(
             atom, 'expr_stmt', 'lambdef'
@@ -857,8 +851,7 @@ def _infer_subscript_list(context, index):
         return ValueSet([iterable.Slice(context, None, None, None)])
 
     elif index.type == 'subscript' and not index.children[0] == '.':
-        # subscript basically implies a slice operation, except for Python 2's
-        # Ellipsis.
+        # subscript basically implies a slice operation
         # e.g. array[:3]
         result = []
         for el in index.children:

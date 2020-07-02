@@ -323,8 +323,7 @@ class ModuleContext(TreeContextMixin, ValueContext):
             ),
             self.get_global_filter(),
         )
-        for f in filters:  # Python 2...
-            yield f
+        yield from filters
 
     def get_global_filter(self):
         return GlobalNameFilter(self, self.tree_node)

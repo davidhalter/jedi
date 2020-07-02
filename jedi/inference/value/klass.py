@@ -191,13 +191,11 @@ class ClassMixin(object):
         if include_metaclasses:
             metaclasses = self.get_metaclasses()
             if metaclasses:
-                for f in self.get_metaclass_filters(metaclasses, is_instance):
-                    yield f  # Python 2..
+                yield from self.get_metaclass_filters(metaclasses, is_instance)
 
         for cls in self.py__mro__():
             if cls.is_compiled():
-                for filter in cls.get_filters(is_instance=is_instance):
-                    yield filter
+                yield from cls.get_filters(is_instance=is_instance)
             else:
                 yield ClassFilter(
                     self, node_context=cls.as_context(),

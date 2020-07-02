@@ -166,9 +166,9 @@ class _FunctionExecutionFilter(ParserTreeFilter):
 
 
 class FunctionExecutionFilter(_FunctionExecutionFilter):
-    def __init__(self, *args, **kwargs):
-        self._arguments = kwargs.pop('arguments')  # Python 2
+    def __init__(self, *args, arguments, **kwargs):
         super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
+        self._arguments = arguments
 
     def _convert_param(self, param, name):
         return ParamName(self._function_value, name, self._arguments)

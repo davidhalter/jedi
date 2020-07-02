@@ -88,12 +88,10 @@ class TypingModuleName(NameWrapper):
                 inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield from self._wrapped_name.infer()
         else:
             # Everything else shouldn't be relevant for type checking.
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield from self._wrapped_name.infer()
 
 
 class TypingModuleFilterWrapper(FilterWrapper):

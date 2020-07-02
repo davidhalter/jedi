@@ -6,6 +6,7 @@ from collections import namedtuple
 import warnings
 import re
 import builtins
+import typing
 
 from jedi.inference.compiled.getattr_static import getattr_static
 
@@ -504,15 +505,9 @@ class DirectObjectAccess(object):
             return None
 
         try:
-            # Python 2 doesn't have typing.
-            import typing
-        except ImportError:
+            o = typing.get_type_hints(self._obj).get('return')
+        except Exception:
             pass
-        else:
-            try:
-                o = typing.get_type_hints(self._obj).get('return')
-            except Exception:
-                pass
 
         return self._create_access_path(o)
 

@@ -89,10 +89,6 @@ class PushBackIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
-        """ Python 2 Compatibility """
-        return self.__next__()
-
     def __next__(self):
         if self.pushes:
             self.current = self.pushes.pop()

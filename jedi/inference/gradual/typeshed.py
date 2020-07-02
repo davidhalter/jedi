@@ -272,7 +272,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
 def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, import_names):
     try:
         stub_module_node = parse_stub_module(inference_state, file_io)
-    except (OSError, IOError):  # IOError is Python 2 only
+    except OSError:  # IOError is Python 2 only
         # The file that you're looking for doesn't exist (anymore).
         return None
     else:
