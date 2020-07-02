@@ -350,8 +350,7 @@ def _find_non_global_names(nodes):
             if node.type == 'trailer' and node.children[0] == '.':
                 continue
 
-            for x in _find_non_global_names(children):  # Python 2...
-                yield x
+            yield from _find_non_global_names(children)
 
 
 def _get_code_insertion_node(node, is_bound_method):

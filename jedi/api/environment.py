@@ -257,7 +257,7 @@ def _get_cached_default_environment():
         return InterpreterEnvironment()
 
 
-def find_virtualenvs(paths=None, **kwargs):
+def find_virtualenvs(paths=None, *, safe=True, use_environment_vars=True):
     """
     :param paths: A list of paths in your file system to be scanned for
         Virtualenvs. It will search in these paths and potentially execute the
@@ -274,47 +274,44 @@ def find_virtualenvs(paths=None, **kwargs):
 
     :yields: :class:`.Environment`
     """
-    def py27_comp(paths=None, safe=True, use_environment_vars=True):
-        if paths is None:
-            paths = []
+    if paths is None:
+        paths = []
 
-        _used_paths = set()
+    _used_paths = set()
 
-        if use_environment_vars:
-            # Using this variable should be safe, because attackers might be
-            # able to drop files (via git) but not environment variables.
-            virtual_env = _get_virtual_env_from_var()
-            if virtual_env is not None:
-                yield virtual_env
-                _used_paths.add(virtual_env.path)
+    if use_environment_vars:
+        # Using this variable should be safe, because attackers might be
+        # able to drop files (via git) but not environment variables.
+        virtual_env = _get_virtual_env_from_var()
+        if virtual_env is not None:
+            yield virtual_env
+            _used_paths.add(virtual_env.path)
 
-            conda_env = _get_virtual_env_from_var(_CONDA_VAR)
-            if conda_env is not None:
-                yield conda_env
-                _used_paths.add(conda_env.path)
+        conda_env = _get_virtual_env_from_var(_CONDA_VAR)
+        if conda_env is not None:
+            yield conda_env
+            _used_paths.add(conda_env.path)
 
-        for directory in paths:
-            if not os.path.isdir(directory):
+    for directory in paths:
+        if not os.path.isdir(directory):
+            continue
+
+        directory = os.path.abspath(directory)
+        for path in os.listdir(directory):
+            path = os.path.join(directory, path)
+            if path in _used_paths:
+                # A path shouldn't be inferred twice.
                 continue
+            _used_paths.add(path)
 
-            directory = os.path.abspath(directory)
-            for path in os.listdir(directory):
-                path = os.path.join(directory, path)
-                if path in _used_paths:
-                    # A path shouldn't be inferred twice.
-                    continue
-                _used_paths.add(path)
-
-                try:
-                    executable = _get_executable_path(path, safe=safe)
-                    yield Environment(executable)
-                except InvalidPythonEnvironment:
-                    pass
-
-    return py27_comp(paths, **kwargs)
+            try:
+                executable = _get_executable_path(path, safe=safe)
+                yield Environment(executable)
+            except InvalidPythonEnvironment:
+                pass
 
 
-def find_system_environments(**kwargs):
+def find_system_environments(*, env_vars={}):
     """
     Ignores virtualenvs and returns the Python versions that were installed on
     your system. This might return nothing, if you're running Python e.g. from
@@ -326,14 +323,14 @@ def find_system_environments(**kwargs):
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
-            yield get_system_environment(version_string, **kwargs)
+            yield get_system_environment(version_string, env_vars=env_vars)
         except InvalidPythonEnvironment:
             pass
 
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_system_environment(version, **kwargs):
+def get_system_environment(version, *, env_vars={}):
     """
     Return the first Python environment found for a string of the form 'X.Y'
     where X and Y are the major and minor versions of Python.
@@ -350,26 +347,20 @@ def get_system_environment(version, **kwargs):
     if os.name == 'nt':
         for exe in _get_executables_from_windows_registry(version):
             try:
-                return Environment(exe, **kwargs)
+                return Environment(exe, env_vars=env_vars)
             except InvalidPythonEnvironment:
                 pass
     raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
 
 
-def create_environment(path, safe=True, **kwargs):
+def create_environment(path, *, safe=True, env_vars={}):
     """
     Make it possible to manually create an Environment object by specifying a
     Virtualenv path or an executable path and optional environment variables.
 
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`.Environment`
-
-    TODO: make env_vars a kwarg when Python 2 is dropped. For now, preserve API
     """
-    return _create_environment(path, safe, **kwargs)
-
-
-def _create_environment(path, safe=True, env_vars={}):
     if os.path.isfile(path):
         _assert_safe(path, safe)
         return Environment(path, env_vars=env_vars)
@@ -393,11 +384,7 @@ def _get_executable_path(path, safe=True):
 
 
 def _get_executables_from_windows_registry(version):
-    # The winreg module is named _winreg on Python 2.
-    try:
-        import winreg
-    except ImportError:
-        import _winreg as winreg
+    import winreg
 
     # TODO: support Python Anaconda.
     sub_keys = [

@@ -34,9 +34,7 @@ def _get_signature_param_names(signatures, positional_count, used_kwargs):
     # Add named params
     for call_sig in signatures:
         for i, p in enumerate(call_sig.params):
-            # Allow protected access, because it's a public API.
-            # TODO reconsider with Python 2 drop
-            kind = p._name.get_kind()
+            kind = p.kind
             if i < positional_count and kind == Parameter.POSITIONAL_OR_KEYWORD:
                 continue
             if kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY) \
@@ -51,8 +49,7 @@ def _must_be_kwarg(signatures, positional_count, used_kwargs):
     must_be_kwarg = True
     for signature in signatures:
         for i, p in enumerate(signature.params):
-            # TODO reconsider with Python 2 drop
-            kind = p._name.get_kind()
+            kind = p.kind
             if kind is Parameter.VAR_POSITIONAL:
                 # In case there were not already kwargs, the next param can
                 # always be a normal argument.

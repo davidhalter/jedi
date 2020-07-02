@@ -295,8 +295,7 @@ def _iter_arguments(nodes, position):
     # Returns Generator[Tuple[star_count, Optional[key_start: str], had_equal]]
     nodes_before = [c for c in nodes if c.start_pos < position]
     if nodes_before[-1].type == 'arglist':
-        for x in _iter_arguments(nodes_before[-1].children, position):
-            yield x  # Python 2 :(
+        yield from _iter_arguments(nodes_before[-1].children, position)
         return
 
     previous_node_yielded = False
@@ -321,7 +320,7 @@ def _iter_arguments(nodes, position):
                 else:
                     yield 0, None, False
             stars_seen = 0
-        elif node.type in ('testlist', 'testlist_star_expr'):  # testlist is Python 2
+        elif node.type == 'testlist_star_expr':
             for n in node.children[::2]:
                 if n.type == 'star_expr':
                     stars_seen = 1

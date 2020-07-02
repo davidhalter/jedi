@@ -97,10 +97,8 @@ def increase_indent_cm(title=None, color='MAGENTA'):
             dbg('End: ' + title, color=color)
 
 
-def dbg(message, *args, **kwargs):
+def dbg(message, *args, color='GREEN'):
     """ Looks at the stack, to see if a debug message should be printed. """
-    # Python 2 compatibility, because it doesn't understand default args
-    color = kwargs.pop('color', 'GREEN')
     assert color
 
     if debug_function and enable_notice:

@@ -211,7 +211,7 @@ class Project(object):
                 self._environment = get_cached_default_environment()
         return self._environment
 
-    def search(self, string, **kwargs):
+    def search(self, string, *, all_scopes=False):
         """
         Searches a name in the whole project. If the project is very big,
         at some point Jedi will stop searching. However it's also very much
@@ -232,7 +232,7 @@ class Project(object):
             functions and classes.
         :yields: :class:`.Name`
         """
-        return self._search(string, **kwargs)
+        return self._search_func(string, all_scopes=all_scopes)
 
     def complete_search(self, string, **kwargs):
         """
@@ -245,9 +245,6 @@ class Project(object):
         :yields: :class:`.Completion`
         """
         return self._search_func(string, complete=True, **kwargs)
-
-    def _search(self, string, all_scopes=False):  # Python 2..
-        return self._search_func(string, all_scopes=all_scopes)
 
     @_try_to_skip_duplicates
     def _search_func(self, string, complete=False, all_scopes=False):
@@ -290,7 +287,7 @@ class Project(object):
                     continue
 
             debug.dbg('Search of a specific module %s', m)
-            for x in search_in_module(
+            yield from search_in_module(
                 inference_state,
                 m,
                 names=[m.name],
@@ -299,15 +296,14 @@ class Project(object):
                 complete=complete,
                 convert=True,
                 ignore_imports=True,
-            ):
-                yield x  # Python 2...
+            )
 
         # 2. Search for identifiers in the project.
         for module_context in search_in_file_ios(inference_state, file_ios, name):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
             names = [module_context.create_name(n) for n in names]
             names = _remove_imports(names)
-            for x in search_in_module(
+            yield from search_in_module(
                 inference_state,
                 module_context,
                 names=names,
@@ -315,8 +311,7 @@ class Project(object):
                 wanted_names=wanted_names,
                 complete=complete,
                 ignore_imports=True,
-            ):
-                yield x  # Python 2...
+            )
 
         # 3. Search for modules on sys.path
         sys_path = [
@@ -326,7 +321,7 @@ class Project(object):
             if not p.startswith(self._path)
         ]
         names = list(iter_module_names(inference_state, empty_module_context, sys_path))
-        for x in search_in_module(
+        yield from search_in_module(
             inference_state,
             empty_module_context,
             names=names,
@@ -334,8 +329,7 @@ class Project(object):
             wanted_names=wanted_names,
             complete=complete,
             convert=True,
-        ):
-            yield x  # Python 2...
+        )
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._path)
