@@ -254,7 +254,7 @@ def builtins_super(types, objects, context):
 
 class ReversedObject(AttributeOverwrite):
     def __init__(self, reversed_obj, iter_list):
-        super(ReversedObject, self).__init__(reversed_obj)
+        super().__init__(reversed_obj)
         self._iter_list = iter_list
 
     def py__iter__(self, contextualized_node):
@@ -341,7 +341,7 @@ def builtins_staticmethod(functions):
 
 class ClassMethodObject(ValueWrapper):
     def __init__(self, class_method_obj, function):
-        super(ClassMethodObject, self).__init__(class_method_obj)
+        super().__init__(class_method_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
@@ -353,7 +353,7 @@ class ClassMethodObject(ValueWrapper):
 
 class ClassMethodGet(ValueWrapper):
     def __init__(self, get_method, klass, function):
-        super(ClassMethodGet, self).__init__(get_method)
+        super().__init__(get_method)
         self._class = klass
         self._function = function
 
@@ -366,7 +366,7 @@ class ClassMethodGet(ValueWrapper):
 
 class ClassMethodArguments(TreeArgumentsWrapper):
     def __init__(self, klass, arguments):
-        super(ClassMethodArguments, self).__init__(arguments)
+        super().__init__(arguments)
         self._class = klass
 
     def unpack(self, func=None):
@@ -386,7 +386,7 @@ def builtins_classmethod(functions, value, arguments):
 
 class PropertyObject(AttributeOverwrite, ValueWrapper):
     def __init__(self, property_obj, function):
-        super(PropertyObject, self).__init__(property_obj)
+        super().__init__(property_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
@@ -470,7 +470,7 @@ def collections_namedtuple(value, arguments, callback):
 
 class PartialObject(ValueWrapper):
     def __init__(self, actual_value, arguments, instance=None):
-        super(PartialObject, self).__init__(actual_value)
+        super().__init__(actual_value)
         self._arguments = arguments
         self._instance = instance
 
@@ -533,7 +533,7 @@ class PartialMethodObject(PartialObject):
 
 class PartialSignature(SignatureWrapper):
     def __init__(self, wrapped_signature, skipped_arg_count, skipped_arg_set):
-        super(PartialSignature, self).__init__(wrapped_signature)
+        super().__init__(wrapped_signature)
         self._skipped_arg_count = skipped_arg_count
         self._skipped_arg_set = skipped_arg_set
 
@@ -626,7 +626,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
 
 class DataclassSignature(AbstractSignature):
     def __init__(self, value, param_names):
-        super(DataclassSignature, self).__init__(value)
+        super().__init__(value)
         self._param_names = param_names
 
     def get_param_names(self, resolve_stars=False):
@@ -635,7 +635,7 @@ class DataclassSignature(AbstractSignature):
 
 class DataclassParamName(BaseTreeParamName):
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
-        super(DataclassParamName, self).__init__(parent_context, tree_name)
+        super().__init__(parent_context, tree_name)
         self.annotation_node = annotation_node
         self.default_node = default_node
 
@@ -651,7 +651,7 @@ class DataclassParamName(BaseTreeParamName):
 
 class ItemGetterCallable(ValueWrapper):
     def __init__(self, instance, args_value_set):
-        super(ItemGetterCallable, self).__init__(instance)
+        super().__init__(instance)
         self._args_value_set = args_value_set
 
     @repack_with_argument_clinic('item, /')
@@ -689,7 +689,7 @@ class WrapsCallable(ValueWrapper):
 
 class Wrapped(ValueWrapper, FunctionMixin):
     def __init__(self, func, original_function):
-        super(Wrapped, self).__init__(func)
+        super().__init__(func)
         self._original_function = original_function
 
     @property

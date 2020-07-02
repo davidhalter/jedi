@@ -138,7 +138,7 @@ class ModuleValue(ModuleMixin, TreeValue):
 
     def __init__(self, inference_state, module_node, code_lines, file_io=None,
                  string_names=None, is_package=False):
-        super(ModuleValue, self).__init__(
+        super().__init__(
             inference_state,
             parent_context=None,
             tree_node=module_node
@@ -158,7 +158,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             # used in them. This could be changed if stubs would be identified
             # sooner and used as StubModuleValue.
             return True
-        return super(ModuleValue, self).is_stub()
+        return super().is_stub()
 
     def py__name__(self):
         if self.string_names is None:

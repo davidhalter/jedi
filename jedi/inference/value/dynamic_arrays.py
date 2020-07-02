@@ -170,7 +170,7 @@ class _DynamicArrayAdditions(HelperValueMixin):
 
 class _Modification(ValueWrapper):
     def __init__(self, wrapped_value, assigned_values, contextualized_key):
-        super(_Modification, self).__init__(wrapped_value)
+        super().__init__(wrapped_value)
         self._assigned_values = assigned_values
         self._contextualized_key = contextualized_key
 

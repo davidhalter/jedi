@@ -208,7 +208,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
 
 class ParamNameFixedKind(ParamNameWrapper):
     def __init__(self, param_name, new_kind):
-        super(ParamNameFixedKind, self).__init__(param_name)
+        super().__init__(param_name)
         self._new_kind = new_kind
 
     def get_kind(self):

@@ -172,7 +172,7 @@ class FunctionValue(FunctionMixin, FunctionAndClassBase, metaclass=CachedMetaCla
 
 class FunctionNameInClass(NameWrapper):
     def __init__(self, class_context, name):
-        super(FunctionNameInClass, self).__init__(name)
+        super().__init__(name)
         self._class_context = class_context
 
     def get_defining_qualified_value(self):
@@ -181,7 +181,7 @@ class FunctionNameInClass(NameWrapper):
 
 class MethodValue(FunctionValue):
     def __init__(self, inference_state, class_context, *args, **kwargs):
-        super(MethodValue, self).__init__(inference_state, *args, **kwargs)
+        super().__init__(inference_state, *args, **kwargs)
         self.class_context = class_context
 
     def get_default_param_context(self):
@@ -197,7 +197,7 @@ class MethodValue(FunctionValue):
 
     @property
     def name(self):
-        return FunctionNameInClass(self.class_context, super(MethodValue, self).name)
+        return FunctionNameInClass(self.class_context, super().name)
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
@@ -356,7 +356,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
 
 class FunctionExecutionContext(BaseFunctionExecutionContext):
     def __init__(self, function_value, arguments):
-        super(FunctionExecutionContext, self).__init__(function_value)
+        super().__init__(function_value)
         self._arguments = arguments
 
     def get_filters(self, until_position=None, origin_scope=None):
@@ -397,7 +397,7 @@ class AnonymousFunctionExecution(BaseFunctionExecutionContext):
 
 class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
     def __init__(self, function, overloaded_functions):
-        super(OverloadedFunctionValue, self).__init__(function)
+        super().__init__(function)
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):

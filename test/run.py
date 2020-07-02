@@ -164,7 +164,7 @@ class BaseTestCase(object):
 class IntegrationTestCase(BaseTestCase):
     def __init__(self, test_type, correct, line_nr, column, start, line,
                  path=None, skip_version_info=None):
-        super(IntegrationTestCase, self).__init__(skip_version_info)
+        super().__init__(skip_version_info)
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -294,7 +294,7 @@ class StaticAnalysisCase(BaseTestCase):
         for line in self._source.splitlines():
             skip_version_info = skip_python_version(line) or skip_version_info
 
-        super(StaticAnalysisCase, self).__init__(skip_version_info)
+        super().__init__(skip_version_info)
 
     def collect_comparison(self):
         cases = []

@@ -68,7 +68,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
 class Generator(GeneratorBase):
     """Handling of `yield` functions."""
     def __init__(self, inference_state, func_execution_context):
-        super(Generator, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._func_execution_context = func_execution_context
 
     def py__iter__(self, contextualized_node=None):
@@ -212,7 +212,7 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
 class _BaseComprehension(ComprehensionMixin):
     def __init__(self, inference_state, defining_context, sync_comp_for_node, entry_node):
         assert sync_comp_for_node.type == 'sync_comp_for'
-        super(_BaseComprehension, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._defining_context = defining_context
         self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = entry_node
@@ -254,7 +254,7 @@ class DictComprehension(ComprehensionMixin, Sequence, _DictKeyMixin):
 
     def __init__(self, inference_state, defining_context, sync_comp_for_node, key_node, value_node):
         assert sync_comp_for_node.type == 'sync_comp_for'
-        super(DictComprehension, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._defining_context = defining_context
         self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = key_node
@@ -312,7 +312,7 @@ class SequenceLiteralValue(Sequence):
                '{': 'set'}
 
     def __init__(self, inference_state, defining_context, atom):
-        super(SequenceLiteralValue, self).__init__(inference_state)
+        super().__init__(inference_state)
         self.atom = atom
         self._defining_context = defining_context
 
@@ -325,7 +325,7 @@ class SequenceLiteralValue(Sequence):
     def _get_generics(self):
         if self.array_type == 'tuple':
             return tuple(x.infer().py__class__() for x in self.py__iter__())
-        return super(SequenceLiteralValue, self)._get_generics()
+        return super()._get_generics()
 
     def py__simple_getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
@@ -481,7 +481,7 @@ class _FakeSequence(Sequence):
         """
         type should be one of "tuple", "list"
         """
-        super(_FakeSequence, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._lazy_value_list = lazy_value_list
 
     def py__simple_getitem__(self, index):
@@ -514,7 +514,7 @@ class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
     array_type = 'dict'
 
     def __init__(self, inference_state, dct):
-        super(FakeDict, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._dct = dct
 
     def py__iter__(self, contextualized_node=None):
@@ -548,7 +548,7 @@ class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
 
 class MergedArray(Sequence):
     def __init__(self, inference_state, arrays):
-        super(MergedArray, self).__init__(inference_state)
+        super().__init__(inference_state)
         self.array_type = arrays[-1].array_type
         self._arrays = arrays
 

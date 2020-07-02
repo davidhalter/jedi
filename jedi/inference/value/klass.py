@@ -55,7 +55,7 @@ from jedi.plugins import plugin_manager
 
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(name_context, tree_name)
+        super().__init__(name_context, tree_name)
         self._apply_decorators = apply_decorators
         self._class_value = class_value
 
@@ -77,7 +77,7 @@ class ClassName(TreeNameDefinition):
 class ClassFilter(ParserTreeFilter):
     def __init__(self, class_value, node_context=None, until_position=None,
                  origin_scope=None, is_instance=False):
-        super(ClassFilter, self).__init__(
+        super().__init__(
             class_value.as_context(), node_context,
             until_position=until_position,
             origin_scope=origin_scope,
@@ -124,7 +124,7 @@ class ClassFilter(ParserTreeFilter):
             or self._equals_origin_scope()
 
     def _filter(self, names):
-        names = super(ClassFilter, self)._filter(names)
+        names = super()._filter(names)
         return [name for name in names if self._access_possible(name)]
 
 

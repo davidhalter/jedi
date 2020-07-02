@@ -27,7 +27,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     parent_context = None
 
     def __init__(self, inference_state, string_names, paths):
-        super(ImplicitNamespaceValue, self).__init__(inference_state, parent_context=None)
+        super().__init__(inference_state, parent_context=None)
         self.inference_state = inference_state
         self.string_names = string_names
         self._paths = paths

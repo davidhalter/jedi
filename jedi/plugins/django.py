@@ -114,7 +114,7 @@ def _infer_field(cls, field_name, is_instance):
 
 class DjangoModelName(NameWrapper):
     def __init__(self, cls, name, is_instance):
-        super(DjangoModelName, self).__init__(name)
+        super().__init__(name)
         self._cls = cls
         self._is_instance = is_instance
 
@@ -258,7 +258,7 @@ class GenericFieldWrapper(AttributeOverwrite, ClassMixin):
 
 class DjangoModelSignature(AbstractSignature):
     def __init__(self, value, field_names):
-        super(DjangoModelSignature, self).__init__(value)
+        super().__init__(value)
         self._field_names = field_names
 
     def get_param_names(self, resolve_stars=False):
@@ -267,7 +267,7 @@ class DjangoModelSignature(AbstractSignature):
 
 class DjangoParamName(BaseTreeParamName):
     def __init__(self, field_name):
-        super(DjangoParamName, self).__init__(field_name.parent_context, field_name.tree_name)
+        super().__init__(field_name.parent_context, field_name.tree_name)
         self._field_name = field_name
 
     def get_kind(self):
@@ -279,7 +279,7 @@ class DjangoParamName(BaseTreeParamName):
 
 class QuerySetMethodWrapper(ValueWrapper):
     def __init__(self, method, model_cls):
-        super(QuerySetMethodWrapper, self).__init__(method)
+        super().__init__(method)
         self._model_cls = model_cls
 
     def py__get__(self, instance, class_value):
@@ -289,7 +289,7 @@ class QuerySetMethodWrapper(ValueWrapper):
 
 class QuerySetBoundMethodWrapper(ValueWrapper):
     def __init__(self, method, model_cls):
-        super(QuerySetBoundMethodWrapper, self).__init__(method)
+        super().__init__(method)
         self._model_cls = model_cls
 
     def get_signatures(self):

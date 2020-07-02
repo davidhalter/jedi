@@ -143,7 +143,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
-        for name in super(FixtureFilter, self)._filter(names):
+        for name in super()._filter(names):
             funcdef = name.parent
             if funcdef.type == 'funcdef':
                 # Class fixtures are not supported
