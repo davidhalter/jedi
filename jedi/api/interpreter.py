@@ -21,7 +21,7 @@ class NamespaceObject(object):
 
 class MixedModuleContext(ModuleContext):
     def __init__(self, tree_module_value, namespaces):
-        super(MixedModuleContext, self).__init__(tree_module_value)
+        super().__init__(tree_module_value)
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
 
     def _get_mixed_object(self, compiled_value):

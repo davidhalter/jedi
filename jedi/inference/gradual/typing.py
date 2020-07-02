@@ -413,7 +413,7 @@ class NewTypeFunction(BaseTypingValue):
 
 class NewType(Value):
     def __init__(self, inference_state, parent_context, tree_node, type_value_set):
-        super(NewType, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self._type_value_set = type_value_set
         self.tree_node = tree_node
 

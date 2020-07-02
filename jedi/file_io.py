@@ -65,7 +65,7 @@ class FileIOFolderMixin(object):
 class ZipFileIO(file_io.KnownContentFileIO, FileIOFolderMixin):
     """For .zip and .egg archives"""
     def __init__(self, path, code, zip_path):
-        super(ZipFileIO, self).__init__(path, code)
+        super().__init__(path, code)
         self._zip_path = zip_path
 
     def get_last_modified(self):

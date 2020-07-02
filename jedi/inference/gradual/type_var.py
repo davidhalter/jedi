@@ -46,7 +46,7 @@ class TypeVarClass(BaseTypingValue):
 
 class TypeVar(BaseTypingValue):
     def __init__(self, parent_context, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(parent_context, tree_name)
+        super().__init__(parent_context, tree_name)
         self._var_name = var_name
 
         self._constraints_lazy_values = []
@@ -120,7 +120,7 @@ class TypeVar(BaseTypingValue):
 
 class TypeWrapper(ValueWrapper):
     def __init__(self, wrapped_value, original_value):
-        super(TypeWrapper, self).__init__(wrapped_value)
+        super().__init__(wrapped_value)
         self._original_value = original_value
 
     def execute_annotation(self):

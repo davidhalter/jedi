@@ -108,13 +108,13 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         """
         if node_context is None:
             node_context = parent_context
-        super(ParserTreeFilter, self).__init__(parent_context, node_context.tree_node)
+        super().__init__(parent_context, node_context.tree_node)
         self._node_context = node_context
         self._origin_scope = origin_scope
         self._until_position = until_position
 
     def _filter(self, names):
-        names = super(ParserTreeFilter, self)._filter(names)
+        names = super()._filter(names)
         names = [n for n in names if self._is_name_reachable(n)]
         return list(self._check_flows(names))
 
@@ -142,7 +142,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 class _FunctionExecutionFilter(ParserTreeFilter):
     def __init__(self, parent_context, function_value, until_position, origin_scope):
-        super(_FunctionExecutionFilter, self).__init__(
+        super().__init__(
             parent_context,
             until_position=until_position,
             origin_scope=origin_scope,
@@ -167,7 +167,7 @@ class _FunctionExecutionFilter(ParserTreeFilter):
 
 class FunctionExecutionFilter(_FunctionExecutionFilter):
     def __init__(self, *args, arguments, **kwargs):
-        super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._arguments = arguments
 
     def _convert_param(self, param, name):
@@ -248,7 +248,7 @@ class _BuiltinMappedMethod(ValueWrapper):
     api_type = 'function'
 
     def __init__(self, value, method, builtin_func):
-        super(_BuiltinMappedMethod, self).__init__(builtin_func)
+        super().__init__(builtin_func)
         self._value = value
         self._method = method
 
@@ -287,7 +287,7 @@ class SpecialMethodFilter(DictFilter):
             ])
 
     def __init__(self, value, dct, builtin_value):
-        super(SpecialMethodFilter, self).__init__(dct)
+        super().__init__(dct)
         self.value = value
         self._builtin_value = builtin_value
         """
@@ -303,7 +303,7 @@ class SpecialMethodFilter(DictFilter):
 
 class _OverwriteMeta(type):
     def __init__(cls, name, bases, dct):
-        super(_OverwriteMeta, cls).__init__(name, bases, dct)
+        super().__init__(name, bases, dct)
 
         base_dct = {}
         for base_cls in reversed(cls.__bases__):

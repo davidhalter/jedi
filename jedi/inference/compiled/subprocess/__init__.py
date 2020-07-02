@@ -118,7 +118,7 @@ class InferenceStateSameProcess(_InferenceStateProcess):
 
 class InferenceStateSubprocess(_InferenceStateProcess):
     def __init__(self, inference_state, compiled_subprocess):
-        super(InferenceStateSubprocess, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 

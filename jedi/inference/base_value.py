@@ -355,7 +355,7 @@ class ValueWrapper(_ValueWrapperBase):
 
 class TreeValue(Value):
     def __init__(self, inference_state, parent_context, tree_node):
-        super(TreeValue, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self.tree_node = tree_node
 
     def __repr__(self):

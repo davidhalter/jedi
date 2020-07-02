@@ -4,7 +4,6 @@ Used only for REPL Completion.
 
 import inspect
 import os
-import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
@@ -43,7 +42,7 @@ class MixedObject(ValueWrapper):
     to modify the runtime.
     """
     def __init__(self, compiled_value, tree_value):
-        super(MixedObject, self).__init__(tree_value)
+        super().__init__(tree_value)
         self.compiled_value = compiled_value
         self.access_handle = compiled_value.access_handle
 
@@ -104,7 +103,7 @@ class MixedName(NameWrapper):
     The ``CompiledName._compiled_value`` is our MixedObject.
     """
     def __init__(self, wrapped_name, parent_tree_value):
-        super(MixedName, self).__init__(wrapped_name)
+        super().__init__(wrapped_name)
         self._parent_tree_value = parent_tree_value
 
     @property
@@ -130,12 +129,12 @@ class MixedName(NameWrapper):
 
 class MixedObjectFilter(compiled.CompiledValueFilter):
     def __init__(self, inference_state, compiled_value, tree_value):
-        super(MixedObjectFilter, self).__init__(inference_state, compiled_value)
+        super().__init__(inference_state, compiled_value)
         self._tree_value = tree_value
 
     def _create_name(self, name):
         return MixedName(
-            super(MixedObjectFilter, self)._create_name(name),
+            super()._create_name(name),
             self._tree_value,
         )
 

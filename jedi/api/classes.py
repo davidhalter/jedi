@@ -635,7 +635,7 @@ class Completion(BaseName):
     """
     def __init__(self, inference_state, name, stack, like_name_length,
                  is_fuzzy, cached_name=None):
-        super(Completion, self).__init__(inference_state, name)
+        super().__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
@@ -706,7 +706,7 @@ class Completion(BaseName):
             # wouldn't load like > 100 Python modules anymore.
             fast = False
 
-        return super(Completion, self).docstring(raw=raw, fast=fast)
+        return super().docstring(raw=raw, fast=fast)
 
     def _get_docstring(self):
         if self._cached_name is not None:
@@ -715,7 +715,7 @@ class Completion(BaseName):
                 self._name.get_public_name(),
                 lambda: self._get_cache()
             )
-        return super(Completion, self)._get_docstring()
+        return super()._get_docstring()
 
     def _get_docstring_signature(self):
         if self._cached_name is not None:
@@ -724,13 +724,13 @@ class Completion(BaseName):
                 self._name.get_public_name(),
                 lambda: self._get_cache()
             )
-        return super(Completion, self)._get_docstring_signature()
+        return super()._get_docstring_signature()
 
     def _get_cache(self):
         return (
-            super(Completion, self).type,
-            super(Completion, self)._get_docstring_signature(),
-            super(Completion, self)._get_docstring(),
+            super().type,
+            super()._get_docstring_signature(),
+            super()._get_docstring(),
         )
 
     @property
@@ -746,7 +746,7 @@ class Completion(BaseName):
                 lambda: self._get_cache()
             )
 
-        return super(Completion, self).type
+        return super().type
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
@@ -758,7 +758,7 @@ class Name(BaseName):
     :meth:`.Script.goto` or :meth:`.Script.infer`.
     """
     def __init__(self, inference_state, definition):
-        super(Name, self).__init__(inference_state, definition)
+        super().__init__(inference_state, definition)
 
     @property
     def desc_with_module(self):
@@ -811,7 +811,7 @@ class BaseSignature(Name):
     calls.
     """
     def __init__(self, inference_state, signature):
-        super(BaseSignature, self).__init__(inference_state, signature.name)
+        super().__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -841,7 +841,7 @@ class Signature(BaseSignature):
     :meth:`.Script.get_signatures`.
     """
     def __init__(self, inference_state, signature, call_details):
-        super(Signature, self).__init__(inference_state, signature)
+        super().__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 

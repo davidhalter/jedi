@@ -28,7 +28,7 @@ class ExactValue(LazyValueWrapper):
         if name in ('get_safe_value', 'execute_operation', 'access_handle',
                     'negate', 'py__bool__', 'is_compiled'):
             return getattr(self._compiled_value, name)
-        return super(ExactValue, self).__getattribute__(name)
+        return super().__getattribute__(name)
 
     def _get_wrapped_value(self):
         instance, = builtin_from_name(

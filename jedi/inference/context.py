@@ -164,7 +164,7 @@ class ValueContext(AbstractContext):
     Should be defined, otherwise the API returns empty types.
     """
     def __init__(self, value):
-        super(ValueContext, self).__init__(value.inference_state)
+        super().__init__(value.inference_state)
         self._value = value
 
     @property
@@ -374,7 +374,7 @@ class ClassContext(TreeContextMixin, ValueContext):
 
 class CompForContext(TreeContextMixin, AbstractContext):
     def __init__(self, parent_context, comp_for):
-        super(CompForContext, self).__init__(parent_context.inference_state)
+        super().__init__(parent_context.inference_state)
         self.tree_node = comp_for
         self.parent_context = parent_context
 

@@ -44,7 +44,7 @@ class CheckAttribute(object):
 
 class CompiledValue(Value):
     def __init__(self, inference_state, access_handle, parent_context=None):
-        super(CompiledValue, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
@@ -59,7 +59,7 @@ class CompiledValue(Value):
         try:
             self.access_handle.getattr_paths('__call__')
         except AttributeError:
-            return super(CompiledValue, self).py__call__(arguments)
+            return super().py__call__(arguments)
         else:
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
@@ -164,7 +164,7 @@ class CompiledValue(Value):
             try:
                 access = self.access_handle.py__simple_getitem__(index)
             except AttributeError:
-                return super(CompiledValue, self).py__simple_getitem__(index)
+                return super().py__simple_getitem__(index)
         if access is None:
             return NO_VALUES
 
@@ -175,7 +175,7 @@ class CompiledValue(Value):
         if all_access_paths is None:
             # This means basically that no __getitem__ has been defined on this
             # object.
-            return super(CompiledValue, self).py__getitem__(index_value_set, contextualized_node)
+            return super().py__getitem__(index_value_set, contextualized_node)
         return ValueSet(
             create_from_access_path(self.inference_state, access)
             for access in all_access_paths
@@ -187,7 +187,7 @@ class CompiledValue(Value):
         # just start with __getitem__(0). This is especially true for
         # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
-            for x in super(CompiledValue, self).py__iter__(contextualized_node):
+            for x in super().py__iter__(contextualized_node):
                 yield x
 
         access_path_list = self.access_handle.py__iter__list()
@@ -265,7 +265,7 @@ class CompiledValue(Value):
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
             ]).execute_annotation()
-        return super(CompiledValue, self).execute_annotation()
+        return super().execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())

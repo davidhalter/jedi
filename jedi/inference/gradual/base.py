@@ -70,7 +70,7 @@ class _TypeVarFilter(object):
 
 class _AnnotatedClassContext(ClassContext):
     def get_filters(self, *args, **kwargs):
-        filters = super(_AnnotatedClassContext, self).get_filters(
+        filters = super().get_filters(
             *args, **kwargs
         )
         for f in filters:
@@ -164,7 +164,7 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
         my_foo_int_cls = Foo[int]
     """
     def __init__(self, class_value, generics_manager):
-        super(GenericClass, self).__init__(generics_manager)
+        super().__init__(generics_manager)
         self._class_value = class_value
 
     def _get_wrapped_value(self):
@@ -186,7 +186,7 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
         return _TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def py__call__(self, arguments):
-        instance, = super(GenericClass, self).py__call__(arguments)
+        instance, = super().py__call__(arguments)
         return ValueSet([_GenericInstanceWrapper(instance)])
 
     def _as_context(self):
@@ -201,7 +201,7 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
         return GenericClass(self._class_value, generics_manager)
 
     def is_sub_class_of(self, class_value):
-        if super(GenericClass, self).is_sub_class_of(class_value):
+        if super().is_sub_class_of(class_value):
             return True
         return self._class_value.is_sub_class_of(class_value)
 
@@ -329,7 +329,7 @@ class _PseudoTreeNameClass(Value):
     api_type = 'class'
 
     def __init__(self, parent_context, tree_name):
-        super(_PseudoTreeNameClass, self).__init__(
+        super().__init__(
             parent_context.inference_state,
             parent_context
         )
@@ -388,7 +388,7 @@ class BaseTypingValue(LazyValueWrapper):
 
 class BaseTypingClassWithGenerics(DefineGenericBaseClass):
     def __init__(self, parent_context, tree_name, generics_manager):
-        super(BaseTypingClassWithGenerics, self).__init__(generics_manager)
+        super().__init__(generics_manager)
         self.inference_state = parent_context.inference_state
         self.parent_context = parent_context
         self._tree_name = tree_name

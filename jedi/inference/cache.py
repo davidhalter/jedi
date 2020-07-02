@@ -78,7 +78,7 @@ class CachedMetaClass(type):
     """
     @inference_state_as_method_param_cache()
     def __call__(self, *args, **kwargs):
-        return super(CachedMetaClass, self).__call__(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 def inference_state_method_generator_cache():
