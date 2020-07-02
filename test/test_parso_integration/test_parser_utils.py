@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from jedi import parser_utils
 from parso import parse
 from parso.python import tree

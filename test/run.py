@@ -400,7 +400,7 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
 
             path = os.path.join(base_dir, f_name)
 
-            with open(path, encoding='utf-8', newline='') as f:
+            with open(path, newline='') as f:
                 source = f.read()
 
             for case in collect_file_tests(path, StringIO(source),

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3.6
-# -*- coding: utf-8 -*-
 """
 Profile a piece of Python code with ``profile``. Tries a completion on a
 certain piece of code.

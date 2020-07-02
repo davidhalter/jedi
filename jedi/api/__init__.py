@@ -106,8 +106,7 @@ class Script(object):
         also ways to modify the sys path and other things.
     """
     def __init__(self, code=None, line=None, column=None, path=None,
-                 encoding=None, sys_path=None, environment=None,
-                 project=None, source=None):
+                 sys_path=None, environment=None, project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -160,7 +159,6 @@ class Script(object):
         self._module_node, code = self._inference_state.parse_and_get_code(
             code=code,
             path=self.path,
-            encoding=encoding,
             use_latest_grammar=path and path.endswith('.pyi'),
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
@@ -841,7 +839,7 @@ class Interpreter(Script):
         )
 
 
-def names(source=None, path=None, encoding='utf-8', all_scopes=False,
+def names(source=None, path=None, all_scopes=False,
           definitions=True, references=False, environment=None):
     warnings.warn(
         "Deprecated since version 0.16.0. Use Script(...).get_names instead.",
@@ -849,7 +847,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         stacklevel=2
     )
 
-    return Script(source, path=path, encoding=encoding).get_names(
+    return Script(source, path=path).get_names(
         all_scopes=all_scopes,
         definitions=definitions,
         references=references,

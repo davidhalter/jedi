@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Jedi documentation build configuration file, created by
 # sphinx-quickstart on Wed Dec 26 00:11:34 2012.
 #

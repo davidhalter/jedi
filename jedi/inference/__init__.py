@@ -176,14 +176,14 @@ class InferenceState(object):
 
         return helpers.infer_call_of_leaf(context, name)
 
-    def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
+    def parse_and_get_code(self, code=None, path=None,
                            use_latest_grammar=False, file_io=None, **kwargs):
         if code is None:
             if file_io is None:
                 file_io = FileIO(path)
             code = file_io.read()
         # We cannot just use parso, because it doesn't use errors='replace'.
-        code = parso.python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+        code = parso.python_bytes_to_unicode(code, encoding='utf-8', errors='replace')
 
         if len(code) > settings._cropped_file_size:
             code = code[:settings._cropped_file_size]
