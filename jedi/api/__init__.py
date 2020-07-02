@@ -97,9 +97,6 @@ class Script(object):
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or None
-    :param encoding: Deprecated, cast to unicode yourself. The encoding of
-        ``code``, if it is not a ``unicode`` object (default ``'utf-8'``).
-    :type encoding: str
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: typing.List[str]
     :param Environment environment: Provide a predefined :ref:`Environment <environments>`
@@ -115,15 +112,6 @@ class Script(object):
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
 
-        if encoding is None:
-            encoding = 'utf-8'
-        else:
-            warnings.warn(
-                "Deprecated since version 0.17.0. You should cast to valid "
-                "unicode yourself, especially if you are not using utf-8.",
-                DeprecationWarning,
-                stacklevel=2
-            )
         if line is not None:
             warnings.warn(
                 "Providing the line is now done in the functions themselves "

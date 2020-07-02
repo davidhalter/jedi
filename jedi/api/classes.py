@@ -160,7 +160,7 @@ class BaseName(object):
 
         Finally, here is what you can get from :attr:`type`:
 
-        >>> defs = [str(d.type) for d in defs]  # It's unicode and in Py2 has u before it.
+        >>> defs = [d.type for d in defs]
         >>> defs[0]
         'module'
         >>> defs[1]

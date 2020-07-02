@@ -1,4 +1,3 @@
-from jedi._compatibility import unicode
 from jedi.inference.compiled.value import CompiledValue, CompiledName, \
     CompiledValueFilter, CompiledValueName, create_from_access_path
 from jedi.inference.base_value import LazyValueWrapper
@@ -45,7 +44,7 @@ def create_simple_object(inference_state, obj):
     Only allows creations of objects that are easily picklable across Python
     versions.
     """
-    assert type(obj) in (int, float, str, bytes, unicode, slice, complex, bool), obj
+    assert type(obj) in (int, float, str, bytes, slice, complex, bool), obj
     compiled_value = create_from_access_path(
         inference_state,
         inference_state.compiled_subprocess.create_simple_object(obj)

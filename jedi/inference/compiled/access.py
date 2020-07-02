@@ -7,10 +7,9 @@ import warnings
 import re
 import builtins
 
-from jedi._compatibility import unicode
 from jedi.inference.compiled.getattr_static import getattr_static
 
-ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
+ALLOWED_GETITEM_TYPES = (str, list, tuple, bytes, bytearray, dict)
 
 MethodDescriptorType = type(str.replace)
 # These are not considered classes and access is granted even though they have
@@ -250,7 +249,7 @@ class DirectObjectAccess(object):
         # Avoid some weird hacks that would just fail, because they cannot be
         # used by pickle.
         if not isinstance(paths, list) \
-                or not all(isinstance(p, (bytes, unicode)) for p in paths):
+                or not all(isinstance(p, str) for p in paths):
             return None
         return paths
 
@@ -383,7 +382,7 @@ class DirectObjectAccess(object):
         return [self._create_access(module), access]
 
     def get_safe_value(self):
-        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice) or self._obj is None:
+        if type(self._obj) in (bool, bytes, float, int, str, slice) or self._obj is None:
             return self._obj
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 

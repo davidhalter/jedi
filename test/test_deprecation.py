@@ -3,8 +3,6 @@ import warnings
 
 import pytest
 
-from jedi._compatibility import u
-
 
 @pytest.fixture(autouse=True)
 def check_for_warning(recwarn):
@@ -40,9 +38,3 @@ def test_usages(Script):
 def test_call_signatures(Script):
     d1, = Script('abs(float(\nstr(', line=1, column=4).call_signatures()
     assert d1.name == 'abs'
-
-
-def test_encoding_parameter(Script):
-    name = u('hö')
-    s = Script(name.encode('latin-1'), encoding='latin-1')
-    assert s._module_node.get_code() == name

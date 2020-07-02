@@ -7,8 +7,6 @@ from contextlib import contextmanager
 
 from parso.python import tree
 
-from jedi._compatibility import unicode
-
 
 def is_stdlib_path(path):
     # Python standard library paths look like this:

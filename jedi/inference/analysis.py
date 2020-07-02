@@ -49,12 +49,9 @@ class Error(object):
         first = self.__class__.__name__[0]
         return first + str(CODES[self.name][0])
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s:%s:%s: %s %s' % (self.path, self.line, self.column,
                                     self.code, self.message)
-
-    def __str__(self):
-        return self.__unicode__()
 
     def __eq__(self, other):
         return (self.path == other.path and self.name == other.name

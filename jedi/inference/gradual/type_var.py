@@ -1,4 +1,3 @@
-from jedi._compatibility import unicode
 from jedi import debug
 from jedi.inference.base_value import ValueSet, NO_VALUES, ValueWrapper
 from jedi.inference.gradual.base import BaseTypingValue
@@ -40,7 +39,7 @@ class TypeVarClass(BaseTypingValue):
             return None
         else:
             safe_value = method(default=None)
-            if isinstance(safe_value, (str, unicode)):
+            if isinstance(safe_value, str):
                 return safe_value
             return None
 

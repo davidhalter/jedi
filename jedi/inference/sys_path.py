@@ -2,7 +2,6 @@ import os
 import re
 from importlib.machinery import all_suffixes
 
-from jedi._compatibility import unicode
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string, get_str_or_none
@@ -203,7 +202,7 @@ def _get_buildout_script_paths(search_path):
         except (UnicodeDecodeError, IOError) as e:
             # Probably a binary file; permission error or race cond. because
             # file got deleted. Ignore it.
-            debug.warning(unicode(e))
+            debug.warning(e)
             continue
 
 

@@ -21,9 +21,6 @@ def imitate_pydoc(string):
     if pydoc_topics is None:
         return ''
 
-    # str needed because of possible unicode stuff in py2k (pydoc doesn't work
-    # with unicode strings)
-    string = str(string)
     h = pydoc.help
     with suppress(KeyError):
         # try to access symbols

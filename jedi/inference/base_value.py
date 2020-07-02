@@ -13,7 +13,6 @@ from itertools import zip_longest
 from parso.python.tree import Name
 
 from jedi import debug
-from jedi._compatibility import unicode
 from jedi.parser_utils import clean_scope_docstring
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.utils import safe_property
@@ -384,7 +383,7 @@ def _getitem(value, index_values, contextualized_node):
     unused_values = set()
     for index_value in index_values:
         index = index_value.get_safe_value(default=None)
-        if type(index) in (float, int, str, unicode, slice, bytes):
+        if type(index) in (float, int, str, slice, bytes):
             try:
                 result |= value.py__simple_getitem__(index)
                 continue

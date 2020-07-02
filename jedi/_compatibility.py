@@ -134,13 +134,6 @@ class ImplicitNSInfo(object):
         self.paths = paths
 
 
-# unicode function
-try:
-    unicode = unicode
-except NameError:
-    unicode = str
-
-
 try:
     encoding = sys.stdout.encoding
     if encoding is None:
@@ -156,7 +149,7 @@ def u(string, errors='strict'):
     unicode, because we check that in the beginning).
     """
     if isinstance(string, bytes):
-        return unicode(string, encoding='UTF-8', errors=errors)
+        return str(string, encoding='UTF-8', errors=errors)
     return string
 
 
