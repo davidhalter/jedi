@@ -1,7 +1,8 @@
 import os
 import re
+from importlib.machinery import all_suffixes
 
-from jedi._compatibility import unicode, all_suffixes
+from jedi._compatibility import unicode
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string, get_str_or_none

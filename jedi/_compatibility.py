@@ -135,15 +135,6 @@ class ImplicitNSInfo(object):
         self.paths = paths
 
 
-if True:
-    all_suffixes = importlib.machinery.all_suffixes
-else:
-    def all_suffixes():
-        # Is deprecated and raises a warning in Python 3.6.
-        import imp
-        return [suffix for suffix, _, _ in imp.get_suffixes()]
-
-
 # unicode function
 try:
     unicode = unicode

@@ -3,9 +3,9 @@ import sys
 import os
 import re
 import inspect
+from importlib.machinery import all_suffixes
 
-from jedi._compatibility import find_module, cast_path, \
-    all_suffixes
+from jedi._compatibility import find_module, cast_path
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
