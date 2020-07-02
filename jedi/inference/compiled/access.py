@@ -138,15 +138,6 @@ class AccessPath(object):
     def __init__(self, accesses):
         self.accesses = accesses
 
-    # Writing both of these methods here looks a bit ridiculous. However with
-    # the differences of Python 2/3 it's actually necessary, because we will
-    # otherwise have a accesses attribute that is bytes instead of unicode.
-    def __getstate__(self):
-        return self.accesses
-
-    def __setstate__(self, value):
-        self.accesses = value
-
 
 def create_access_path(inference_state, obj):
     access = create_access(inference_state, obj)
