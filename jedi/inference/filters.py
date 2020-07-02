@@ -265,12 +265,7 @@ class SpecialMethodFilter(DictFilter):
     class SpecialMethodName(AbstractNameDefinition):
         api_type = u'function'
 
-        def __init__(self, parent_context, string_name, value, builtin_value):
-            callable_, python_version = value
-            if python_version is not None and \
-                    python_version != parent_context.inference_state.environment.version_info.major:
-                raise KeyError
-
+        def __init__(self, parent_context, string_name, callable_, builtin_value):
             self.parent_context = parent_context
             self.string_name = string_name
             self._callable = callable_
@@ -344,9 +339,9 @@ class AttributeOverwrite(_AttributeOverwriteMixin, ValueWrapper,
     pass
 
 
-def publish_method(method_name, python_version_match=None):
+def publish_method(method_name):
     def decorator(func):
         dct = func.__dict__.setdefault('registered_overwritten_methods', {})
-        dct[method_name] = func, python_version_match
+        dct[method_name] = func
         return func
     return decorator
