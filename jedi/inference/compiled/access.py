@@ -8,7 +8,7 @@ import warnings
 import re
 import builtins
 
-from jedi._compatibility import unicode, is_py3, py_version
+from jedi._compatibility import unicode, py_version
 from jedi.inference.compiled.getattr_static import getattr_static
 
 ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
@@ -28,16 +28,11 @@ NOT_CLASS_TYPES = (
     types.MethodType,
     types.ModuleType,
     types.TracebackType,
-    MethodDescriptorType
+    MethodDescriptorType,
+    types.MappingProxyType,
+    types.SimpleNamespace,
+    types.DynamicClassAttribute,
 )
-
-if is_py3:
-    NOT_CLASS_TYPES += (
-        types.MappingProxyType,
-        types.SimpleNamespace,
-        types.DynamicClassAttribute,
-    )
-
 
 # Those types don't exist in typing.
 MethodDescriptorType = type(str.replace)

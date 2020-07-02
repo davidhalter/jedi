@@ -12,7 +12,7 @@ from jedi._compatibility import unicode
 
 def is_stdlib_path(path):
     # Python standard library paths look like this:
-    # /usr/lib/python3.5/...
+    # /usr/lib/python3.9/...
     # TODO The implementation below is probably incorrect and not complete.
     if 'dist-packages' in path or 'site-packages' in path:
         return False

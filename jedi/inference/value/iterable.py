@@ -4,7 +4,6 @@ iterators in general.
 """
 import sys
 
-from jedi._compatibility import is_py3
 from jedi.inference import compiled
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \

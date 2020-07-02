@@ -1,18 +1,9 @@
 import pydoc
+from contextlib import suppress
 
-from jedi.inference.utils import ignored
 from jedi.inference.names import AbstractArbitraryName
 
-try:
-    from pydoc_data import topics as pydoc_topics
-except ImportError:
-    # Python 2
-    try:
-        import pydoc_topics
-    except ImportError:
-        # This is for Python 3 embeddable version, which dont have
-        # pydoc_data module in its file python3x.zip.
-        pydoc_topics = None
+from pydoc_data import topics as pydoc_topics
 
 
 class KeywordName(AbstractArbitraryName):
@@ -34,7 +25,7 @@ def imitate_pydoc(string):
     # with unicode strings)
     string = str(string)
     h = pydoc.help
-    with ignored(KeyError):
+    with suppress(KeyError):
         # try to access symbols
         string = h.symbols[string]
         string, _, related = string.partition(' ')

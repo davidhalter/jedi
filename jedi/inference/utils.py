@@ -99,15 +99,3 @@ class PushBackIterator(object):
         else:
             self.current = next(self.iterator)
         return self.current
-
-
-@contextlib.contextmanager
-def ignored(*exceptions):
-    """
-    Value manager that ignores all of the specified exceptions. This will
-    be in the standard library starting with Python 3.5.
-    """
-    try:
-        yield
-    except exceptions:
-        pass

@@ -142,11 +142,8 @@ def unpack_arglist(arglist):
     if arglist is None:
         return
 
-    # Allow testlist here as well for Python2's class inheritance
-    # definitions.
-    if not (arglist.type in ('arglist', 'testlist') or (
-            # in python 3.5 **arg is an argument, not arglist
-            arglist.type == 'argument' and arglist.children[0] in ('*', '**'))):
+    if arglist.type != 'arglist' and not (
+            arglist.type == 'argument' and arglist.children[0] in ('*', '**')):
         yield 0, arglist
         return
 

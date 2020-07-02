@@ -10,7 +10,6 @@ be used across repositories.
 import os
 import errno
 import json
-import sys
 
 from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
@@ -258,10 +257,6 @@ class Project(object):
         inference_state = s._inference_state
         empty_module_context = s._get_module_context()
 
-        if inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
-            raise NotImplementedError(
-                "No support for refactorings/search on Python 2/3.5"
-            )
         debug.dbg('Search for string %s, complete=%s', string, complete)
         wanted_type, wanted_names = split_search_string(string)
         name = wanted_names[0]
