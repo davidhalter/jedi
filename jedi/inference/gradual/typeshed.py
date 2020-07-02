@@ -65,7 +65,6 @@ def _get_typeshed_directories(version_info):
         for base_list_entry in base_list:
             match = re.match(r'(\d+)\.(\d+)$', base_list_entry)
             if match is not None:
-                print(match)
                 if match.group(1) == '3' and int(match.group(2)) <= version_info.minor:
                     check_version_list.append(base_list_entry)
 
