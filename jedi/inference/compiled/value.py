@@ -182,10 +182,6 @@ class CompiledValue(Value):
         )
 
     def py__iter__(self, contextualized_node=None):
-        # Python iterators are a bit strange, because there's no need for
-        # the __iter__ function as long as __getitem__ is defined (it will
-        # just start with __getitem__(0). This is especially true for
-        # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
             for x in super().py__iter__(contextualized_node):
                 yield x

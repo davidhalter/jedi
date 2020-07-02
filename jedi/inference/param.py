@@ -20,8 +20,7 @@ def _add_argument_issue(error_name, lazy_value, message):
 
 class ExecutedParamName(ParamName):
     def __init__(self, function_value, arguments, param_node, lazy_value, is_default=False):
-        super().__init__(
-            function_value, param_node.name, arguments=arguments)
+        super().__init__(function_value, param_node.name, arguments=arguments)
         self._lazy_value = lazy_value
         self._is_default = is_default
 
