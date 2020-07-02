@@ -18,11 +18,7 @@ Options:
 """
 
 import time
-try:
-    # For Python 2
-    import cProfile as profile
-except ImportError:
-    import profile
+import profile
 import pstats
 
 from docopt import docopt

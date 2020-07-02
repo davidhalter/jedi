@@ -291,14 +291,6 @@ except ImportError as i_a:
     i_a
     #? ImportError()
     i_a
-try:
-    import math
-except ImportError, i_b:
-    # TODO check this only in Python2
-    ##? ['i_b']
-    i_b
-    ##? ImportError()
-    i_b
 
 
 class MyException(Exception):

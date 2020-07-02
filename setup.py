@@ -37,7 +37,6 @@ setup(name='jedi',
       install_requires=install_requires,
       extras_require={
           'testing': [
-              # Pytest 5 doesn't support Python 2 anymore.
               'pytest<6.0.0',
               # docopt for sith doctests
               'docopt',
