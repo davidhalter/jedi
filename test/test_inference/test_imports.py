@@ -8,32 +8,32 @@ import os
 import pytest
 
 from jedi.file_io import FileIO
-from jedi._compatibility import find_module_py33, find_module
 from jedi.inference import compiled
 from jedi.inference import imports
 from jedi.api.project import Project
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
 from jedi.inference.references import get_module_contexts_containing_name
 from ..helpers import get_example_dir, test_dir, test_dir_project, root_dir
+from jedi.inference.compiled.subprocess.functions import _find_module_py33, _find_module
 
 THIS_DIR = os.path.dirname(__file__)
 
 
 def test_find_module_basic():
     """Needs to work like the old find_module."""
-    assert find_module_py33('_io') == (None, False)
+    assert _find_module_py33('_io') == (None, False)
     with pytest.raises(ImportError):
-        assert find_module_py33('_DOESNTEXIST_') == (None, None)
+        assert _find_module_py33('_DOESNTEXIST_') == (None, None)
 
 
 def test_find_module_package():
-    file_io, is_package = find_module('json')
+    file_io, is_package = _find_module('json')
     assert file_io.path.endswith(os.path.join('json', '__init__.py'))
     assert is_package is True
 
 
 def test_find_module_not_package():
-    file_io, is_package = find_module('io')
+    file_io, is_package = _find_module('io')
     assert file_io.path.endswith('io.py')
     assert is_package is False
 

@@ -13,7 +13,6 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 
-from jedi._compatibility import ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.file_io import FolderIO
@@ -28,6 +27,7 @@ from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typeshed import import_module_decorator, \
     create_stub_module, parse_stub_module
+from jedi.inference.compiled.subprocess.functions import ImplicitNSInfo
 from jedi.plugins import plugin_manager
 
 
