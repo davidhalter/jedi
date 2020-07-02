@@ -420,7 +420,10 @@ class BaseName(object):
             return False
         return tree_name.is_definition() and tree_name.parent.type == 'trailer'
 
-    def goto(self, **kwargs):
+    @debug.increase_indent_cm('goto on name')
+    def goto(self, *, follow_imports=False, follow_builtin_imports=False,
+             only_stubs=False, prefer_stubs=False):
+
         """
         Like :meth:`.Script.goto` (also supports the same params), but does it
         for the current name. This is typically useful if you are using
@@ -433,20 +436,6 @@ class BaseName(object):
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`Name`
         """
-        with debug.increase_indent_cm('goto for %s' % self._name):
-            return self._goto(**kwargs)
-
-    def goto_assignments(self, **kwargs):  # Python 2...
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use .goto.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.goto(**kwargs)
-
-    def _goto(self, follow_imports=False, follow_builtin_imports=False,
-              only_stubs=False, prefer_stubs=False):
-
         if not self._name.is_value_name:
             return []
 
@@ -461,7 +450,16 @@ class BaseName(object):
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in names]
 
-    def infer(self, **kwargs):  # Python 2...
+    def goto_assignments(self, **kwargs):
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use .goto.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.goto(**kwargs)
+
+    @debug.increase_indent_cm('infer on name')
+    def infer(self, *, only_stubs=False, prefer_stubs=False):
         """
         Like :meth:`.Script.infer`, it can be useful to understand which type
         the current name has.
@@ -478,10 +476,6 @@ class BaseName(object):
             inference call.
         :rtype: list of :class:`Name`
         """
-        with debug.increase_indent_cm('infer for %s' % self._name):
-            return self._infer(**kwargs)
-
-    def _infer(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:

@@ -228,7 +228,7 @@ class Script(object):
         )
 
     @validate_line_column
-    def complete(self, line=None, column=None, **kwargs):
+    def complete(self, line=None, column=None, *, fuzzy=False):
         """
         Completes objects under the cursor.
 
@@ -242,9 +242,6 @@ class Script(object):
             before magic methods and name mangled names that start with ``__``.
         :rtype: list of :class:`.Completion`
         """
-        return self._complete(line, column, **kwargs)
-
-    def _complete(self, line, column, fuzzy=False):  # Python 2...
         with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
@@ -261,7 +258,7 @@ class Script(object):
         return self.complete(*self._pos, fuzzy=fuzzy)
 
     @validate_line_column
-    def infer(self, line=None, column=None, **kwargs):
+    def infer(self, line=None, column=None, *, only_stubs=False, prefer_stubs=False):
         """
         Return the definitions of under the cursor. It is basically a wrapper
         around Jedi's type inference.
@@ -277,18 +274,6 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
-        with debug.increase_indent_cm('infer'):
-            return self._infer(line, column, **kwargs)
-
-    def goto_definitions(self, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.infer(*self._pos, **kwargs)
-
-    def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
         pos = line, column
         leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
@@ -311,6 +296,14 @@ class Script(object):
         # the API.
         return helpers.sorted_definitions(set(defs))
 
+    def goto_definitions(self, **kwargs):
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.infer(*self._pos, **kwargs)
+
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
         warnings.warn(
             "Deprecated since version 0.16.0. Use Script(...).goto instead.",
@@ -323,7 +316,8 @@ class Script(object):
                          **kwargs)
 
     @validate_line_column
-    def goto(self, line=None, column=None, **kwargs):
+    def goto(self, line=None, column=None, *, follow_imports=False, follow_builtin_imports=False,
+             only_stubs=False, prefer_stubs=False):
         """
         Goes to the name that defined the object under the cursor. Optionally
         you can follow imports.
@@ -337,11 +331,6 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
-        with debug.increase_indent_cm('goto'):
-            return self._goto(line, column, **kwargs)
-
-    def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
-              only_stubs=False, prefer_stubs=False):
         tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
@@ -377,7 +366,7 @@ class Script(object):
         # Avoid duplicates
         return list(set(helpers.sorted_definitions(defs)))
 
-    def search(self, string, **kwargs):
+    def search(self, string, *, all_scopes=False):
         """
         Searches a name in the current file. For a description of how the
         search string should look like, please have a look at
@@ -388,9 +377,6 @@ class Script(object):
             functions and classes.
         :yields: :class:`.Name`
         """
-        return self._search(string, **kwargs)  # Python 2 ...
-
-    def _search(self, string, all_scopes=False):
         return self._search_func(string, all_scopes=all_scopes)
 
     @to_list
@@ -654,7 +640,7 @@ class Script(object):
         ]
         return sorted(defs, key=lambda x: x.start_pos)
 
-    def rename(self, line=None, column=None, **kwargs):
+    def rename(self, line=None, column=None, *, new_name):
         """
         Renames all references of the variable under the cursor.
 
@@ -663,13 +649,11 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._rename(line, column, **kwargs)
-
-    def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._inference_state, definitions, new_name)
 
-    def extract_variable(self, line, column, **kwargs):
+    @validate_line_column
+    def extract_variable(self, line, column, *, new_name, until_line=None, until_column=None):
         """
         Moves an expression to a new statemenet.
 
@@ -694,10 +678,6 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._extract_variable(line, column, **kwargs)  # Python 2...
-
-    @validate_line_column
-    def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None
         else:
@@ -711,7 +691,8 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    def extract_function(self, line, column, **kwargs):
+    @validate_line_column
+    def extract_function(self, line, column, *, new_name, until_line=None, until_column=None):
         """
         Moves an expression to a new function.
 
@@ -744,10 +725,6 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._extract_function(line, column, **kwargs)  # Python 2...
-
-    @validate_line_column
-    def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None
         else:
