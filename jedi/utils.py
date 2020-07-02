@@ -2,7 +2,6 @@
 Utilities for end-users.
 """
 
-from __future__ import absolute_import
 import __main__
 from collections import namedtuple
 import logging
