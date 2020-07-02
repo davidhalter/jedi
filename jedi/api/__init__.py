@@ -10,7 +10,6 @@ arguments.
 import os
 import sys
 import warnings
-from functools import wraps
 
 import parso
 from parso.python import tree
@@ -49,18 +48,6 @@ from jedi.inference.utils import to_list
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
 sys.setrecursionlimit(3000)
-
-
-def _no_python2_support(func):
-    # TODO remove when removing Python 2/3.5
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
-            raise NotImplementedError(
-                "No support for refactorings/search on Python 2/3.5"
-            )
-        return func(self, *args, **kwargs)
-    return wrapper
 
 
 class Script(object):
@@ -404,7 +391,6 @@ class Script(object):
         # Avoid duplicates
         return list(set(helpers.sorted_definitions(defs)))
 
-    @_no_python2_support
     def search(self, string, **kwargs):
         """
         Searches a name in the current file. For a description of how the
@@ -682,7 +668,6 @@ class Script(object):
         ]
         return sorted(defs, key=lambda x: x.start_pos)
 
-    @_no_python2_support
     def rename(self, line=None, column=None, **kwargs):
         """
         Renames all references of the variable under the cursor.
@@ -698,7 +683,6 @@ class Script(object):
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._inference_state, definitions, new_name)
 
-    @_no_python2_support
     def extract_variable(self, line, column, **kwargs):
         """
         Moves an expression to a new statemenet.
@@ -741,7 +725,6 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @_no_python2_support
     def extract_function(self, line, column, **kwargs):
         """
         Moves an expression to a new function.
@@ -792,7 +775,6 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @_no_python2_support
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor. This is basically the opposite of
