@@ -138,8 +138,7 @@ def _infer_param(function_value, param):
     """
     annotation = param.annotation
     if annotation is None:
-        # If no Python 3-style annotation, look for a Python 2-style comment
-        # annotation.
+        # If no Python 3-style annotation, look for a comment annotation.
         # Identify parameters to function in the same sequence as they would
         # appear in a type comment.
         all_params = [child for child in param.parent.children
@@ -204,7 +203,8 @@ def infer_return_types(function, arguments):
     all_annotations = py__annotations__(function.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
-        # If there is no Python 3-type annotation, look for a Python 2-type annotation
+        # If there is no Python 3-type annotation, look for an annotation
+        # comment.
         node = function.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:

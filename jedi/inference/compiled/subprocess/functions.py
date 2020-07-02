@@ -1,6 +1,5 @@
 import sys
 import os
-import re
 import inspect
 import importlib
 import warnings
@@ -102,10 +101,9 @@ def _iter_module_names(inference_state, paths):
             name = dir_entry.name
             # First Namespaces then modules/stubs
             if dir_entry.is_dir():
-                # pycache is obviously not an interestin namespace. Also the
+                # pycache is obviously not an interesting namespace. Also the
                 # name must be a valid identifier.
-                # TODO use str.isidentifier, once Python 2 is removed
-                if name != '__pycache__' and not re.search(r'\W|^\d', name):
+                if name != '__pycache__' and name.isidentifier():
                     yield name
             else:
                 if name.endswith('.pyi'):  # Stub files
