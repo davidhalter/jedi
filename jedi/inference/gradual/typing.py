@@ -71,7 +71,7 @@ class TypingModuleName(NameWrapper):
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
-            yield builtin_from_name(inference_state, u'True')
+            yield builtin_from_name(inference_state, 'True')
         elif name == 'overload':
             yield OverloadFunction.create_cached(
                 inference_state, self.parent_context, self.tree_name)
@@ -110,7 +110,7 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
             # Optional is basically just saying it's either None or the actual
             # type.
             return self.gather_annotation_classes().execute_annotation() \
-                | ValueSet([builtin_from_name(self.inference_state, u'None')])
+                | ValueSet([builtin_from_name(self.inference_state, 'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
             return self._generics_manager[0]
@@ -153,7 +153,7 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
             # Optional[T] is equivalent to Union[T, None]. In Jedi unions
             # are represented by members within a ValueSet, so we extract
             # the T from the Optional[T] by removing the None value.
-            none = builtin_from_name(self.inference_state, u'None')
+            none = builtin_from_name(self.inference_state, 'None')
             return annotation_generics[0].infer_type_vars(
                 value_set.filter(lambda x: x != none),
             )

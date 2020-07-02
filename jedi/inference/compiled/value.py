@@ -57,7 +57,7 @@ class CompiledValue(Value):
             ).execute_annotation()
 
         try:
-            self.access_handle.getattr_paths(u'__call__')
+            self.access_handle.getattr_paths('__call__')
         except AttributeError:
             return super(CompiledValue, self).py__call__(arguments)
         else:
@@ -500,7 +500,7 @@ class CompiledValueFilter(AbstractFilter):
 
         # ``dir`` doesn't include the type names.
         if not self.is_instance and needs_type_completions:
-            for filter in builtin_from_name(self._inference_state, u'type').get_filters():
+            for filter in builtin_from_name(self._inference_state, 'type').get_filters():
                 names += filter.values()
         return names
 
@@ -516,11 +516,11 @@ class CompiledValueFilter(AbstractFilter):
 
 
 docstr_defaults = {
-    'floating point number': u'float',
-    'character': u'str',
-    'integer': u'int',
-    'dictionary': u'dict',
-    'string': u'str',
+    'floating point number': 'float',
+    'character': 'str',
+    'integer': 'int',
+    'dictionary': 'dict',
+    'string': 'str',
 }
 
 
@@ -550,7 +550,7 @@ def _parse_function_doc(doc):
         # UnboundLocalError for undefined end in last line
         debug.dbg('no brackets found - no param')
         end = 0
-        param_str = u''
+        param_str = ''
     else:
         # remove square brackets, that show an optional param ( = None)
         def change_options(m):
@@ -568,9 +568,9 @@ def _parse_function_doc(doc):
     param_str = param_str.replace('-', '_')  # see: isinstance.__doc__
 
     # parse return value
-    r = re.search(u'-[>-]* ', doc[end:end + 7])
+    r = re.search('-[>-]* ', doc[end:end + 7])
     if r is None:
-        ret = u''
+        ret = ''
     else:
         index = end + r.end()
         # get result type, which can contain newlines

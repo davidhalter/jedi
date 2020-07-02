@@ -372,7 +372,7 @@ class _ParamMixin(object):
 
 
 class ParamNameInterface(_ParamMixin):
-    api_type = u'param'
+    api_type = 'param'
 
     def get_kind(self):
         raise NotImplementedError

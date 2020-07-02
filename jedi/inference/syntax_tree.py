@@ -227,7 +227,7 @@ def _infer_node(context, element):
         if element.value != '...':
             origin = element.parent
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
-        return ValueSet([compiled.builtin_from_name(inference_state, u'Ellipsis')])
+        return ValueSet([compiled.builtin_from_name(inference_state, 'Ellipsis')])
     elif typ == 'dotted_name':
         value_set = infer_atom(context, element.children[0])
         for next_name in element.children[2::2]:
@@ -319,7 +319,7 @@ def infer_atom(context, atom):
         value_set = infer_atom(context, atom.children[0])
         for string in atom.children[1:]:
             right = infer_atom(context, string)
-            value_set = _infer_comparison(context, value_set, u'+', right)
+            value_set = _infer_comparison(context, value_set, '+', right)
         return value_set
     elif atom.type == 'fstring':
         return compiled.get_string_value_set(state)
@@ -737,7 +737,7 @@ def tree_name_to_values(inference_state, context, tree_name):
         types = infer_expr_stmt(context, node, tree_name)
     elif typ == 'with_stmt':
         value_managers = context.infer_node(node.get_test_node_from_name(tree_name))
-        enter_methods = value_managers.py__getattribute__(u'__enter__')
+        enter_methods = value_managers.py__getattribute__('__enter__')
         return enter_methods.execute_with_values()
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)

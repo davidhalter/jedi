@@ -50,8 +50,8 @@ def test_find_module_package_zipped(Script, inference_state, environment):
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
-        string=u'pkg',
-        full_name=u'pkg'
+        string='pkg',
+        full_name='pkg'
     )
     assert file_io is not None
     assert file_io.path.endswith(os.path.join('pkg.zip', 'pkg', '__init__.py'))
@@ -104,8 +104,8 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
-        string=u'not_pkg',
-        full_name=u'not_pkg'
+        string='not_pkg',
+        full_name='not_pkg'
     )
     assert file_io.path.endswith(os.path.join('not_pkg.zip', 'not_pkg.py'))
     assert is_package is False

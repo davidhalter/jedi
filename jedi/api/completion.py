@@ -576,8 +576,8 @@ def _complete_getattr(user_context, instance):
     will write it like this anyway and the other ones, well they are just
     out of luck I guess :) ~dave.
     """
-    names = (instance.get_function_slot_names(u'__getattr__')
-             or instance.get_function_slot_names(u'__getattribute__'))
+    names = (instance.get_function_slot_names('__getattr__')
+             or instance.get_function_slot_names('__getattribute__'))
     functions = ValueSet.from_sets(
         name.infer()
         for name in names

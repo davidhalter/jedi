@@ -25,7 +25,7 @@ from jedi.inference.gradual.generics import TupleGenericManager
 
 class LambdaName(AbstractNameDefinition):
     string_name = '<lambda>'
-    api_type = u'function'
+    api_type = 'function'
 
     def __init__(self, lambda_value):
         self._lambda_value = lambda_value
@@ -54,7 +54,7 @@ class FunctionAndClassBase(TreeValue):
 
 
 class FunctionMixin(object):
-    api_type = u'function'
+    api_type = 'function'
 
     def get_filters(self, origin_scope=None):
         cls = self.py__class__()
@@ -160,7 +160,7 @@ class FunctionValue(FunctionMixin, FunctionAndClassBase, metaclass=CachedMetaCla
         return function
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.inference_state, u'types', u'FunctionType')
+        c, = values_from_qualified_names(self.inference_state, 'types', 'FunctionType')
         return c
 
     def get_default_param_context(self):
@@ -237,7 +237,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                     try:
                         children = r.children
                     except AttributeError:
-                        ctx = compiled.builtin_from_name(self.inference_state, u'None')
+                        ctx = compiled.builtin_from_name(self.inference_state, 'None')
                         value_set |= ValueSet([ctx])
                     else:
                         value_set |= self.infer_node(children[1])
@@ -249,7 +249,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
     def _get_yield_lazy_value(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            ctx = compiled.builtin_from_name(self.inference_state, u'None')
+            ctx = compiled.builtin_from_name(self.inference_state, 'None')
             yield LazyKnownValue(ctx)
             return
 

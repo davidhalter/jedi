@@ -53,7 +53,7 @@ def create_simple_object(inference_state, obj):
 
 
 def get_string_value_set(inference_state):
-    return builtin_from_name(inference_state, u'str').execute_with_values()
+    return builtin_from_name(inference_state, 'str').execute_with_values()
 
 
 def load_module(inference_state, dotted_name, **kwargs):

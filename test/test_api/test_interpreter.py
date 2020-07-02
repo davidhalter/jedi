@@ -564,7 +564,7 @@ def test_param_annotation_completion(class_is_findable):
     ]
 )
 def test_dict_completion(code, column, expected):
-    strs = {'asdf': 1, u"""foo""": 2, r'fbar': 3}
+    strs = {'asdf': 1, """foo""": 2, r'fbar': 3}
     mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
 
     namespaces = [locals(), {'implicit': {1000: 3}}]

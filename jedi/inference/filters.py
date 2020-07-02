@@ -245,7 +245,7 @@ class MergedFilter(object):
 
 class _BuiltinMappedMethod(ValueWrapper):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
-    api_type = u'function'
+    api_type = 'function'
 
     def __init__(self, value, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(builtin_func)
@@ -263,7 +263,7 @@ class SpecialMethodFilter(DictFilter):
     classes like Generator (for __next__, etc).
     """
     class SpecialMethodName(AbstractNameDefinition):
-        api_type = u'function'
+        api_type = 'function'
 
         def __init__(self, parent_context, string_name, callable_, builtin_value):
             self.parent_context = parent_context

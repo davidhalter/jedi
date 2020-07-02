@@ -18,7 +18,7 @@ _sentinel = object()
 
 
 class StringName(AbstractArbitraryName):
-    api_type = u'string'
+    api_type = 'string'
     is_value_name = False
 
 

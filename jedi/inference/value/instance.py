@@ -88,7 +88,7 @@ class MethodExecutionContext(FunctionExecutionContext):
 
 
 class AbstractInstanceValue(Value):
-    api_type = u'instance'
+    api_type = 'instance'
 
     def __init__(self, inference_state, parent_context, class_value):
         super(AbstractInstanceValue, self).__init__(inference_state, parent_context)
@@ -234,12 +234,12 @@ class _BaseTreeInstance(AbstractInstanceValue):
         # other way around.
         if is_big_annoying_library(self.parent_context):
             return NO_VALUES
-        names = (self.get_function_slot_names(u'__getattr__')
-                 or self.get_function_slot_names(u'__getattribute__'))
+        names = (self.get_function_slot_names('__getattr__')
+                 or self.get_function_slot_names('__getattribute__'))
         return self.execute_function_slots(names, name)
 
     def py__getitem__(self, index_value_set, contextualized_node):
-        names = self.get_function_slot_names(u'__getitem__')
+        names = self.get_function_slot_names('__getitem__')
         if not names:
             return super(_BaseTreeInstance, self).py__getitem__(
                 index_value_set,
@@ -250,7 +250,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
         return ValueSet.from_sets(name.infer().execute(args) for name in names)
 
     def py__iter__(self, contextualized_node=None):
-        iter_slot_names = self.get_function_slot_names(u'__iter__')
+        iter_slot_names = self.get_function_slot_names('__iter__')
         if not iter_slot_names:
             return super(_BaseTreeInstance, self).py__iter__(contextualized_node)
 
@@ -258,7 +258,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
             for generator in self.execute_function_slots(iter_slot_names):
                 if generator.is_instance() and not generator.is_compiled():
                     # `__next__` logic.
-                    name = u'__next__'
+                    name = '__next__'
                     next_slot_names = generator.get_function_slot_names(name)
                     if next_slot_names:
                         yield LazyKnownValues(
@@ -272,7 +272,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
         return iterate()
 
     def py__call__(self, arguments):
-        names = self.get_function_slot_names(u'__call__')
+        names = self.get_function_slot_names('__call__')
         if not names:
             # Means the Instance is not callable.
             return super(_BaseTreeInstance, self).py__call__(arguments)
@@ -290,10 +290,10 @@ class _BaseTreeInstance(AbstractInstanceValue):
             if result is not NotImplemented:
                 return result
 
-        names = self.get_function_slot_names(u'__get__')
+        names = self.get_function_slot_names('__get__')
         if names:
             if instance is None:
-                instance = compiled.builtin_from_name(self.inference_state, u'None')
+                instance = compiled.builtin_from_name(self.inference_state, 'None')
             return self.execute_function_slots(names, instance, class_value)
         else:
             return ValueSet([self])
@@ -461,7 +461,7 @@ class BoundMethod(FunctionMixin, ValueWrapper):
         )
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.inference_state, u'types', u'MethodType')
+        c, = values_from_qualified_names(self.inference_state, 'types', 'MethodType')
         return c
 
     def _get_arguments(self, arguments):

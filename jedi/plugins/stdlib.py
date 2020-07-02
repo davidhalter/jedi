@@ -421,7 +421,7 @@ def collections_namedtuple(value, arguments, callback):
     inference_state = value.inference_state
 
     # Process arguments
-    name = u'jedi_unknown_namedtuple'
+    name = 'jedi_unknown_namedtuple'
     for c in _follow_param(inference_state, arguments, 0):
         x = get_str_or_none(c)
         if x is not None:
@@ -451,7 +451,7 @@ def collections_namedtuple(value, arguments, callback):
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
-        arg_list=repr(tuple(fields)).replace("u'", "").replace("'", "")[1:-1],
+        arg_list=repr(tuple(fields)).replace("'", "")[1:-1],
         repr_fmt='',
         field_defs='\n'.join(_NAMEDTUPLE_FIELD_TEMPLATE.format(index=index, name=name)
                              for index, name in enumerate(fields))
@@ -727,7 +727,7 @@ def _create_string_input_function(func):
 @argument_clinic('*args, /', want_callback=True)
 def _os_path_join(args_set, callback):
     if len(args_set) == 1:
-        string = u''
+        string = ''
         sequence, = args_set
         is_first = True
         for lazy_value in sequence.py__iter__():

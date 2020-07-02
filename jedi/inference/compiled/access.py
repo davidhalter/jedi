@@ -155,14 +155,14 @@ def create_access_path(inference_state, obj):
 
 def get_api_type(obj):
     if inspect.isclass(obj):
-        return u'class'
+        return 'class'
     elif inspect.ismodule(obj):
-        return u'module'
+        return 'module'
     elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
             or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
-        return u'function'
+        return 'function'
     # Everything else...
-    return u'instance'
+    return 'instance'
 
 
 class DirectObjectAccess(object):

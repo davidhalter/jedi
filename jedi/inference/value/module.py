@@ -16,7 +16,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
     """
-    api_type = u'instance'
+    api_type = 'instance'
 
     def __init__(self, parent_module, string_name, string_value=None):
         self.parent_context = parent_module
@@ -70,7 +70,7 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.inference_state, u'types', u'ModuleType')
+        c, = values_from_qualified_names(self.inference_state, 'types', 'ModuleType')
         return c
 
     def is_module(self):
@@ -134,7 +134,7 @@ class ModuleMixin(SubModuleDictMixin):
 
 
 class ModuleValue(ModuleMixin, TreeValue):
-    api_type = u'module'
+    api_type = 'module'
 
     def __init__(self, inference_state, module_node, code_lines, file_io=None,
                  string_names=None, is_package=False):

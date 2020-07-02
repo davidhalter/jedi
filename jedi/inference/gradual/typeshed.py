@@ -109,7 +109,7 @@ def import_module_decorator(func):
                 # ``os``.
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, (n,), None, sys_path,)
-                    for n in [u'posixpath', u'ntpath', u'macpath', u'os2emxpath']
+                    for n in ['posixpath', 'ntpath', 'macpath', 'os2emxpath']
                 )
             else:
                 python_value_set = ValueSet.from_sets(

@@ -23,7 +23,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     # Is a module like every other module, because if you import an empty
     # folder foobar it will be available as an object:
     # <module 'foobar' (namespace)>.
-    api_type = u'module'
+    api_type = 'module'
     parent_context = None
 
     def __init__(self, inference_state, string_names, paths):

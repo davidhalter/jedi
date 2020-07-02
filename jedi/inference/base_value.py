@@ -93,7 +93,7 @@ class HelperValueMixin(object):
         return values
 
     def py__await__(self):
-        await_value_set = self.py__getattribute__(u"__await__")
+        await_value_set = self.py__getattribute__("__await__")
         if not await_value_set:
             debug.warning('Tried to run __await__ on value %s', self)
         return await_value_set.execute_with_values()

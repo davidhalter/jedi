@@ -7,7 +7,7 @@ from jedi.inference.helpers import get_str_or_none
 
 
 class PathName(StringName):
-    api_type = u'path'
+    api_type = 'path'
 
 
 def complete_file_name(inference_state, module_context, start_leaf, quote, string,

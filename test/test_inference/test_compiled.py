@@ -12,22 +12,22 @@ from jedi.inference.syntax_tree import _infer_comparison_part
 
 
 def test_simple(inference_state, environment):
-    obj = compiled.create_simple_object(inference_state, u'_str_')
-    upper, = obj.py__getattribute__(u'upper')
+    obj = compiled.create_simple_object(inference_state, '_str_')
+    upper, = obj.py__getattribute__('upper')
     objs = list(upper.execute_with_values())
     assert len(objs) == 1
     assert objs[0].name.string_name == 'str'
 
 
 def test_builtin_loading(inference_state):
-    string, = inference_state.builtins_module.py__getattribute__(u'str')
-    from_name, = string.py__getattribute__(u'__init__')
+    string, = inference_state.builtins_module.py__getattribute__('str')
+    from_name, = string.py__getattribute__('__init__')
     assert from_name.tree_node
     assert not from_name.py__doc__()  # It's a stub
 
 
 def test_next_docstr(inference_state):
-    next_ = compiled.builtin_from_name(inference_state, u'next')
+    next_ = compiled.builtin_from_name(inference_state, 'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
     for non_stub in _stub_to_python_value_set(next_):
@@ -48,9 +48,9 @@ def test_doc(inference_state):
     Even CompiledValue docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    str_ = compiled.create_simple_object(inference_state, u'')
+    str_ = compiled.create_simple_object(inference_state, '')
     # Equals `''.__getnewargs__`
-    obj, = str_.py__getattribute__(u'__getnewargs__')
+    obj, = str_.py__getattribute__('__getnewargs__')
     assert obj.py__doc__() == ''
 
 
@@ -162,7 +162,7 @@ def test_operation(Script, inference_state, create_compiled_object):
     false, true = _infer_comparison_part(
         inference_state, b.parent_context,
         left=list(b.execute_with_values())[0],
-        operator=u'is not',
+        operator='is not',
         right=b,
     )
     assert false.py__name__() == 'bool'

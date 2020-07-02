@@ -7,7 +7,7 @@ from pydoc_data import topics as pydoc_topics
 
 
 class KeywordName(AbstractArbitraryName):
-    api_type = u'keyword'
+    api_type = 'keyword'
 
     def py__doc__(self):
         return imitate_pydoc(self.string_name)

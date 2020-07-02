@@ -230,7 +230,7 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
                 else:
                     continue
 
-                if py_class.api_type != u'class':
+                if py_class.api_type != 'class':
                     # Functions & modules don't have an MRO and we're not
                     # expecting a Callable (those are handled separately within
                     # TypingClassValueWithIndex).
@@ -309,7 +309,7 @@ class _GenericInstanceWrapper(ValueWrapper):
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':
-                return ValueSet([builtin_from_name(self.inference_state, u'None')])
+                return ValueSet([builtin_from_name(self.inference_state, 'None')])
         return self._wrapped_value.py__stop_iteration_returns()
 
     def get_type_hint(self, add_class_info=True):
@@ -326,7 +326,7 @@ class _PseudoTreeNameClass(Value):
     this class. Essentially this class makes it possible to goto that `Tuple`
     name, without affecting anything else negatively.
     """
-    api_type = u'class'
+    api_type = 'class'
 
     def __init__(self, parent_context, tree_name):
         super(_PseudoTreeNameClass, self).__init__(
@@ -356,7 +356,7 @@ class _PseudoTreeNameClass(Value):
     def py__class__(self):
         # This might not be 100% correct, but it is good enough. The details of
         # the typing library are not really an issue for Jedi.
-        return builtin_from_name(self.inference_state, u'type')
+        return builtin_from_name(self.inference_state, 'type')
 
     @property
     def name(self):
@@ -423,7 +423,7 @@ class BaseTypingInstance(LazyValueWrapper):
         return ValueName(self, self._tree_name)
 
     def _get_wrapped_value(self):
-        object_, = builtin_from_name(self.inference_state, u'object').execute_annotation()
+        object_, = builtin_from_name(self.inference_state, 'object').execute_annotation()
         return object_
 
     def __repr__(self):

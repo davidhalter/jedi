@@ -21,7 +21,7 @@ from jedi.inference.value.dynamic_arrays import check_array_additions
 
 class IterableMixin(object):
     def py__stop_iteration_returns(self):
-        return ValueSet([compiled.builtin_from_name(self.inference_state, u'None')])
+        return ValueSet([compiled.builtin_from_name(self.inference_state, 'None')])
 
     # At the moment, safe values are simple values like "foo", 1 and not
     # lists/dicts. Therefore as a small speed optimization we can just do the
@@ -58,7 +58,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
 
     def py__stop_iteration_returns(self):
-        return ValueSet([compiled.builtin_from_name(self.inference_state, u'None')])
+        return ValueSet([compiled.builtin_from_name(self.inference_state, 'None')])
 
     @property
     def name(self):
@@ -173,7 +173,7 @@ class _DictMixin(object):
 
 
 class Sequence(LazyAttributeOverwrite, IterableMixin):
-    api_type = u'instance'
+    api_type = 'instance'
 
     @property
     def name(self):
@@ -219,7 +219,7 @@ class _BaseComprehension(ComprehensionMixin):
 
 
 class ListComprehension(_BaseComprehension, Sequence):
-    array_type = u'list'
+    array_type = 'list'
 
     def py__simple_getitem__(self, index):
         if isinstance(index, slice):
@@ -232,7 +232,7 @@ class ListComprehension(_BaseComprehension, Sequence):
 
 
 class SetComprehension(_BaseComprehension, Sequence):
-    array_type = u'set'
+    array_type = 'set'
 
 
 class GeneratorComprehension(_BaseComprehension, GeneratorBase):
@@ -250,7 +250,7 @@ class _DictKeyMixin(object):
 
 
 class DictComprehension(ComprehensionMixin, Sequence, _DictKeyMixin):
-    array_type = u'dict'
+    array_type = 'dict'
 
     def __init__(self, inference_state, defining_context, sync_comp_for_node, key_node, value_node):
         assert sync_comp_for_node.type == 'sync_comp_for'
@@ -307,9 +307,9 @@ class DictComprehension(ComprehensionMixin, Sequence, _DictKeyMixin):
 
 class SequenceLiteralValue(Sequence):
     _TUPLE_LIKE = 'testlist_star_expr', 'testlist', 'subscriptlist'
-    mapping = {'(': u'tuple',
-               '[': u'list',
-               '{': u'set'}
+    mapping = {'(': 'tuple',
+               '[': 'list',
+               '{': 'set'}
 
     def __init__(self, inference_state, defining_context, atom):
         super(SequenceLiteralValue, self).__init__(inference_state)
@@ -317,13 +317,13 @@ class SequenceLiteralValue(Sequence):
         self._defining_context = defining_context
 
         if self.atom.type in self._TUPLE_LIKE:
-            self.array_type = u'tuple'
+            self.array_type = 'tuple'
         else:
             self.array_type = SequenceLiteralValue.mapping[atom.children[0]]
             """The builtin name of the array (list, set, tuple or dict)."""
 
     def _get_generics(self):
-        if self.array_type == u'tuple':
+        if self.array_type == 'tuple':
             return tuple(x.infer().py__class__() for x in self.py__iter__())
         return super(SequenceLiteralValue, self)._get_generics()
 
@@ -415,7 +415,7 @@ class SequenceLiteralValue(Sequence):
 
 
 class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
-    array_type = u'dict'
+    array_type = 'dict'
 
     def __init__(self, inference_state, defining_context, atom):
         super(SequenceLiteralValue, self).__init__(inference_state)
@@ -427,7 +427,7 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
         compiled_value_index = compiled.create_simple_object(self.inference_state, index)
         for key, value in self.get_tree_entries():
             for k in self._defining_context.infer_node(key):
-                for key_v in k.execute_operation(compiled_value_index, u'=='):
+                for key_v in k.execute_operation(compiled_value_index, '=='):
                     if key_v.get_safe_value():
                         return self._defining_context.infer_node(value)
         raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
@@ -503,15 +503,15 @@ class _FakeSequence(Sequence):
 
 
 class FakeTuple(_FakeSequence):
-    array_type = u'tuple'
+    array_type = 'tuple'
 
 
 class FakeList(_FakeSequence):
-    array_type = u'tuple'
+    array_type = 'tuple'
 
 
 class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
-    array_type = u'dict'
+    array_type = 'dict'
 
     def __init__(self, inference_state, dct):
         super(FakeDict, self).__init__(inference_state)

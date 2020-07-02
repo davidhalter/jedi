@@ -144,7 +144,7 @@ class ClassMixin(object):
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.inference_state, u'type')
+        return compiled.builtin_from_name(self.inference_state, 'type')
 
     @property
     def name(self):
@@ -204,7 +204,7 @@ class ClassMixin(object):
                 )
         if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
-            type_ = builtin_from_name(self.inference_state, u'type')
+            type_ = builtin_from_name(self.inference_state, 'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
                 # We are not using execute_with_values here, because the
@@ -319,7 +319,7 @@ class ClassMixin(object):
 
 
 class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
-    api_type = u'class'
+    api_type = 'class'
 
     @inference_state_method_cache()
     def list_type_vars(self):

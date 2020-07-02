@@ -43,7 +43,7 @@ def test_versions(version):
 
 def test_load_module(inference_state):
     access_path = inference_state.compiled_subprocess.load_module(
-        dotted_name=u'math',
+        dotted_name='math',
         sys_path=inference_state.get_sys_path()
     )
     name, access_handle = access_path.accesses[0]
