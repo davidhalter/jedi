@@ -7,7 +7,6 @@ information returned to enable Jedi to make decisions.
 import types
 
 from jedi import debug
-from jedi._compatibility import py_version
 
 _sentinel = object()
 
@@ -65,7 +64,7 @@ def _static_getmro_newstyle(klass):
     return mro
 
 
-if py_version >= 30:
+if True:
     _shadowed_dict = _shadowed_dict_newstyle
     _get_type = type
     _static_getmro = _static_getmro_newstyle

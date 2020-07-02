@@ -3,25 +3,13 @@ Tests of ``jedi.api.Interpreter``.
 """
 import sys
 import warnings
+import typing
 
 import pytest
 
 import jedi
-from jedi._compatibility import py_version
 from jedi.inference.compiled import mixed
 from importlib import import_module
-
-if py_version > 30:
-    def exec_(source, global_map):
-        exec(source, global_map)
-else:
-    eval(compile("""def exec_(source, global_map):
-                        exec source in global_map """, 'blub', 'exec'))
-
-if py_version > 35:
-    import typing
-else:
-    typing = None
 
 
 class _GlobalNameSpace:
@@ -321,7 +309,7 @@ def test_completion_param_annotations():
     # Need to define this function not directly in Python. Otherwise Jedi is too
     # clever and uses the Python code instead of the signature object.
     code = 'def foo(a: 1, b: str, c: int = 1.0) -> bytes: pass'
-    exec_(code, locals())
+    exec(code, locals())
     script = jedi.Interpreter('foo', [locals()])
     c, = script.complete()
     sig, = c.get_signatures()
@@ -625,7 +613,6 @@ def bar():
     return float
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'annotations, result, code', [
         ({}, [], ''),

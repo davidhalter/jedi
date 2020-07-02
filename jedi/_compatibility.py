@@ -18,8 +18,6 @@ from zipimport import zipimporter
 
 from jedi.file_io import KnownContentFileIO, ZipFileIO
 
-py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
-
 
 def find_module(string, path=None, full_name=None, is_global_search=True):
     """

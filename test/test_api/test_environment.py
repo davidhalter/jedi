@@ -4,7 +4,6 @@ import sys
 import pytest
 
 import jedi
-from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
     InvalidPythonEnvironment, find_system_environments, \
     get_system_environment, create_environment, InterpreterEnvironment, \
@@ -33,7 +32,7 @@ def test_versions(version):
     try:
         env = get_system_environment(version)
     except InvalidPythonEnvironment:
-        if int(version.replace('.', '')) == py_version:
+        if int(version.replace('.', '')) == str(sys.version_info[0]) + str(sys.version_info[1]):
             # At least the current version has to work
             raise
         pytest.skip()

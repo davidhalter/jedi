@@ -8,7 +8,7 @@ import warnings
 import re
 import builtins
 
-from jedi._compatibility import unicode, py_version
+from jedi._compatibility import unicode
 from jedi.inference.compiled.getattr_static import getattr_static
 
 ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
@@ -470,8 +470,6 @@ class DirectObjectAccess(object):
         return inspect.isclass(self._obj) and self._obj != type
 
     def _annotation_to_str(self, annotation):
-        if py_version < 30:
-            return ''
         return inspect.formatannotation(annotation)
 
     def get_signature_params(self):

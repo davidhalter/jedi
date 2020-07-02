@@ -1,13 +1,13 @@
 import tempfile
 import shutil
 import os
+import sys
 from functools import partial
 
 import pytest
 
 import jedi
 from jedi.api.environment import get_system_environment, InterpreterEnvironment
-from jedi._compatibility import py_version
 from test.helpers import test_dir
 
 collect_ignore = [
@@ -93,7 +93,8 @@ def clean_jedi_cache(request):
 def environment(request):
     version = request.config.option.env
     if version is None:
-        version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+        v = str(sys.version_info[0]) + str(sys.version_info[1])
+        version = os.environ.get('JEDI_TEST_ENVIRONMENT', v)
 
     if request.config.option.interpreter_env or version == 'interpreter':
         return InterpreterEnvironment()
