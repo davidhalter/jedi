@@ -48,18 +48,3 @@ def pickle_dump(data, file, protocol):
         if sys.platform == 'win32':
             raise IOError(errno.EPIPE, "Broken pipe")
         raise
-
-
-class GeneralizedPopen(subprocess.Popen):
-    def __init__(self, *args, **kwargs):
-        if os.name == 'nt':
-            try:
-                # Was introduced in Python 3.7.
-                CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
-            except AttributeError:
-                CREATE_NO_WINDOW = 0x08000000
-            kwargs['creationflags'] = CREATE_NO_WINDOW
-        # The child process doesn't need file descriptors except 0, 1, 2.
-        # This is unix only.
-        kwargs['close_fds'] = 'posix' in sys.builtin_module_names
-        super(GeneralizedPopen, self).__init__(*args, **kwargs)

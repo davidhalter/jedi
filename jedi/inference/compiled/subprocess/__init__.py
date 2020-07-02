@@ -18,8 +18,7 @@ import weakref
 from functools import partial
 from threading import Thread
 
-from jedi._compatibility import \
-    pickle_dump, pickle_load, GeneralizedPopen
+from jedi._compatibility import pickle_dump, pickle_load
 from jedi import debug
 from jedi.cache import memoize_method
 from jedi.inference.compiled.subprocess import functions
@@ -30,6 +29,21 @@ from jedi.api.exceptions import InternalError
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 PICKLE_PROTOCOL = 4
+
+
+class _GeneralizedPopen(subprocess.Popen):
+    def __init__(self, *args, **kwargs):
+        if os.name == 'nt':
+            try:
+                # Was introduced in Python 3.7.
+                CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
+            except AttributeError:
+                CREATE_NO_WINDOW = 0x08000000
+            kwargs['creationflags'] = CREATE_NO_WINDOW
+        # The child process doesn't need file descriptors except 0, 1, 2.
+        # This is unix only.
+        kwargs['close_fds'] = 'posix' in sys.builtin_module_names
+        super().__init__(*args, **kwargs)
 
 
 def _enqueue_output(out, queue_):
@@ -187,7 +201,7 @@ class CompiledSubprocess(object):
             os.path.dirname(os.path.dirname(parso_path)),
             '.'.join(str(x) for x in sys.version_info[:3]),
         )
-        process = GeneralizedPopen(
+        process = _GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
