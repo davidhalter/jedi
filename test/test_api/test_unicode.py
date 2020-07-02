@@ -37,18 +37,14 @@ def test_unicode_attribute(Script):
 
 def test_multibyte_script(Script):
     """ `jedi.Script` must accept multi-byte string source. """
-    try:
-        code = u("import datetime; datetime.d")
-        comment = u("# multi-byte comment あいうえおä")
-        s = (u('%s\n%s') % (code, comment)).encode('utf-8')
-    except NameError:
-        pass  # python 3 has no unicode method
-    else:
-        assert len(Script(s).complete(1, len(code)))
+    code = u("import datetime; datetime.d")
+    comment = u("# multi-byte comment あいうえおä")
+    s = (u('%s\n%s') % (code, comment))
+    assert len(Script(s).complete(1, len(code)))
 
 
 def test_goto_definition_at_zero(Script):
-    """At zero usually sometimes raises unicode issues."""
+    """Infer at zero sometimes raises issues."""
     assert Script("a").infer(1, 1) == []
     s = Script("str").infer(1, 1)
     assert len(s) == 1

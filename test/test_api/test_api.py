@@ -9,7 +9,6 @@ import pytest
 from pytest import raises
 from parso import cache
 
-from jedi._compatibility import unicode
 from jedi import preload_module
 from jedi.inference.gradual import typeshed
 from test.helpers import test_dir, get_example_dir
@@ -326,7 +325,7 @@ def test_goto_follow_builtin_imports(Script):
 
 def test_docstrings_for_completions(Script):
     for c in Script('').complete():
-        assert isinstance(c.docstring(), (str, unicode))
+        assert isinstance(c.docstring(), str)
 
 
 def test_fuzzy_completion(Script):

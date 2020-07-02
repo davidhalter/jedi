@@ -7,7 +7,7 @@ def test_goto_keyword(Script):
     """
     Bug: goto assignments on ``in`` used to raise AttributeError::
 
-      'unicode' object has no attribute 'generate_call_path'
+      'str' object has no attribute 'generate_call_path'
     """
     Script('in').goto()
 
