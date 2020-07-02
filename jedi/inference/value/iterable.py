@@ -418,7 +418,9 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
     array_type = 'dict'
 
     def __init__(self, inference_state, defining_context, atom):
-        super(SequenceLiteralValue, self).__init__(inference_state)
+        # Intentionally don't call the super class. This is definitely a sign
+        # that the architecture is bad and we should refactor.
+        Sequence.__init__(self, inference_state)
         self._defining_context = defining_context
         self.atom = atom
 
