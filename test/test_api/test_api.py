@@ -337,9 +337,7 @@ def test_fuzzy_completion(Script):
 
 def test_math_fuzzy_completion(Script, environment):
     script = Script('import math\nmath.og')
-    expected = ['copysign', 'log', 'log10', 'log1p']
-    if environment.version_info.major >= 3:
-        expected.append('log2')
+    expected = ['copysign', 'log', 'log10', 'log1p', 'log2']
     completions = script.complete(fuzzy=True)
     assert expected == [comp.name for comp in completions]
     for c in completions:

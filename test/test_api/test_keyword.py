@@ -2,8 +2,6 @@
 Test of keywords and ``jedi.keywords``
 """
 
-import pytest
-
 
 def test_goto_keyword(Script):
     """
@@ -17,10 +15,7 @@ def test_goto_keyword(Script):
 def test_keyword(Script, environment):
     """ github jedi-vim issue #44 """
     defs = Script("print").infer()
-    if environment.version_info.major < 3:
-        assert defs == []
-    else:
-        assert [d.docstring() for d in defs]
+    assert [d.docstring() for d in defs]
 
     assert Script("import").goto() == []
 
@@ -51,10 +46,6 @@ def test_keyword_attributes(Script):
 
 
 def test_none_keyword(Script, environment):
-    if environment.version_info.major == 2:
-        # Just don't care about Python 2 anymore, it's almost gone.
-        pytest.skip()
-
     none, = Script('None').complete()
     assert not none.docstring()
     assert none.name == 'None'

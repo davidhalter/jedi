@@ -16,11 +16,7 @@ def test_simple(inference_state, environment):
     upper, = obj.py__getattribute__(u'upper')
     objs = list(upper.execute_with_values())
     assert len(objs) == 1
-    if environment.version_info.major == 2:
-        expected = 'unicode'
-    else:
-        expected = 'str'
-    assert objs[0].name.string_name == expected
+    assert objs[0].name.string_name == 'str'
 
 
 def test_builtin_loading(inference_state):
@@ -65,13 +61,9 @@ def test_string_literals(Script, environment):
 
     assert typ('""') == 'str'
     assert typ('r""') == 'str'
-    if environment.version_info.major > 2:
-        assert typ('br""') == 'bytes'
-        assert typ('b""') == 'bytes'
-        assert typ('u""') == 'str'
-    else:
-        assert typ('b""') == 'str'
-        assert typ('u""') == 'unicode'
+    assert typ('br""') == 'bytes'
+    assert typ('b""') == 'bytes'
+    assert typ('u""') == 'str'
 
 
 def test_method_completion(Script, environment):
@@ -94,9 +86,6 @@ def test_time_docstring(Script):
 
 
 def test_dict_values(Script, environment):
-    if environment.version_info.major == 2:
-        # It looks like typeshed for Python 2 returns Any.
-        pytest.skip()
     assert Script('import sys\nsys.modules["alshdb;lasdhf"]').infer()
 
 

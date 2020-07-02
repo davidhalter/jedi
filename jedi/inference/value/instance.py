@@ -258,10 +258,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
             for generator in self.execute_function_slots(iter_slot_names):
                 if generator.is_instance() and not generator.is_compiled():
                     # `__next__` logic.
-                    if self.inference_state.environment.version_info.major == 2:
-                        name = u'next'
-                    else:
-                        name = u'__next__'
+                    name = u'__next__'
                     next_slot_names = generator.get_function_slot_names(name)
                     if next_slot_names:
                         yield LazyKnownValues(

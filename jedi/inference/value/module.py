@@ -26,9 +26,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
     def infer(self):
         if self._string_value is not None:
             s = self._string_value
-            if self.parent_context.inference_state.environment.version_info.major == 2 \
-                    and not isinstance(s, bytes):
-                s = s.encode('utf-8')
             return ValueSet([
                 create_simple_object(self.parent_context.inference_state, s)
             ])

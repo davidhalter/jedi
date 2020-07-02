@@ -90,14 +90,8 @@ def test_re_sub(Script, environment):
         return {d.name for d in defs}
 
     names = run("import re; re.sub('a', 'a', 'f')")
-    if environment.version_info.major == 2:
-        assert names == {'str'}
-    else:
-        assert names == {'str'}
+    assert names == {'str'}
 
     # This param is missing because of overloading.
     names = run("import re; re.sub('a', 'a')")
-    if environment.version_info.major == 2:
-        assert names == {'str', 'unicode'}
-    else:
-        assert names == {'str', 'bytes'}
+    assert names == {'str', 'bytes'}

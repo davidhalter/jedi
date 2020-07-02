@@ -46,9 +46,6 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
     operation = 'infer'
 
     def test_tuple_mapping(self):
-        if self.environment.version_info.major == 2:
-            pytest.skip('Python 2 also yields None.')
-
         self.check("""
         import re
         any_re = re.compile('.*')

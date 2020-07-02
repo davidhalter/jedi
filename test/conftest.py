@@ -102,9 +102,7 @@ def collect_static_analysis_tests(base_dir, test_files):
 
 @pytest.fixture(scope='session')
 def venv_path(tmpdir_factory, environment):
-    if environment.version_info.major < 3:
-        pytest.skip("python -m venv does not exist in Python 2")
-    elif isinstance(environment, InterpreterEnvironment):
+    if isinstance(environment, InterpreterEnvironment):
         # The environment can be a tox virtualenv environment which we don't
         # want, so use the system environment.
         environment = get_system_environment(

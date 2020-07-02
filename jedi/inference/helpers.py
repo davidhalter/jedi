@@ -122,11 +122,7 @@ def get_names_of_node(node):
 
 
 def is_string(value):
-    if value.inference_state.environment.version_info.major == 2:
-        str_classes = (unicode, bytes)
-    else:
-        str_classes = (unicode,)
-    return value.is_compiled() and isinstance(value.get_safe_value(default=None), str_classes)
+    return value.is_compiled() and isinstance(value.get_safe_value(default=None), str)
 
 
 def is_literal(value):

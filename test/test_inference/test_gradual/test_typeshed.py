@@ -103,11 +103,8 @@ def test_sys_getwindowsversion(Script, environment):
     # This should only exist on Windows, but type inference should happen
     # everywhere.
     definitions = Script('import sys; sys.getwindowsversion().major').infer()
-    if environment.version_info.major == 2:
-        assert not definitions
-    else:
-        def_, = definitions
-        assert def_.name == 'int'
+    def_, = definitions
+    assert def_.name == 'int'
 
 
 def test_sys_hexversion(Script):

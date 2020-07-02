@@ -182,14 +182,9 @@ def argument_clinic(clinic_string, want_value=False, want_context=False,
 
 @argument_clinic('iterator[, default], /', want_inference_state=True)
 def builtins_next(iterators, defaults, inference_state):
-    if inference_state.environment.version_info.major == 2:
-        name = 'next'
-    else:
-        name = '__next__'
-
     # TODO theoretically we have to check here if something is an iterator.
     # That is probably done by checking if it's not a class.
-    return defaults | iterators.py__getattribute__(name).execute_with_values()
+    return defaults | iterators.py__getattribute__('__next__').execute_with_values()
 
 
 @argument_clinic('iterator[, default], /')
