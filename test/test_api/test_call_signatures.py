@@ -503,7 +503,7 @@ _calls = [
 
 @pytest.mark.parametrize('ending', ['', ')'])
 @pytest.mark.parametrize('code, call, expected_index', _calls)
-def test_signature_index(skip_python2, Script, environment, code, call, expected_index, ending):
+def test_signature_index(Script, environment, code, call, expected_index, ending):
     if isinstance(expected_index, tuple):
         expected_index = expected_index[environment.version_info > (3, 8)]
     if environment.version_info < (3, 8):

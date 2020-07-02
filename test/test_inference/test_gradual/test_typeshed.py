@@ -126,7 +126,7 @@ def test_math(Script):
     assert value
 
 
-def test_type_var(Script, skip_python2):
+def test_type_var(Script):
     def_, = Script('import typing; T = typing.TypeVar("T1")').infer()
     assert def_.name == 'TypeVar'
     assert def_.description == 'class TypeVar'

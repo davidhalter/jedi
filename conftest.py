@@ -145,14 +145,6 @@ def jedi_path():
 
 
 @pytest.fixture()
-def skip_python2(environment):
-    if environment.version_info.major == 2:
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        pytest.skip()
-
-
-@pytest.fixture()
 def skip_pre_python38(environment):
     if environment.version_info < (3, 8):
         # This if is just needed to avoid that tests ever skip way more than

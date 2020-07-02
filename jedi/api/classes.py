@@ -336,7 +336,7 @@ class BaseName(object):
         >>> print(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Name full_name='__main__.f', description='def f'>,
          <Name full_name='__main__.C', description='class C'>]
-        >>> str(defs[0].description)  # strip literals in python2
+        >>> str(defs[0].description)
         'def f'
         >>> str(defs[1].description)
         'class C'
