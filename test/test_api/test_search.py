@@ -66,9 +66,6 @@ class SomeClass:
     ]
 )
 def test_simple_search(Script, string, descriptions, kwargs):
-    if sys.version_info < (3, 6):
-        pytest.skip()
-
     if kwargs.pop('complete', False) is True:
         defs = Script(path=__file__).complete_search(string, **kwargs)
     else:

@@ -1,6 +1,5 @@
 from os.path import join, sep as s, dirname, expanduser
 import os
-import sys
 from textwrap import dedent
 
 import pytest
@@ -75,10 +74,7 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
     dirname = str(tmpdir.mkdir('jedi-test'))
     filename1 = join(dirname, 'test1.py')
     filename2 = join(dirname, 'test2.py')
-    if sys.version_info < (3, 0):
-        data = "# coding: latin-1\nfoo = 'm\xf6p'\n"
-    else:
-        data = "# coding: latin-1\nfoo = 'm\xf6p'\n".encode("latin-1")
+    data = "# coding: latin-1\nfoo = 'm\xf6p'\n".encode("latin-1")
 
     with open(filename1, "wb") as f:
         f.write(data)
@@ -372,7 +368,6 @@ _dict_keys_completion_tests = [
 ]
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'added_code, column, expected', _dict_keys_completion_tests
 )
@@ -398,7 +393,6 @@ def test_dict_keys_completions(Script, added_code, column, expected):
     assert [c.complete for c in comps] == expected
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_dict_keys_in_weird_case(Script):
     assert Script('a[\n# foo\nx]').complete(line=2, column=0)
 

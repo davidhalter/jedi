@@ -117,7 +117,6 @@ def test_create_environment_executable():
     assert environment.executable == sys.executable
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch):
     fake_python = os.path.join(str(tmpdir), 'fake_python')
     with open(fake_python, 'w', newline='') as f:

@@ -1,5 +1,4 @@
 from typing import Generic, TypeVar, List
-import sys
 
 import pytest
 
@@ -86,7 +85,6 @@ def test_mixed_module_cache():
     assert isinstance(jedi_module, ModuleValue)
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
 def test_signature():
     """
     For performance reasons we use the signature of the compiled object and not

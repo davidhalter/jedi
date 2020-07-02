@@ -1,6 +1,5 @@
 from textwrap import dedent
 import math
-import sys
 from collections import Counter
 from datetime import datetime
 
@@ -146,7 +145,6 @@ def test_parent_context(same_process_inference_state, attribute, expected_name, 
     assert x.parent_context.parent_context is None
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'obj, expected_names', [
         ('', ['str']),

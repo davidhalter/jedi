@@ -2,8 +2,6 @@
 Contains all classes and functions to deal with lists, dicts, generators and
 iterators in general.
 """
-import sys
-
 from jedi.inference import compiled
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
@@ -31,14 +29,7 @@ class IterableMixin(object):
     # doing this in the end as well.
     # This mostly speeds up patterns like `sys.version_info >= (3, 0)` in
     # typeshed.
-    if sys.version_info[0] == 2:
-        # Python 2...........
-        def get_safe_value(self, default=sentinel):
-            if default is sentinel:
-                raise ValueError("There exists no safe value for value %s" % self)
-            return default
-    else:
-        get_safe_value = Value.get_safe_value
+    get_safe_value = Value.get_safe_value
 
 
 class GeneratorBase(LazyAttributeOverwrite, IterableMixin):

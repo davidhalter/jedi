@@ -1,5 +1,4 @@
 import os
-import sys
 
 import pytest
 
@@ -133,7 +132,6 @@ def test_load_save_project(tmpdir):
         ('multiprocessin', ['multiprocessing'], dict(complete=True)),
     ]
 )
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
 def test_search(string, full_names, kwargs):
     some_search_test_var = 1.0
     project = Project(test_dir)
@@ -152,7 +150,6 @@ def test_search(string, full_names, kwargs):
         ('test_load_save_p', ['roject'], False),
     ]
 )
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
 def test_complete_search(Script, string, completions, all_scopes):
     project = Project(test_dir)
     defs = project.complete_search(string, all_scopes=all_scopes)

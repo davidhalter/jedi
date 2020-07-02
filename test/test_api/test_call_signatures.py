@@ -1,4 +1,3 @@
-import sys
 from textwrap import dedent
 import inspect
 from unittest import TestCase
@@ -515,7 +514,6 @@ def test_signature_index(skip_python2, Script, environment, code, call, expected
     assert expected_index == index
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't support __signature__")
 @pytest.mark.parametrize('code', ['foo', 'instance.foo'])
 def test_arg_defaults(Script, environment, code):
     def foo(arg="bla", arg1=1):

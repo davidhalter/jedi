@@ -184,7 +184,6 @@ def test_property_warnings(stacklevel, allow_unsafe_getattr):
     _assert_interpreter_complete('foo.prop.uppe', locals(), expected)
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('class_is_findable', [False, True])
 def test__getattr__completions(allow_unsafe_getattr, class_is_findable):
     class CompleteGetattr(object):
@@ -275,7 +274,6 @@ def test_property_content():
     assert def_.name == 'int'
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_param_completion():
     def foo(bar):
         pass
@@ -326,7 +324,6 @@ def test_completion_param_annotations():
     assert d.name == 'bytes'
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_keyword_argument():
     def f(some_keyword_argument):
         pass
@@ -433,7 +430,6 @@ def test_sys_path_docstring():  # Was an issue in #1298
     s.complete(line=2, column=4)[0].docstring()
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, completions', [
         ('x[0].uppe', ['upper']),
@@ -479,7 +475,6 @@ def test_simple_completions(code, completions):
     assert [d.name for d in defs] == completions
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't have lru_cache")
 def test__wrapped__():
     from functools import lru_cache
 
@@ -492,7 +487,6 @@ def test__wrapped__():
     assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_illegal_class_instance():
     class X:
         __class__ = 1
@@ -502,14 +496,12 @@ def test_illegal_class_instance():
     assert not v.is_instance()
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('module_name', ['sys', 'time', 'unittest.mock'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)
     assert jedi.Interpreter('module.', [locals()]).complete()
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, expected, index', [
         ('a(', ['a', 'b', 'c'], 0),
@@ -535,7 +527,6 @@ def test_partial_signatures(code, expected, index):
     assert index == sig.index
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_type_var():
     """This was an issue before, see Github #1369"""
     import typing
@@ -544,7 +535,6 @@ def test_type_var():
     assert def_.name == 'TypeVar'
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('class_is_findable', [False, True])
 def test_param_annotation_completion(class_is_findable):
     class Foo:
@@ -558,7 +548,6 @@ def test_param_annotation_completion(class_is_findable):
     assert def_.name == 'bar'
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, column, expected', [
         ('strs[', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
@@ -589,7 +578,6 @@ def test_dict_completion(code, column, expected):
     assert [c.complete for c in comps] == expected
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, types', [
         ('dct[1]', ['int']),

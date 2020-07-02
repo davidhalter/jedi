@@ -19,8 +19,7 @@ from ..helpers import get_example_dir, test_dir, test_dir_project, root_dir
 THIS_DIR = os.path.dirname(__file__)
 
 
-@pytest.mark.skipif('sys.version_info < (3,3)')
-def test_find_module_py33():
+def test_find_module_basic():
     """Needs to work like the old find_module."""
     assert find_module_py33('_io') == (None, False)
     with pytest.raises(ImportError):

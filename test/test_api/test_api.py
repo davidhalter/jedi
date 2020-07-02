@@ -3,7 +3,6 @@ Test all things related to the ``jedi.api`` module.
 """
 
 import os
-import sys
 from textwrap import dedent
 
 import pytest
@@ -16,7 +15,6 @@ from jedi.inference.gradual import typeshed
 from test.helpers import test_dir, get_example_dir
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
 def test_preload_modules():
     def check_loaded(*modules):
         for grammar_cache in cache.parser_cache.values():
@@ -119,8 +117,8 @@ def test_completion_on_complex_literals(Script):
     # However this has been disabled again, because it apparently annoyed
     # users. So no completion after j without a space :)
     assert not Script('4j').complete()
-    assert ({c.name for c in Script('4j ').complete()} ==
-            {'if', 'and', 'in', 'is', 'not', 'or'})
+    assert ({c.name for c in Script('4j ').complete()}
+            == {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
 def test_goto_non_name(Script, environment):

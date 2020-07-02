@@ -1,5 +1,4 @@
 import os
-import sys
 
 import pytest
 
@@ -41,10 +40,7 @@ def test_completion(case, monkeypatch, environment, has_django):
     if skip_reason is not None:
         pytest.skip(skip_reason)
 
-    if 'pep0484_typing' in case.path and sys.version_info[0] == 2:
-        pytest.skip('ditch python 2 finally')
-
-    if (not has_django or environment.version_info.major == 2) and case.path.endswith('django.py'):
+    if (not has_django) and case.path.endswith('django.py'):
         pytest.skip('Needs django to be installed to run this test.')
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
@@ -65,9 +61,6 @@ def test_refactor(refactor_case, environment):
 
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
-    if sys.version_info < (3, 6):
-        pytest.skip()
-
     desired_result = refactor_case.get_desired_result()
     if refactor_case.type == 'error':
         with pytest.raises(RefactoringError) as e:

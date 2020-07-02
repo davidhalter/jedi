@@ -152,12 +152,11 @@ def _load_module(inference_state, path):
 
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
-    if sys.version_info[0] > 2:
-        try:
-            python_object = inspect.unwrap(python_object)
-        except ValueError:
-            # Can return a ValueError when it wraps around
-            pass
+    try:
+        python_object = inspect.unwrap(python_object)
+    except ValueError:
+        # Can return a ValueError when it wraps around
+        pass
 
     if (inspect.ismodule(python_object)
             or inspect.isclass(python_object)
