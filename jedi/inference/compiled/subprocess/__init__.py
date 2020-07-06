@@ -167,9 +167,9 @@ class CompiledSubprocess(object):
             # if SYSTEMROOT (or case variant) exists in environment,
             # ensure it goes to subprocess
             for k, v in os.environ.items():
-                if 'SYSTEMROOT' == k.upper():
-                    self._env_vars.update({k: os.environ[k]})
-                    break  # don't risk multiple entries
+                # no need to worry about multiple entries since Windows ignores case
+                if 'SYSTEMROOT' == k.upper() or k.upper().startswith('PYTHON'):
+                    self._env_vars.update({k: v})
 
     def __repr__(self):
         pid = os.getpid()
