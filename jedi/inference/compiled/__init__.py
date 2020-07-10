@@ -44,7 +44,7 @@ def create_simple_object(inference_state, obj):
     Only allows creations of objects that are easily picklable across Python
     versions.
     """
-    assert type(obj) in (int, float, str, bytes, slice, complex, bool), obj
+    assert type(obj) in (int, float, str, bytes, slice, complex, bool), repr(obj)
     compiled_value = create_from_access_path(
         inference_state,
         inference_state.compiled_subprocess.create_simple_object(obj)

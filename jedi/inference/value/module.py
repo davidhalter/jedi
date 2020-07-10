@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
@@ -89,9 +90,9 @@ class ModuleMixin(SubModuleDictMixin):
         names = ['__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
         dct = dict((n, _ModuleAttributeName(self, n)) for n in names)
-        file = self.py__file__()
-        if file is not None:
-            dct['__file__'] = _ModuleAttributeName(self, '__file__', file)
+        path = self.py__file__()
+        if path is not None:
+            dct['__file__'] = _ModuleAttributeName(self, '__file__', str(path))
         return dct
 
     def iter_star_filters(self):
@@ -147,13 +148,13 @@ class ModuleValue(ModuleMixin, TreeValue):
         if file_io is None:
             self._path = None
         else:
-            self._path = file_io.path
+            self._path = Path(file_io.path)
         self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
         self._is_package = is_package
 
     def is_stub(self):
-        if self._path is not None and self._path.endswith('.pyi'):
+        if self._path is not None and self._path.suffix == '.pyi':
             # Currently this is the way how we identify stubs when e.g. goto is
             # used in them. This could be changed if stubs would be identified
             # sooner and used as StubModuleValue.
@@ -165,14 +166,14 @@ class ModuleValue(ModuleMixin, TreeValue):
             return None
         return '.'.join(self.string_names)
 
-    def py__file__(self):
+    def py__file__(self) -> Path:
         """
         In contrast to Python's __file__ can be None.
         """
         if self._path is None:
             return None
 
-        return os.path.abspath(self._path)
+        return self._path.absolute()
 
     def is_package(self):
         return self._is_package

@@ -196,8 +196,8 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
             file_paths = []
             if c.is_namespace():
                 file_paths = [os.path.join(p, '__init__.pyi') for p in c.py__path__()]
-            elif file_path is not None and file_path.endswith('.py'):
-                file_paths = [file_path + 'i']
+            elif file_path is not None and file_path.suffix == '.py':
+                file_paths = [str(file_path) + 'i']
 
             for file_path in file_paths:
                 m = _try_to_load_stub_from_file(

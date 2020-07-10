@@ -1,11 +1,11 @@
 import os
 import re
+from pathlib import Path, PurePath
 from importlib.machinery import all_suffixes
 
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string, get_str_or_none
-from jedi.common import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.file_io import FileIO
 from jedi import settings
@@ -14,8 +14,9 @@ from jedi import debug
 _BUILDOUT_PATH_INSERTION_LIMIT = 10
 
 
-def _abs_path(module_context, path):
-    if os.path.isabs(path):
+def _abs_path(module_context, path: str):
+    path = PurePath(path)
+    if path.is_absolute():
         return path
 
     module_path = module_context.py__file__()
@@ -24,8 +25,8 @@ def _abs_path(module_context, path):
         # system.
         return None
 
-    base_dir = os.path.dirname(module_path)
-    return os.path.abspath(os.path.join(base_dir, path))
+    base_dir = module_path.parent
+    return base_dir.joinpath(path).absolute()
 
 
 def _paths_from_assignment(module_context, expr_stmt):
@@ -169,14 +170,14 @@ def _get_paths_from_buildout_script(inference_state, buildout_script_path):
         yield path
 
 
-def _get_parent_dir_with_file(path, filename):
-    for parent in traverse_parents(path):
-        if os.path.isfile(os.path.join(parent, filename)):
+def _get_parent_dir_with_file(path: Path, filename):
+    for parent in path.parents:
+        if parent.joinpath(filename).is_file():
             return parent
     return None
 
 
-def _get_buildout_script_paths(search_path):
+def _get_buildout_script_paths(search_path: Path):
     """
     if there is a 'buildout.cfg' file in one of the parent directories of the
     given module it will return a list of all files in the buildout bin
@@ -188,13 +189,13 @@ def _get_buildout_script_paths(search_path):
     project_root = _get_parent_dir_with_file(search_path, 'buildout.cfg')
     if not project_root:
         return
-    bin_path = os.path.join(project_root, 'bin')
-    if not os.path.exists(bin_path):
+    bin_path = project_root.joinpath('bin')
+    if not bin_path.exists():
         return
 
     for filename in os.listdir(bin_path):
         try:
-            filepath = os.path.join(bin_path, filename)
+            filepath = bin_path.joinpath(filename)
             with open(filepath, 'r') as f:
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
@@ -208,8 +209,8 @@ def _get_buildout_script_paths(search_path):
 
 def remove_python_path_suffix(path):
     for suffix in all_suffixes() + ['.pyi']:
-        if path.endswith(suffix):
-            path = path[:-len(suffix)]
+        if path.suffix == suffix:
+            path = path.with_name(path.stem)
             break
     return path
 
@@ -232,16 +233,15 @@ def transform_path_to_dotted(sys_path, module_path):
     # means that if someone uses an ending like .vim for a Python file, .vim
     # will be part of the returned dotted part.
 
-    is_package = module_path.endswith(os.path.sep + '__init__')
+    is_package = module_path.name == '__init__'
     if is_package:
-        # -1 to remove the separator
-        module_path = module_path[:-len('__init__') - 1]
+        module_path = module_path.parent
 
     def iter_potential_solutions():
         for p in sys_path:
-            if module_path.startswith(p):
+            if str(module_path).startswith(p):
                 # Strip the trailing slash/backslash
-                rest = module_path[len(p):]
+                rest = str(module_path)[len(p):]
                 # On Windows a path can also use a slash.
                 if rest.startswith(os.path.sep) or rest.startswith('/'):
                     # Remove a slash in cases it's still there.

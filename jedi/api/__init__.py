@@ -7,9 +7,9 @@ Alternatively, if you don't need a custom function and are happy with printing
 debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
 """
-import os
 import sys
 import warnings
+from pathlib import Path
 
 import parso
 from parso.python import tree
@@ -96,7 +96,7 @@ class Script(object):
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
-    :type path: str or None
+    :type path: str or pathlib.Path or None
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: typing.List[str]
     :param Environment environment: Provide a predefined :ref:`Environment <environments>`
@@ -109,7 +109,10 @@ class Script(object):
                  sys_path=None, environment=None, project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
-        self.path = os.path.abspath(path) if path else None
+        if isinstance(path, str):
+            path = Path(path)
+
+        self.path = path.absolute() if path else None
 
         if line is not None:
             warnings.warn(
@@ -139,9 +142,7 @@ class Script(object):
 
         if project is None:
             # Load the Python grammar of the current interpreter.
-            project = get_default_project(
-                os.path.dirname(self.path) if path else None
-            )
+            project = get_default_project(self.path)
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
@@ -159,7 +160,7 @@ class Script(object):
         self._module_node, code = self._inference_state.parse_and_get_code(
             code=code,
             path=self.path,
-            use_latest_grammar=path and path.endswith('.pyi'),
+            use_latest_grammar=path and path.suffix == 'pyi',
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
@@ -191,7 +192,7 @@ class Script(object):
             file_io = None
         else:
             file_io = KnownContentFileIO(cast_path(self.path), self._code)
-        if self.path is not None and self.path.endswith('.pyi'):
+        if self.path is not None and self.path.suffix == 'pyi':
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._inference_state,
@@ -798,7 +799,7 @@ class Interpreter(Script):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
         super().__init__(code, environment=environment,
-                         project=Project(os.getcwd()), **kwds)
+                         project=Project(Path.cwd()), **kwds)
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
@@ -806,7 +807,7 @@ class Interpreter(Script):
     def _get_module_context(self):
         tree_module_value = ModuleValue(
             self._inference_state, self._module_node,
-            file_io=KnownContentFileIO(self.path, self._code),
+            file_io=KnownContentFileIO(str(self.path), self._code),
             string_names=('__main__',),
             code_lines=self._code_lines,
         )
@@ -841,7 +842,7 @@ def preload_module(*modules):
     """
     for m in modules:
         s = "import %s as x; x." % m
-        Script(s, path=None).complete(1, len(s))
+        Script(s).complete(1, len(s))
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

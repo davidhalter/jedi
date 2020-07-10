@@ -9,6 +9,7 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
+from pathlib import Path
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -237,7 +238,10 @@ class Importer(object):
             # inference we want to show the user as much as possible.
             # See GH #1446.
             self._inference_state.get_sys_path(add_init_paths=not is_completion)
-            + sys_path.check_sys_path_modifications(self._module_context)
+            + [
+                str(p) for p
+                in sys_path.check_sys_path_modifications(self._module_context)
+            ]
         )
 
     def follow(self):
@@ -467,19 +471,19 @@ def load_module_from_path(inference_state, file_io, import_names=None, is_packag
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
-    path = file_io.path
+    path = Path(file_io.path)
     if import_names is None:
         e_sys_path = inference_state.get_sys_path()
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
     else:
         assert isinstance(is_package, bool)
 
-    is_stub = file_io.path.endswith('.pyi')
+    is_stub = path.suffix == '.pyi'
     if is_stub:
         folder_io = file_io.get_parent_folder()
         if folder_io.path.endswith('-stubs'):
             folder_io = FolderIO(folder_io.path[:-6])
-        if file_io.path.endswith('__init__.pyi'):
+        if path.name == '__init__.pyi':
             python_file_io = folder_io.get_file_io('__init__.py')
         else:
             python_file_io = folder_io.get_file_io(import_names[-1] + '.py')
@@ -510,7 +514,7 @@ def load_module_from_path(inference_state, file_io, import_names=None, is_packag
 def load_namespace_from_path(inference_state, folder_io):
     import_names, is_package = sys_path.transform_path_to_dotted(
         inference_state.get_sys_path(),
-        folder_io.path
+        Path(folder_io.path)
     )
     from jedi.inference.value.namespace import ImplicitNamespaceValue
     return ImplicitNamespaceValue(inference_state, import_names, [folder_io.path])

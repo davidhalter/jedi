@@ -44,7 +44,10 @@ def match(string, like_name, fuzzy=False):
 
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
-    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0, x.name))
+    return sorted(defs, key=lambda x: (str(x.module_path) or '',
+                                       x.line or 0,
+                                       x.column or 0,
+                                       x.name))
 
 
 def get_on_completion_name(module_node, lines, position):
