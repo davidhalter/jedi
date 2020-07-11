@@ -219,8 +219,7 @@ def transform_path_to_dotted(sys_path, module_path):
     """
     Returns the dotted path inside a sys.path as a list of names. e.g.
 
-    >>> from os.path import abspath
-    >>> transform_path_to_dotted([abspath("/foo")], abspath('/foo/bar/baz.py'))
+    >>> transform_path_to_dotted(["/foo"], Path('/foo/bar/baz.py'))
     (('bar', 'baz'), False)
 
     Returns (None, False) if the path doesn't really resolve to anything.
