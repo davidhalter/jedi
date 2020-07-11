@@ -87,4 +87,4 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
             assert has_python == (not d.is_stub())
         assert d.full_name == full_name
 
-        assert d.is_stub() == d.module_path.endswith('.pyi')
+        assert d.is_stub() == (d.module_path.suffix == '.pyi')

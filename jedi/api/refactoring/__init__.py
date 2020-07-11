@@ -1,4 +1,6 @@
 import difflib
+from pathlib import Path
+from typing import Dict
 
 from parso import split_lines
 
@@ -47,8 +49,8 @@ class ChangedFile(object):
             to_p = self._to_path.relative_to(project_path)
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=from_p,
-            tofile=to_p,
+            fromfile=str(from_p),
+            tofile=str(to_p),
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
@@ -76,17 +78,15 @@ class Refactoring(object):
         self._renames = renames
         self._file_to_node_changes = file_to_node_changes
 
-    def get_changed_files(self):
-        """
-        Returns a path to ``ChangedFile`` map.
-        """
+    def get_changed_files(self) -> Dict[Path, ChangedFile]:
         def calculate_to_path(p):
             if p is None:
                 return p
+            p = str(p)
             for from_, to in renames:
-                if p.startswith(from_):
-                    p = to + p[len(from_):]
-            return p
+                if p.startswith(str(from_)):
+                    p = str(to) + p[len(str(from_)):]
+            return Path(p)
 
         renames = self.get_renames()
         return {
@@ -144,7 +144,8 @@ def rename(inference_state, definitions, new_name):
     for d in definitions:
         tree_name = d._name.tree_name
         if d.type == 'module' and tree_name is None:
-            file_renames.add(_calculate_rename(d.module_path, new_name))
+            p = None if d.module_path is None else Path(d.module_path)
+            file_renames.add(_calculate_rename(p, new_name))
         else:
             # This private access is ok in a way. It's not public to
             # protect Jedi users from seeing it.

@@ -142,7 +142,7 @@ class Script(object):
 
         if project is None:
             # Load the Python grammar of the current interpreter.
-            project = get_default_project(self.path)
+            project = get_default_project(None if self.path is None else self.path.parent)
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
@@ -192,7 +192,7 @@ class Script(object):
             file_io = None
         else:
             file_io = KnownContentFileIO(cast_path(self.path), self._code)
-        if self.path is not None and self.path.suffix == 'pyi':
+        if self.path is not None and self.path.suffix == '.pyi':
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._inference_state,

@@ -221,8 +221,8 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         ('example.py', 'rb"' + join('..', current_dirname, 'tes'), None, ['t' + s]),
 
         # Absolute paths
-        (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py"']),
-        (None, '"%s"' % join(root_dir, 'test', 'test_ca'), len(root_dir) + 14, ['che.py']),
+        (None, f'"{root_dir.joinpath("test", "test_ca")}', None, ['che.py"']),
+        (None, f'"{root_dir.joinpath("test", "test_ca")}"', len(str(root_dir)) + 14, ['che.py']),
 
         # Longer quotes
         ('example.py', 'r"""test', None, [s]),

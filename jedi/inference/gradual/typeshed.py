@@ -2,6 +2,7 @@ import os
 import re
 from functools import wraps
 from collections import namedtuple
+from pathlib import Path
 
 from jedi import settings
 from jedi.file_io import FileIO
@@ -11,10 +12,10 @@ from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
 from jedi.inference.value import ModuleValue
 
-_jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
-DJANGO_INIT_PATH = os.path.join(_jedi_path, 'third_party', 'django-stubs',
-                                'django-stubs', '__init__.pyi')
+_jedi_path = Path(__file__).parent.parent.parent
+TYPESHED_PATH = _jedi_path.joinpath('third_party', 'typeshed')
+DJANGO_INIT_PATH = _jedi_path.joinpath('third_party', 'django-stubs',
+                                       'django-stubs', '__init__.pyi')
 
 _IMPORT_MAP = dict(
     _collections='collections',
@@ -60,7 +61,7 @@ def _create_stub_map(directory_path_info):
 def _get_typeshed_directories(version_info):
     check_version_list = ['2and3', '3']
     for base in ['stdlib', 'third_party']:
-        base_path = os.path.join(TYPESHED_PATH, base)
+        base_path = TYPESHED_PATH.joinpath(base)
         base_list = os.listdir(base_path)
         for base_list_entry in base_list:
             match = re.match(r'(\d+)\.(\d+)$', base_list_entry)
@@ -70,7 +71,7 @@ def _get_typeshed_directories(version_info):
 
         for check_version in check_version_list:
             is_third_party = base != 'stdlib'
-            yield PathInfo(os.path.join(base_path, check_version), is_third_party)
+            yield PathInfo(str(base_path.joinpath(check_version)), is_third_party)
 
 
 _version_cache = {}
@@ -181,7 +182,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
             return _try_to_load_stub_from_file(
                 inference_state,
                 python_value_set,
-                file_io=FileIO(DJANGO_INIT_PATH),
+                file_io=FileIO(str(DJANGO_INIT_PATH)),
                 import_names=import_names,
             )
 

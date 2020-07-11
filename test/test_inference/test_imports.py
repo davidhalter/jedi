@@ -4,6 +4,7 @@ Tests".
 """
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -38,11 +39,11 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-pkg_zip_path = get_example_dir('zipped_imports', 'pkg.zip')
+pkg_zip_path = Path(get_example_dir('zipped_imports', 'pkg.zip'))
 
 
 def test_find_module_package_zipped(Script, inference_state, environment):
-    sys_path = environment.get_sys_path() + [pkg_zip_path]
+    sys_path = environment.get_sys_path() + [str(pkg_zip_path)]
 
     project = Project('.', sys_path=sys_path)
     script = Script('import pkg; pkg.mod', project=project)
@@ -86,14 +87,14 @@ def test_find_module_package_zipped(Script, inference_state, environment):
 )
 def test_correct_zip_package_behavior(Script, inference_state, environment, code,
                                       file, package, path):
-    sys_path = environment.get_sys_path() + [pkg_zip_path]
+    sys_path = environment.get_sys_path() + [str(pkg_zip_path)]
     pkg, = Script(code, project=Project('.', sys_path=sys_path)).infer()
     value, = pkg._name.infer()
-    assert value.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
+    assert value.py__file__() == pkg_zip_path.joinpath('pkg', file)
     assert '.'.join(value.py__package__()) == package
     assert value.is_package() is (path is not None)
     if path is not None:
-        assert value.py__path__() == [os.path.join(pkg_zip_path, path)]
+        assert value.py__path__() == [str(pkg_zip_path.joinpath(path))]
 
 
 def test_find_module_not_package_zipped(Script, inference_state, environment):
@@ -103,7 +104,7 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
-        sys_path=sys_path,
+        sys_path=map(str, sys_path),
         string='not_pkg',
         full_name='not_pkg'
     )
@@ -435,8 +436,8 @@ def test_pre_defined_imports_module(Script, environment, name):
     module = Script('', path=path)._get_module_context()
     assert module.string_names == (name,)
 
-    assert module.inference_state.builtins_module.py__file__() != path
-    assert module.inference_state.typing_module.py__file__() != path
+    assert str(module.inference_state.builtins_module.py__file__()) != path
+    assert str(module.inference_state.typing_module.py__file__()) != path
 
 
 @pytest.mark.parametrize('name', ('builtins', 'typing'))
@@ -449,8 +450,8 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
         project=Project('.', sys_path=[tmpdir.strpath] + environment.get_sys_path()),
     )
     module, = script.infer()
-    assert module._inference_state.builtins_module.py__file__() != module_path
-    assert module._inference_state.typing_module.py__file__() != module_path
+    assert str(module._inference_state.builtins_module.py__file__()) != module_path
+    assert str(module._inference_state.typing_module.py__file__()) != module_path
 
 
 def test_import_with_semicolon(Script):

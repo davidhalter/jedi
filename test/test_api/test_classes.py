@@ -3,7 +3,6 @@
 
 from textwrap import dedent
 from inspect import cleandoc
-import os
 
 import pytest
 
@@ -534,8 +533,8 @@ def test_execute(Script, code, description):
         ('from pkg import Foo; Foo().bar', 'bar', 'module.py'),
     ])
 def test_inheritance_module_path(Script, goto, code, name, file_name):
-    base_path = os.path.join(get_example_dir('inheritance'), 'pkg')
-    whatever_path = os.path.join(base_path, 'NOT_EXISTING.py')
+    base_path = get_example_dir('inheritance', 'pkg')
+    whatever_path = base_path.joinpath('NOT_EXISTING.py')
 
     script = Script(code, path=whatever_path)
     if goto is None:
@@ -544,7 +543,7 @@ def test_inheritance_module_path(Script, goto, code, name, file_name):
         func, = script.goto(follow_imports=goto)
     assert func.type == 'function'
     assert func.name == name
-    assert func.module_path == os.path.join(base_path, file_name)
+    assert func.module_path == base_path.joinpath(file_name)
 
 
 def test_definition_goto_follow_imports(Script):

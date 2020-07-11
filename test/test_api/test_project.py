@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -21,13 +22,12 @@ def test_django_default_project(Script):
 
 def test_django_default_project_of_file(Script):
     project = get_default_project(__file__)
-    d = os.path.dirname
-    assert project._path == d(d(d(__file__)))
+    assert project._path == Path(__file__).parent.parent.parent
 
 
 def test_interpreter_project_path():
     # Run from anywhere it should be the cwd.
-    dir = os.path.join(root_dir, 'test')
+    dir = Path(root_dir).joinpath('test')
     with set_cwd(dir):
         project = Interpreter('', [locals()])._inference_state.project
         assert project._path == dir

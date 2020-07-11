@@ -20,7 +20,7 @@ def cast_path(string):
     """
     if isinstance(string, bytes):
         return str(string, encoding='UTF-8', errors='replace')
-    return string
+    return str(string)
 
 
 def pickle_load(file):

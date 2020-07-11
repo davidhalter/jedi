@@ -41,7 +41,7 @@ def test_keyword_attributes(Script):
     assert def_.line is def_.column is None
     assert def_.in_builtin_module() is True
     assert def_.module_name == 'builtins'
-    assert 'typeshed' in def_.module_path
+    assert 'typeshed' in def_.module_path.parts
     assert def_.type == 'keyword'
 
 

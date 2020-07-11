@@ -15,6 +15,7 @@ the interesting information about all operations.
 """
 import re
 import warnings
+from typing import Optional
 
 from parso.python.tree import search_ancestor
 
@@ -92,7 +93,7 @@ class BaseName(object):
         return self._name.get_root_context()
 
     @property
-    def module_path(self):
+    def module_path(self) -> Optional[str]:
         """
         Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
 
@@ -102,7 +103,9 @@ class BaseName(object):
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            return self._get_module_context().py__file__()
+            path = self._get_module_context().py__file__()
+            if path is not None:
+                return path
 
         return None
 

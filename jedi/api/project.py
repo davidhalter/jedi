@@ -80,6 +80,8 @@ class Project(object):
 
         :param path: The path of the directory you want to use as a project.
         """
+        if isinstance(path, str):
+            path = Path(path)
         with open(cls._get_json_path(path)) as f:
             version, data = json.load(f)
 
@@ -98,8 +100,9 @@ class Project(object):
         data.pop('_environment', None)
         data.pop('_django', None)  # TODO make django setting public?
         data = {k.lstrip('_'): v for k, v in data.items()}
+        data['path'] = str(data['path'])
 
-        self._path.mkdir(parents=True, exist_ok=True)
+        self._get_config_folder_path(self._path).mkdir(parents=True, exist_ok=True)
         with open(self._get_json_path(self._path), 'w') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
@@ -129,11 +132,15 @@ class Project(object):
             self._path = path
 
             self._environment_path = environment_path
+            if sys_path is not None:
+                # Remap potential pathlib.Path entries
+                sys_path = list(map(str, sys_path))
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._load_unsafe_extensions = load_unsafe_extensions
             self._django = False
-            self.added_sys_path = list(added_sys_path)
+            # Remap potential pathlib.Path entries
+            self.added_sys_path = list(map(str, added_sys_path))
             """The sys path that is going to be added at the end of the """
 
         py2_comp(path, **kwargs)
@@ -173,10 +180,10 @@ class Project(object):
             prefixed.append(str(self._path))
 
             if inference_state.script_path is not None:
-                suffixed += discover_buildout_paths(
+                suffixed += map(str, discover_buildout_paths(
                     inference_state,
                     inference_state.script_path
-                )
+                ))
 
                 if add_parent_paths:
                     # Collect directories in upward search by:
@@ -362,6 +369,8 @@ def get_default_project(path=None):
     """
     if path is None:
         path = Path.cwd()
+    elif isinstance(path, str):
+        path = Path(path)
 
     check = path.absolute()
     probable_path = None
@@ -379,7 +388,7 @@ def get_default_project(path=None):
                 # In the case that a __init__.py exists, it's in 99% just a
                 # Python package and the project sits at least one level above.
                 continue
-            else:
+            elif not dir.is_file():
                 first_no_init_file = dir
 
         if _is_django_path(dir):

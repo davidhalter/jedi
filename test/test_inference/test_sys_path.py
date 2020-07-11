@@ -2,6 +2,7 @@ import os
 from glob import glob
 import sys
 import shutil
+from pathlib import Path, PurePath
 
 import pytest
 
@@ -17,9 +18,9 @@ def test_paths_from_assignment(Script):
         return set(sys_path._paths_from_assignment(script._get_module_context(), expr_stmt))
 
     # Normalize paths for Windows.
-    path_a = os.path.abspath('/foo/a')
-    path_b = os.path.abspath('/foo/b')
-    path_c = os.path.abspath('/foo/c')
+    path_a = PurePath('/foo/a')
+    path_b = PurePath('/foo/b')
+    path_c = PurePath('/foo/c')
 
     assert paths('sys.path[0:0] = ["a"]') == {path_a}
     assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == {path_b, path_c}
@@ -105,5 +106,5 @@ def test_transform_path_to_dotted(sys_path_, module_path, expected, is_package):
     # transform_path_to_dotted expects normalized absolute paths.
     sys_path_ = [os.path.abspath(path) for path in sys_path_]
     module_path = os.path.abspath(module_path)
-    assert sys_path.transform_path_to_dotted(sys_path_, module_path) \
+    assert sys_path.transform_path_to_dotted(sys_path_, Path(module_path)) \
         == (expected, is_package)

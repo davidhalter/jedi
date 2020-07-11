@@ -148,7 +148,7 @@ def discover_buildout_paths(inference_state, script_path):
 
 
 def _get_paths_from_buildout_script(inference_state, buildout_script_path):
-    file_io = FileIO(buildout_script_path)
+    file_io = FileIO(str(buildout_script_path))
     try:
         module_node = inference_state.parse(
             file_io=file_io,
@@ -164,7 +164,7 @@ def _get_paths_from_buildout_script(inference_state, buildout_script_path):
         inference_state, module_node,
         file_io=file_io,
         string_names=None,
-        code_lines=get_cached_code_lines(inference_state.grammar, buildout_script_path),
+        code_lines=get_cached_code_lines(inference_state.grammar, str(buildout_script_path)),
     ).as_context()
     for path in check_sys_path_modifications(module_context):
         yield path
@@ -228,6 +228,8 @@ def transform_path_to_dotted(sys_path, module_path):
     """
     # First remove the suffix.
     module_path = remove_python_path_suffix(module_path)
+    if module_path.name.startswith('.'):
+        return None, False
 
     # Once the suffix was removed we are using the files as we know them. This
     # means that if someone uses an ending like .vim for a Python file, .vim
