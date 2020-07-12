@@ -8,6 +8,7 @@ Unreleased
 
 - Added an option to pass environment variables to ``Environment``
 - ``Project(...).path`` exists now
+- Support for Python 3.9
 
 0.17.1 (2020-06-20)
 +++++++++++++++++++
