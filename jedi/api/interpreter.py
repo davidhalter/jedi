@@ -31,7 +31,7 @@ class MixedTreeName(TreeNameDefinition):
         """
         inferred = super(MixedTreeName, self).infer()
         if not inferred:
-            for compiled_value in self.parent_context.compiled_values:
+            for compiled_value in self.parent_context.mixed_values:
                 for f in compiled_value.get_filters():
                     values = ValueSet.from_sets(
                         n.infer() for n in f.get(self.string_name)
@@ -48,9 +48,10 @@ class MixedParserTreeFilter(ParserTreeFilter):
 class MixedModuleContext(ModuleContext):
     def __init__(self, tree_module_value, namespaces):
         super(MixedModuleContext, self).__init__(tree_module_value)
-        self.compiled_values = [
-            _create(self.inference_state, NamespaceObject(n))
-            for n in namespaces
+        self.mixed_values = [
+            self._get_mixed_object(
+                _create(self.inference_state, NamespaceObject(n))
+            ) for n in namespaces
         ]
 
     def _get_mixed_object(self, compiled_value):
@@ -69,7 +70,6 @@ class MixedModuleContext(ModuleContext):
             self.get_global_filter(),
         )
 
-        for compiled_value in self.compiled_values:
-            mixed_object = self._get_mixed_object(compiled_value)
+        for mixed_object in self.mixed_values:
             for filter in mixed_object.get_filters(until_position, origin_scope):
                 yield filter
