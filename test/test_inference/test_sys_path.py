@@ -2,7 +2,7 @@ import os
 from glob import glob
 import sys
 import shutil
-from pathlib import Path, PurePath
+from pathlib import Path
 
 import pytest
 
@@ -18,9 +18,9 @@ def test_paths_from_assignment(Script):
         return set(sys_path._paths_from_assignment(script._get_module_context(), expr_stmt))
 
     # Normalize paths for Windows.
-    path_a = PurePath('/foo/a')
-    path_b = PurePath('/foo/b')
-    path_c = PurePath('/foo/c')
+    path_a = Path('/foo/a').absolute()
+    path_b = Path('/foo/b').absolute()
+    path_c = Path('/foo/c').absolute()
 
     assert paths('sys.path[0:0] = ["a"]') == {path_a}
     assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == {path_b, path_c}

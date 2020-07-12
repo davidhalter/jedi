@@ -1,6 +1,6 @@
 import os
 import re
-from pathlib import Path, PurePath
+from pathlib import Path
 from importlib.machinery import all_suffixes
 
 from jedi.inference.cache import inference_state_method_cache
@@ -15,7 +15,7 @@ _BUILDOUT_PATH_INSERTION_LIMIT = 10
 
 
 def _abs_path(module_context, path: str):
-    path = PurePath(path)
+    path = Path(path)
     if path.is_absolute():
         return path
 
@@ -219,7 +219,7 @@ def transform_path_to_dotted(sys_path, module_path):
     """
     Returns the dotted path inside a sys.path as a list of names. e.g.
 
-    >>> transform_path_to_dotted(["/foo"], Path('/foo/bar/baz.py'))
+    >>> transform_path_to_dotted([str(Path("/foo").absolute())], Path('/foo/bar/baz.py').absolute())
     (('bar', 'baz'), False)
 
     Returns (None, False) if the path doesn't really resolve to anything.

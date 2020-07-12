@@ -58,17 +58,17 @@ def test_sys_path_with_modifications(Script):
     """)
 
     paths = Script(code, path=path)._inference_state.get_sys_path()
-    assert '/tmp/.buildout/eggs/important_package.egg' in paths
+    assert os.path.abspath('/tmp/.buildout/eggs/important_package.egg') in paths
 
 
 def test_path_from_sys_path_assignment(Script):
-    code = dedent("""
+    code = dedent(f"""
         #!/usr/bin/python
 
         import sys
         sys.path[0:0] = [
-          '/usr/lib/python3.8/site-packages',
-          '/home/test/.buildout/eggs/important_package.egg'
+          {os.path.abspath('/usr/lib/python3.8/site-packages')!r},
+          {os.path.abspath('/home/test/.buildout/eggs/important_package.egg')!r},
           ]
 
         path[0:0] = [1]
