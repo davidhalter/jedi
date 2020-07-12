@@ -683,6 +683,17 @@ def test_string_annotation(annotations, result, code):
     assert [d.name for d in defs] == result
 
 
+def test_name_not_inferred_properly():
+    """
+    In IPython notebook it is typical that some parts of the code that is
+    provided was already executed. In that case if something is not properly
+    inferred, it should still infer from the variables it already knows.
+    """
+    x = 1
+    d, = jedi.Interpreter('x = UNDEFINED; x', [locals()]).infer()
+    assert d.name == 'int'
+
+
 def test_variable_reuse():
     x = 1
     d, = jedi.Interpreter('y = x\ny', [locals()]).infer()
