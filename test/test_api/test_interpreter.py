@@ -681,3 +681,9 @@ def test_string_annotation(annotations, result, code):
     x.__annotations__ = annotations
     defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result
+
+
+def test_variable_reuse():
+    x = 1
+    d, = jedi.Interpreter('y = x\ny', [locals()]).infer()
+    assert d.name == 'int'

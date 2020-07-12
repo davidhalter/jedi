@@ -3,6 +3,7 @@ TODO Some parts of this module are still not well documented.
 """
 
 from jedi.inference import compiled
+from jedi.inference.filters import ParserTreeFilter, MergedFilter
 from jedi.inference.compiled import mixed
 from jedi.inference.compiled.access import create_access_path
 from jedi.inference.context import ModuleContext
@@ -30,12 +31,18 @@ class MixedModuleContext(ModuleContext):
             tree_value=self._value
         )
 
-    def get_filters(self, *args, **kwargs):
-        for filter in self._value.as_context().get_filters(*args, **kwargs):
-            yield filter
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield MergedFilter(
+            ParserTreeFilter(
+                parent_context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            ),
+            self.get_global_filter(),
+        )
 
         for namespace_obj in self._namespace_objects:
             compiled_value = _create(self.inference_state, namespace_obj)
             mixed_object = self._get_mixed_object(compiled_value)
-            for filter in mixed_object.get_filters(*args, **kwargs):
+            for filter in mixed_object.get_filters(until_position, origin_scope):
                 yield filter
