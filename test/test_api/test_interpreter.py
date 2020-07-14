@@ -594,11 +594,17 @@ def test_param_annotation_completion(class_is_findable):
         ('mixed[Non', 9, ['e']),
 
         ('implicit[10', None, ['00']),
+
+        ('inherited["', None, ['blablu"']),
     ]
 )
 def test_dict_completion(code, column, expected):
     strs = {'asdf': 1, u"""foo""": 2, r'fbar': 3}
     mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
+
+    class Inherited(dict):
+        pass
+    inherited = Inherited(blablu=3)
 
     namespaces = [locals(), {'implicit': {1000: 3}}]
     comps = jedi.Interpreter(code, namespaces).complete(column=column)

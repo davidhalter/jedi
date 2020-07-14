@@ -71,6 +71,13 @@ class MixedObject(ValueWrapper):
         else:
             return self.compiled_value.get_safe_value(default)
 
+    @property
+    def array_type(self):
+        return self.compiled_value.array_type
+
+    def get_key_values(self):
+        return self.compiled_value.get_key_values()
+
     def py__simple_getitem__(self, index):
         python_object = self.compiled_value.access_handle.access._obj
         if type(python_object) in ALLOWED_GETITEM_TYPES:
