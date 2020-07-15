@@ -61,7 +61,7 @@ class Environment(_BaseEnvironment):
     """
     _subprocess = None
 
-    def __init__(self, executable, env_vars={}):
+    def __init__(self, executable, env_vars=None):
         self._start_executable = executable
         self._env_vars = env_vars
         # Initialize the environment
@@ -136,7 +136,7 @@ class _SameEnvironmentMixin(object):
         self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
-        self._env_vars = {}
+        self._env_vars = None
 
 
 class SameEnvironment(_SameEnvironmentMixin, Environment):
