@@ -14,8 +14,8 @@ These classes are the much biggest part of the API, because they contain
 the interesting information about all operations.
 """
 import re
-import sys
 import warnings
+from typing import Optional
 
 from parso.python.tree import search_ancestor
 
@@ -71,7 +71,6 @@ class BaseName(object):
         '_collections': 'collections',
         '_socket': 'socket',
         '_sqlite3': 'sqlite3',
-        '__builtin__': 'builtins',
     }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
@@ -94,9 +93,9 @@ class BaseName(object):
         return self._name.get_root_context()
 
     @property
-    def module_path(self):
+    def module_path(self) -> Optional[str]:
         """
-        Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``
+        Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
 
         :rtype: str or None
         """
@@ -104,7 +103,9 @@ class BaseName(object):
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            return self._get_module_context().py__file__()
+            path = self._get_module_context().py__file__()
+            if path is not None:
+                return path
 
         return None
 
@@ -129,7 +130,6 @@ class BaseName(object):
         to Jedi, :meth:`jedi.Script.infer` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
-        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... import keyword
@@ -155,7 +155,7 @@ class BaseName(object):
         so that it is easy to relate the result to the source code.
 
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Name full_name='keyword', description='module keyword'>,
          <Name full_name='__main__.C', description='class C'>,
          <Name full_name='__main__.D', description='instance D'>,
@@ -163,7 +163,7 @@ class BaseName(object):
 
         Finally, here is what you can get from :attr:`type`:
 
-        >>> defs = [str(d.type) for d in defs]  # It's unicode and in Py2 has u before it.
+        >>> defs = [d.type for d in defs]
         >>> defs[0]
         'module'
         >>> defs[1]
@@ -324,7 +324,6 @@ class BaseName(object):
 
         Example:
 
-        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... def f():
@@ -337,10 +336,10 @@ class BaseName(object):
         >>> script = Script(source)  # line is maximum by default
         >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Name full_name='__main__.f', description='def f'>,
          <Name full_name='__main__.C', description='class C'>]
-        >>> str(defs[0].description)  # strip literals in python2
+        >>> str(defs[0].description)
         'def f'
         >>> str(defs[1].description)
         'class C'
@@ -424,7 +423,10 @@ class BaseName(object):
             return False
         return tree_name.is_definition() and tree_name.parent.type == 'trailer'
 
-    def goto(self, **kwargs):
+    @debug.increase_indent_cm('goto on name')
+    def goto(self, *, follow_imports=False, follow_builtin_imports=False,
+             only_stubs=False, prefer_stubs=False):
+
         """
         Like :meth:`.Script.goto` (also supports the same params), but does it
         for the current name. This is typically useful if you are using
@@ -437,20 +439,6 @@ class BaseName(object):
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`Name`
         """
-        with debug.increase_indent_cm('goto for %s' % self._name):
-            return self._goto(**kwargs)
-
-    def goto_assignments(self, **kwargs):  # Python 2...
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use .goto.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.goto(**kwargs)
-
-    def _goto(self, follow_imports=False, follow_builtin_imports=False,
-              only_stubs=False, prefer_stubs=False):
-
         if not self._name.is_value_name:
             return []
 
@@ -465,7 +453,16 @@ class BaseName(object):
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in names]
 
-    def infer(self, **kwargs):  # Python 2...
+    def goto_assignments(self, **kwargs):
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use .goto.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.goto(**kwargs)
+
+    @debug.increase_indent_cm('infer on name')
+    def infer(self, *, only_stubs=False, prefer_stubs=False):
         """
         Like :meth:`.Script.infer`, it can be useful to understand which type
         the current name has.
@@ -482,10 +479,6 @@ class BaseName(object):
             inference call.
         :rtype: list of :class:`Name`
         """
-        with debug.increase_indent_cm('infer for %s' % self._name):
-            return self._infer(**kwargs)
-
-    def _infer(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:
@@ -645,7 +638,7 @@ class Completion(BaseName):
     """
     def __init__(self, inference_state, name, stack, like_name_length,
                  is_fuzzy, cached_name=None):
-        super(Completion, self).__init__(inference_state, name)
+        super().__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
@@ -716,7 +709,7 @@ class Completion(BaseName):
             # wouldn't load like > 100 Python modules anymore.
             fast = False
 
-        return super(Completion, self).docstring(raw=raw, fast=fast)
+        return super().docstring(raw=raw, fast=fast)
 
     def _get_docstring(self):
         if self._cached_name is not None:
@@ -725,7 +718,7 @@ class Completion(BaseName):
                 self._name.get_public_name(),
                 lambda: self._get_cache()
             )
-        return super(Completion, self)._get_docstring()
+        return super()._get_docstring()
 
     def _get_docstring_signature(self):
         if self._cached_name is not None:
@@ -734,13 +727,13 @@ class Completion(BaseName):
                 self._name.get_public_name(),
                 lambda: self._get_cache()
             )
-        return super(Completion, self)._get_docstring_signature()
+        return super()._get_docstring_signature()
 
     def _get_cache(self):
         return (
-            super(Completion, self).type,
-            super(Completion, self)._get_docstring_signature(),
-            super(Completion, self)._get_docstring(),
+            super().type,
+            super()._get_docstring_signature(),
+            super()._get_docstring(),
         )
 
     @property
@@ -756,7 +749,7 @@ class Completion(BaseName):
                 lambda: self._get_cache()
             )
 
-        return super(Completion, self).type
+        return super().type
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
@@ -768,7 +761,7 @@ class Name(BaseName):
     :meth:`.Script.goto` or :meth:`.Script.infer`.
     """
     def __init__(self, inference_state, definition):
-        super(Name, self).__init__(inference_state, definition)
+        super().__init__(inference_state, definition)
 
     @property
     def desc_with_module(self):
@@ -821,7 +814,7 @@ class BaseSignature(Name):
     calls.
     """
     def __init__(self, inference_state, signature):
-        super(BaseSignature, self).__init__(inference_state, signature.name)
+        super().__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -851,7 +844,7 @@ class Signature(BaseSignature):
     :meth:`.Script.get_signatures`.
     """
     def __init__(self, inference_state, signature, call_details):
-        super(Signature, self).__init__(inference_state, signature)
+        super().__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 
@@ -918,8 +911,4 @@ class ParamName(Name):
 
         :rtype: :py:attr:`inspect.Parameter.kind`
         """
-        if sys.version_info < (3, 5):
-            raise NotImplementedError(
-                'Python 2 is end-of-life, the new feature is not available for it'
-            )
         return self._name.get_kind()

@@ -44,7 +44,6 @@ Options:
   --pudb                Launch pudb when error is raised.
 """
 
-from __future__ import print_function, division, unicode_literals
 from docopt import docopt
 
 import json

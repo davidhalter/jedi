@@ -1,6 +1,3 @@
-from jedi._compatibility import force_unicode
-
-
 def test_module_attributes(Script):
     def_, = Script('__name__').complete()
     assert def_.name == '__name__'
@@ -13,9 +10,9 @@ def test_module_attributes(Script):
 def test_module__file__(Script, environment):
     assert not Script('__file__').infer()
     def_, = Script('__file__', path='example.py').infer()
-    value = force_unicode(def_._name._value.get_safe_value())
+    value = def_._name._value.get_safe_value()
     assert value.endswith('example.py')
 
     def_, = Script('import antigravity; antigravity.__file__').infer()
-    value = force_unicode(def_._name._value.get_safe_value())
+    value = def_._name._value.get_safe_value()
     assert value.endswith('.py')

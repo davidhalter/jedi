@@ -1,13 +1,11 @@
 from os.path import join, sep as s, dirname, expanduser
 import os
-import sys
 from textwrap import dedent
 
 import pytest
 
 from ..helpers import root_dir
 from jedi.api.helpers import _start_match, _fuzzy_match
-from jedi._compatibility import scandir
 
 
 def test_in_whitespace(Script):
@@ -76,10 +74,7 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
     dirname = str(tmpdir.mkdir('jedi-test'))
     filename1 = join(dirname, 'test1.py')
     filename2 = join(dirname, 'test2.py')
-    if sys.version_info < (3, 0):
-        data = "# coding: latin-1\nfoo = 'm\xf6p'\n"
-    else:
-        data = "# coding: latin-1\nfoo = 'm\xf6p'\n".encode("latin-1")
+    data = "# coding: latin-1\nfoo = 'm\xf6p'\n".encode("latin-1")
 
     with open(filename1, "wb") as f:
         f.write(data)
@@ -88,7 +83,7 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
 
 
 def test_complete_expanduser(Script):
-    possibilities = scandir(expanduser('~'))
+    possibilities = os.scandir(expanduser('~'))
     non_dots = [p for p in possibilities if not p.name.startswith('.') and len(p.name) > 1]
     item = non_dots[0]
     line = "'~%s%s'" % (os.sep, item.name)
@@ -144,9 +139,6 @@ def test_in_comment_before_string(Script):
 
 
 def test_async(Script, environment):
-    if environment.version_info < (3, 5):
-        pytest.skip()
-
     code = dedent('''
         foo = 3
         async def x():
@@ -229,8 +221,8 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         ('example.py', 'rb"' + join('..', current_dirname, 'tes'), None, ['t' + s]),
 
         # Absolute paths
-        (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py"']),
-        (None, '"%s"' % join(root_dir, 'test', 'test_ca'), len(root_dir) + 14, ['che.py']),
+        (None, f'"{root_dir.joinpath("test", "test_ca")}', None, ['che.py"']),
+        (None, f'"{root_dir.joinpath("test", "test_ca")}"', len(str(root_dir)) + 14, ['che.py']),
 
         # Longer quotes
         ('example.py', 'r"""test', None, [s]),
@@ -248,9 +240,7 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         ('example.py', 'x = f("te" + "st"', 16, [s]),
         ('example.py', 'x = f("te" + "st")', 16, [s]),
         ('example.py', 'x = f("t" + "est")', 16, [s]),
-        # This is actually not correct, but for now leave it here, because of
-        # Python 2.
-        ('example.py', 'x = f(b"t" + "est")', 17, [s]),
+        ('example.py', 'x = f(b"t" + "est")', 17, []),
         ('example.py', '"test" + "', None, [s]),
 
         # __file__
@@ -378,11 +368,10 @@ _dict_keys_completion_tests = [
 ]
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'added_code, column, expected', _dict_keys_completion_tests
 )
-def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python36):
+def test_dict_keys_completions(Script, added_code, column, expected):
     code = dedent(r'''
         ints = {1: ''}
         ints[50] = 3.0
@@ -404,8 +393,7 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
     assert [c.complete for c in comps] == expected
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
-def test_dict_keys_in_weird_case(Script, skip_pre_python36):
+def test_dict_keys_in_weird_case(Script):
     assert Script('a[\n# foo\nx]').complete(line=2, column=0)
 
 

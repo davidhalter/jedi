@@ -2,14 +2,12 @@
 Test of keywords and ``jedi.keywords``
 """
 
-import pytest
-
 
 def test_goto_keyword(Script):
     """
     Bug: goto assignments on ``in`` used to raise AttributeError::
 
-      'unicode' object has no attribute 'generate_call_path'
+      'str' object has no attribute 'generate_call_path'
     """
     Script('in').goto()
 
@@ -17,10 +15,7 @@ def test_goto_keyword(Script):
 def test_keyword(Script, environment):
     """ github jedi-vim issue #44 """
     defs = Script("print").infer()
-    if environment.version_info.major < 3:
-        assert defs == []
-    else:
-        assert [d.docstring() for d in defs]
+    assert [d.docstring() for d in defs]
 
     assert Script("import").goto() == []
 
@@ -45,16 +40,12 @@ def test_keyword_attributes(Script):
     assert def_.full_name is None
     assert def_.line is def_.column is None
     assert def_.in_builtin_module() is True
-    assert def_.module_name in ('builtins', '__builtin__')
-    assert 'typeshed' in def_.module_path
+    assert def_.module_name == 'builtins'
+    assert 'typeshed' in def_.module_path.parts
     assert def_.type == 'keyword'
 
 
 def test_none_keyword(Script, environment):
-    if environment.version_info.major == 2:
-        # Just don't care about Python 2 anymore, it's almost gone.
-        pytest.skip()
-
     none, = Script('None').complete()
     assert not none.docstring()
     assert none.name == 'None'

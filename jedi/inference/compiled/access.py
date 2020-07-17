@@ -1,4 +1,3 @@
-from __future__ import print_function
 import inspect
 import types
 import sys
@@ -6,12 +5,12 @@ import operator as op
 from collections import namedtuple
 import warnings
 import re
+import builtins
+import typing
 
-from jedi._compatibility import unicode, is_py3, builtins, \
-    py_version, force_unicode
 from jedi.inference.compiled.getattr_static import getattr_static
 
-ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
+ALLOWED_GETITEM_TYPES = (str, list, tuple, bytes, bytearray, dict)
 
 MethodDescriptorType = type(str.replace)
 # These are not considered classes and access is granted even though they have
@@ -28,16 +27,11 @@ NOT_CLASS_TYPES = (
     types.MethodType,
     types.ModuleType,
     types.TracebackType,
-    MethodDescriptorType
+    MethodDescriptorType,
+    types.MappingProxyType,
+    types.SimpleNamespace,
+    types.DynamicClassAttribute,
 )
-
-if is_py3:
-    NOT_CLASS_TYPES += (
-        types.MappingProxyType,
-        types.SimpleNamespace,
-        types.DynamicClassAttribute,
-    )
-
 
 # Those types don't exist in typing.
 MethodDescriptorType = type(str.replace)
@@ -144,35 +138,22 @@ class AccessPath(object):
     def __init__(self, accesses):
         self.accesses = accesses
 
-    # Writing both of these methods here looks a bit ridiculous. However with
-    # the differences of Python 2/3 it's actually necessary, because we will
-    # otherwise have a accesses attribute that is bytes instead of unicode.
-    def __getstate__(self):
-        return self.accesses
-
-    def __setstate__(self, value):
-        self.accesses = value
-
 
 def create_access_path(inference_state, obj):
     access = create_access(inference_state, obj)
     return AccessPath(access.get_access_path_tuples())
 
 
-def _force_unicode_decorator(func):
-    return lambda *args, **kwargs: force_unicode(func(*args, **kwargs))
-
-
 def get_api_type(obj):
     if inspect.isclass(obj):
-        return u'class'
+        return 'class'
     elif inspect.ismodule(obj):
-        return u'module'
+        return 'module'
     elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
             or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
-        return u'function'
+        return 'function'
     # Everything else...
-    return u'instance'
+    return 'instance'
 
 
 class DirectObjectAccess(object):
@@ -199,7 +180,7 @@ class DirectObjectAccess(object):
             return None
 
     def py__doc__(self):
-        return force_unicode(inspect.getdoc(self._obj)) or u''
+        return inspect.getdoc(self._obj) or ''
 
     def py__name__(self):
         if not _is_class_instance(self._obj) or \
@@ -214,7 +195,7 @@ class DirectObjectAccess(object):
                 return None
 
         try:
-            return force_unicode(cls.__name__)
+            return cls.__name__
         except AttributeError:
             return None
 
@@ -260,26 +241,23 @@ class DirectObjectAccess(object):
         # Avoid some weird hacks that would just fail, because they cannot be
         # used by pickle.
         if not isinstance(paths, list) \
-                or not all(isinstance(p, (bytes, unicode)) for p in paths):
+                or not all(isinstance(p, str) for p in paths):
             return None
         return paths
 
-    @_force_unicode_decorator
     @shorten_repr
     def get_repr(self):
-        builtins = 'builtins', '__builtin__'
-
         if inspect.ismodule(self._obj):
             return repr(self._obj)
         # Try to avoid execution of the property.
-        if safe_getattr(self._obj, '__module__', default='') in builtins:
+        if safe_getattr(self._obj, '__module__', default='') == 'builtins':
             return repr(self._obj)
 
         type_ = type(self._obj)
         if type_ == type:
             return type.__repr__(self._obj)
 
-        if safe_getattr(type_, '__module__', default='') in builtins:
+        if safe_getattr(type_, '__module__', default='') == 'builtins':
             # Allow direct execution of repr for builtins.
             return repr(self._obj)
         return object.__repr__(self._obj)
@@ -310,10 +288,10 @@ class DirectObjectAccess(object):
             name = try_to_get_name(type(self._obj))
             if name is None:
                 return ()
-        return tuple(force_unicode(n) for n in name.split('.'))
+        return tuple(name.split('.'))
 
     def dir(self):
-        return list(map(force_unicode, dir(self._obj)))
+        return dir(self._obj)
 
     def has_iter(self):
         try:
@@ -396,7 +374,7 @@ class DirectObjectAccess(object):
         return [self._create_access(module), access]
 
     def get_safe_value(self):
-        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice) or self._obj is None:
+        if type(self._obj) in (bool, bytes, float, int, str, slice) or self._obj is None:
             return self._obj
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 
@@ -464,9 +442,6 @@ class DirectObjectAccess(object):
         """
         Returns Tuple[Optional[str], Tuple[AccessPath, ...]]
         """
-        if sys.version_info < (3, 5):
-            return None, ()
-
         name = None
         args = ()
         if safe_getattr(self._obj, '__module__', default='') == 'typing':
@@ -485,8 +460,6 @@ class DirectObjectAccess(object):
         return inspect.isclass(self._obj) and self._obj != type
 
     def _annotation_to_str(self, annotation):
-        if py_version < 30:
-            return ''
         return inspect.formatannotation(annotation)
 
     def get_signature_params(self):
@@ -505,8 +478,6 @@ class DirectObjectAccess(object):
 
     def _get_signature(self):
         obj = self._obj
-        if py_version < 33:
-            raise ValueError("inspect.signature was introduced in 3.3")
         try:
             return inspect.signature(obj)
         except (RuntimeError, TypeError):
@@ -525,15 +496,9 @@ class DirectObjectAccess(object):
             return None
 
         try:
-            # Python 2 doesn't have typing.
-            import typing
-        except ImportError:
+            o = typing.get_type_hints(self._obj).get('return')
+        except Exception:
             pass
-        else:
-            try:
-                o = typing.get_type_hints(self._obj).get('return')
-            except Exception:
-                pass
 
         return self._create_access_path(o)
 
@@ -546,7 +511,7 @@ class DirectObjectAccess(object):
         objects of an objects
         """
         tuples = dict(
-            (force_unicode(name), self.is_allowed_getattr(name))
+            (name, self.is_allowed_getattr(name))
             for name in self.dir()
         )
         return self.needs_type_completions(), tuples

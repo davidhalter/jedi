@@ -1,11 +1,7 @@
 """ A universal module with functions / classes without dependencies. """
-import sys
-import contextlib
 import functools
 import re
 import os
-
-from jedi._compatibility import reraise
 
 
 _sep = os.path.sep
@@ -36,7 +32,6 @@ class UncaughtAttributeError(Exception):
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
-    `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
     Therefore this class originally had to be derived from `BaseException`
     instead of `Exception`.  But because I removed relevant `hasattr` from
     the code base, we can now switch back to `Exception`.
@@ -65,17 +60,13 @@ def reraise_uncaught(func):
     difficult.  This decorator is to help us getting there by changing
     `AttributeError` to `UncaughtAttributeError` to avoid unexpected catch.
     This helps us noticing bugs earlier and facilitates debugging.
-
-    .. note:: Treating StopIteration here is easy.
-              Add that feature when needed.
     """
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         try:
             return func(*args, **kwds)
-        except AttributeError:
-            exc_info = sys.exc_info()
-            reraise(UncaughtAttributeError(exc_info[1]), exc_info[2])
+        except AttributeError as e:
+            raise UncaughtAttributeError(e) from e
     return wrapper
 
 
@@ -91,25 +82,9 @@ class PushBackIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
-        """ Python 2 Compatibility """
-        return self.__next__()
-
     def __next__(self):
         if self.pushes:
             self.current = self.pushes.pop()
         else:
             self.current = next(self.iterator)
         return self.current
-
-
-@contextlib.contextmanager
-def ignored(*exceptions):
-    """
-    Value manager that ignores all of the specified exceptions. This will
-    be in the standard library starting with Python 3.5.
-    """
-    try:
-        yield
-    except exceptions:
-        pass

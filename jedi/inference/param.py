@@ -1,4 +1,5 @@
 from collections import defaultdict
+from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
@@ -6,7 +7,6 @@ from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, \
     LazyTreeValue, LazyUnknownValue
 from jedi.inference.value import iterable
-from jedi._compatibility import Parameter
 from jedi.inference.names import ParamName
 
 
@@ -20,8 +20,7 @@ def _add_argument_issue(error_name, lazy_value, message):
 
 class ExecutedParamName(ParamName):
     def __init__(self, function_value, arguments, param_node, lazy_value, is_default=False):
-        super(ExecutedParamName, self).__init__(
-            function_value, param_node.name, arguments=arguments)
+        super().__init__(function_value, param_node.name, arguments=arguments)
         self._lazy_value = lazy_value
         self._is_default = is_default
 

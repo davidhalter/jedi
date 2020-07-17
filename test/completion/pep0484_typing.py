@@ -1,7 +1,5 @@
 """
-Test the typing library, with docstrings. This is needed since annotations
-are not supported in python 2.7 else then annotating by comment (and this is
-still TODO at 2016-01-23)
+Test the typing library, with docstrings and annotations
 """
 import typing
 class B:
@@ -295,8 +293,6 @@ y = type(PlainInt)
 #? type.mro
 y.mro
 
-# python > 2.7
-
 class TestDefaultDict(typing.DefaultDict[str, int]):
     def setdud(self):
         pass
@@ -323,7 +319,6 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python > 2.7
 
 
 """

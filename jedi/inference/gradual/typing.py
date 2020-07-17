@@ -7,7 +7,6 @@ This file deals with all the typing.py cases.
 """
 import itertools
 
-from jedi._compatibility import unicode
 from jedi import debug
 from jedi.inference.compiled import builtin_from_name, create_simple_object
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
@@ -72,7 +71,7 @@ class TypingModuleName(NameWrapper):
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
-            yield builtin_from_name(inference_state, u'True')
+            yield builtin_from_name(inference_state, 'True')
         elif name == 'overload':
             yield OverloadFunction.create_cached(
                 inference_state, self.parent_context, self.tree_name)
@@ -89,12 +88,10 @@ class TypingModuleName(NameWrapper):
                 inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield from self._wrapped_name.infer()
         else:
             # Everything else shouldn't be relevant for type checking.
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield from self._wrapped_name.infer()
 
 
 class TypingModuleFilterWrapper(FilterWrapper):
@@ -113,7 +110,7 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
             # Optional is basically just saying it's either None or the actual
             # type.
             return self.gather_annotation_classes().execute_annotation() \
-                | ValueSet([builtin_from_name(self.inference_state, u'None')])
+                | ValueSet([builtin_from_name(self.inference_state, 'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
             return self._generics_manager[0]
@@ -156,7 +153,7 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
             # Optional[T] is equivalent to Union[T, None]. In Jedi unions
             # are represented by members within a ValueSet, so we extract
             # the T from the Optional[T] by removing the None value.
-            none = builtin_from_name(self.inference_state, u'None')
+            none = builtin_from_name(self.inference_state, 'None')
             return annotation_generics[0].infer_type_vars(
                 value_set.filter(lambda x: x != none),
             )
@@ -263,8 +260,6 @@ class TypeAlias(LazyValueWrapper):
 
     def _get_wrapped_value(self):
         module_name, class_name = self._actual.split('.')
-        if self.inference_state.environment.version_info.major == 2 and module_name == 'builtins':
-            module_name = '__builtin__'
 
         # TODO use inference_state.import_module?
         from jedi.inference.imports import Importer
@@ -418,7 +413,7 @@ class NewTypeFunction(BaseTypingValue):
 
 class NewType(Value):
     def __init__(self, inference_state, parent_context, tree_node, type_value_set):
-        super(NewType, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self._type_value_set = type_value_set
         self.tree_node = tree_node
 
@@ -461,7 +456,7 @@ class TypedDict(LazyValueWrapper):
         return ValueName(self, self.tree_node.name)
 
     def py__simple_getitem__(self, index):
-        if isinstance(index, unicode):
+        if isinstance(index, str):
             return ValueSet.from_sets(
                 name.infer()
                 for filter in self._definition_class.get_filters(is_instance=True)

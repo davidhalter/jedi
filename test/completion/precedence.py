@@ -178,8 +178,6 @@ from datetime import datetime, timedelta
 # magic methods
 # -----------------
 
-# python >= 3.5
-
 class C:
     def __sub__(self, other) -> int: ...
     def __radd__(self, other) -> float: ...

@@ -134,48 +134,6 @@ weakref.ref(1)
 weakref.ref(1)()
 
 # -----------------
-# functools
-# -----------------
-import functools
-
-basetwo = functools.partial(int, base=2)
-#? int()
-basetwo()
-
-def function(a, b):
-    return a, b
-a = functools.partial(function, 0)
-
-#? int()
-a('')[0]
-#? str()
-a('')[1]
-
-kw = functools.partial(function, b=1.0)
-tup = kw(1)
-#? int()
-tup[0]
-#? float()
-tup[1]
-
-def my_decorator(f):
-    @functools.wraps(f)
-    def wrapper(*args, **kwds):
-        return f(*args, **kwds)
-    return wrapper
-
-@my_decorator
-def example(a):
-    return a
-
-#? str()
-example('')
-
-# From GH #1574
-#? float()
-functools.wraps(functools.partial(str, 1))(lambda: 1.0)()
-
-# -----------------
 # sqlite3 (#84)
 # -----------------
 
@@ -253,7 +211,7 @@ z.read('name').upper
 # -----------------
 # contextlib
 # -----------------
-# python > 2.7
+
 from typing import Iterator
 import contextlib
 with contextlib.closing('asd') as string:
@@ -384,7 +342,6 @@ class Test(metaclass=Meta):
 # Enum
 # -----------------
 
-# python > 2.7
 import enum
 
 class X(enum.Enum):
@@ -409,8 +366,47 @@ X().name
 X().attr_x.attr_y.value
 
 # -----------------
-# functools Python 3.5+
+# functools
 # -----------------
+import functools
+
+basetwo = functools.partial(int, base=2)
+#? int()
+basetwo()
+
+def function(a, b):
+    return a, b
+a = functools.partial(function, 0)
+
+#? int()
+a('')[0]
+#? str()
+a('')[1]
+
+kw = functools.partial(function, b=1.0)
+tup = kw(1)
+#? int()
+tup[0]
+#? float()
+tup[1]
+
+def my_decorator(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwds):
+        return f(*args, **kwds)
+    return wrapper
+
+@my_decorator
+def example(a):
+    return a
+
+#? str()
+example('')
+
+# From GH #1574
+#? float()
+functools.wraps(functools.partial(str, 1))(lambda: 1.0)()
+
 class X:
     def function(self, a, b):
         return a, b
@@ -462,11 +458,6 @@ X.just_partial('')[1]
 X().just_partial('')[0]
 #? str()
 X().just_partial('')[1]
-
-
-# -----------------
-# functools Python 3.8
-# -----------------
 
 # python >= 3.8
 

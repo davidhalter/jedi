@@ -7,26 +7,21 @@ flexibility to define sys paths and Python interpreters for a project,
 Projects can be saved to disk and loaded again, to allow project definitions to
 be used across repositories.
 """
-import os
-import errno
 import json
-import sys
+from pathlib import Path
+from itertools import chain
 
-from jedi._compatibility import FileNotFoundError, PermissionError, \
-    IsADirectoryError, NotADirectoryError
 from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
 from jedi.api.helpers import split_search_string, get_module_names
-from jedi._compatibility import force_unicode
 from jedi.inference.imports import load_module_from_path, \
     load_namespace_from_path, iter_module_names
 from jedi.inference.sys_path import discover_buildout_paths
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.references import recurse_find_python_folders_and_files, search_in_file_ios
 from jedi.file_io import FolderIO
-from jedi.common import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = \
@@ -61,10 +56,6 @@ def _remove_duplicates_from_path(path):
         yield p
 
 
-def _force_unicode_list(lst):
-    return list(map(force_unicode, lst))
-
-
 class Project(object):
     """
     Projects are a simple way to manage Python folders and define how Jedi does
@@ -75,11 +66,11 @@ class Project(object):
 
     @staticmethod
     def _get_config_folder_path(base_path):
-        return os.path.join(base_path, _CONFIG_FOLDER)
+        return base_path.joinpath(_CONFIG_FOLDER)
 
     @staticmethod
     def _get_json_path(base_path):
-        return os.path.join(Project._get_config_folder_path(base_path), 'project.json')
+        return Project._get_config_folder_path(base_path).joinpath('project.json')
 
     @classmethod
     def load(cls, path):
@@ -89,6 +80,8 @@ class Project(object):
 
         :param path: The path of the directory you want to use as a project.
         """
+        if isinstance(path, str):
+            path = Path(path)
         with open(cls._get_json_path(path)) as f:
             version, data = json.load(f)
 
@@ -107,13 +100,9 @@ class Project(object):
         data.pop('_environment', None)
         data.pop('_django', None)  # TODO make django setting public?
         data = {k.lstrip('_'): v for k, v in data.items()}
+        data['path'] = str(data['path'])
 
-        # TODO when dropping Python 2 use pathlib.Path.mkdir(parents=True, exist_ok=True)
-        try:
-            os.makedirs(self._get_config_folder_path(self._path))
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        self._get_config_folder_path(self._path).mkdir(parents=True, exist_ok=True)
         with open(self._get_json_path(self._path), 'w') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
@@ -138,14 +127,20 @@ class Project(object):
         """
         def py2_comp(path, environment_path=None, load_unsafe_extensions=False,
                      sys_path=None, added_sys_path=(), smart_sys_path=True):
-            self._path = os.path.abspath(path)
+            if isinstance(path, str):
+                path = Path(path).absolute()
+            self._path = path
 
             self._environment_path = environment_path
+            if sys_path is not None:
+                # Remap potential pathlib.Path entries
+                sys_path = list(map(str, sys_path))
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._load_unsafe_extensions = load_unsafe_extensions
             self._django = False
-            self.added_sys_path = list(added_sys_path)
+            # Remap potential pathlib.Path entries
+            self.added_sys_path = list(map(str, added_sys_path))
             """The sys path that is going to be added at the end of the """
 
         py2_comp(path, **kwargs)
@@ -182,23 +177,27 @@ class Project(object):
             sys_path = list(self._sys_path)
 
         if self._smart_sys_path:
-            prefixed.append(self._path)
+            prefixed.append(str(self._path))
 
             if inference_state.script_path is not None:
-                suffixed += discover_buildout_paths(inference_state, inference_state.script_path)
+                suffixed += map(str, discover_buildout_paths(
+                    inference_state,
+                    inference_state.script_path
+                ))
 
                 if add_parent_paths:
                     # Collect directories in upward search by:
                     #   1. Skipping directories with __init__.py
                     #   2. Stopping immediately when above self._path
                     traversed = []
-                    for parent_path in traverse_parents(inference_state.script_path):
-                        if parent_path == self._path or not parent_path.startswith(self._path):
+                    for parent_path in inference_state.script_path.parents:
+                        if parent_path == self._path \
+                                or self._path not in parent_path.parents:
                             break
                         if not add_init_paths \
-                                and os.path.isfile(os.path.join(parent_path, "__init__.py")):
+                                and parent_path.joinpath("__init__.py").is_file():
                             continue
-                        traversed.append(parent_path)
+                        traversed.append(str(parent_path))
 
                     # AFAIK some libraries have imports like `foo.foo.bar`, which
                     # leads to the conclusion to by default prefer longer paths
@@ -206,10 +205,10 @@ class Project(object):
                     suffixed += reversed(traversed)
 
         if self._django:
-            prefixed.append(self._path)
+            prefixed.append(str(self._path))
 
         path = prefixed + sys_path + suffixed
-        return list(_force_unicode_list(_remove_duplicates_from_path(path)))
+        return list(_remove_duplicates_from_path(path))
 
     def get_environment(self):
         if self._environment is None:
@@ -219,7 +218,7 @@ class Project(object):
                 self._environment = get_cached_default_environment()
         return self._environment
 
-    def search(self, string, **kwargs):
+    def search(self, string, *, all_scopes=False):
         """
         Searches a name in the whole project. If the project is very big,
         at some point Jedi will stop searching. However it's also very much
@@ -240,7 +239,7 @@ class Project(object):
             functions and classes.
         :yields: :class:`.Name`
         """
-        return self._search(string, **kwargs)
+        return self._search_func(string, all_scopes=all_scopes)
 
     def complete_search(self, string, **kwargs):
         """
@@ -254,9 +253,6 @@ class Project(object):
         """
         return self._search_func(string, complete=True, **kwargs)
 
-    def _search(self, string, all_scopes=False):  # Python 2..
-        return self._search_func(string, all_scopes=all_scopes)
-
     @_try_to_skip_duplicates
     def _search_func(self, string, complete=False, all_scopes=False):
         # Using a Script is they easiest way to get an empty module context.
@@ -265,16 +261,12 @@ class Project(object):
         inference_state = s._inference_state
         empty_module_context = s._get_module_context()
 
-        if inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
-            raise NotImplementedError(
-                "No support for refactorings/search on Python 2/3.5"
-            )
         debug.dbg('Search for string %s, complete=%s', string, complete)
         wanted_type, wanted_names = split_search_string(string)
         name = wanted_names[0]
         stub_folder_name = name + '-stubs'
 
-        ios = recurse_find_python_folders_and_files(FolderIO(self._path))
+        ios = recurse_find_python_folders_and_files(FolderIO(str(self._path)))
         file_ios = []
 
         # 1. Search for modules in the current project
@@ -295,14 +287,13 @@ class Project(object):
                     continue
             else:
                 file_ios.append(file_io)
-                file_name = os.path.basename(file_io.path)
-                if file_name in (name + '.py', name + '.pyi'):
+                if Path(file_io.path).name in (name + '.py', name + '.pyi'):
                     m = load_module_from_path(inference_state, file_io).as_context()
                 else:
                     continue
 
             debug.dbg('Search of a specific module %s', m)
-            for x in search_in_module(
+            yield from search_in_module(
                 inference_state,
                 m,
                 names=[m.name],
@@ -311,15 +302,14 @@ class Project(object):
                 complete=complete,
                 convert=True,
                 ignore_imports=True,
-            ):
-                yield x  # Python 2...
+            )
 
         # 2. Search for identifiers in the project.
         for module_context in search_in_file_ios(inference_state, file_ios, name):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
             names = [module_context.create_name(n) for n in names]
             names = _remove_imports(names)
-            for x in search_in_module(
+            yield from search_in_module(
                 inference_state,
                 module_context,
                 names=names,
@@ -327,18 +317,17 @@ class Project(object):
                 wanted_names=wanted_names,
                 complete=complete,
                 ignore_imports=True,
-            ):
-                yield x  # Python 2...
+            )
 
         # 3. Search for modules on sys.path
         sys_path = [
             p for p in self._get_sys_path(inference_state)
             # Exclude folders that are handled by recursing of the Python
             # folders.
-            if not p.startswith(self._path)
+            if not p.startswith(str(self._path))
         ]
         names = list(iter_module_names(inference_state, empty_module_context, sys_path))
-        for x in search_in_module(
+        yield from search_in_module(
             inference_state,
             empty_module_context,
             names=names,
@@ -346,8 +335,7 @@ class Project(object):
             wanted_names=wanted_names,
             complete=complete,
             convert=True,
-        ):
-            yield x  # Python 2...
+        )
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._path)
@@ -355,7 +343,7 @@ class Project(object):
 
 def _is_potential_project(path):
     for name in _CONTAINS_POTENTIAL_PROJECT:
-        if os.path.exists(os.path.join(path, name)):
+        if path.joinpath(name).exists():
             return True
     return False
 
@@ -363,7 +351,7 @@ def _is_potential_project(path):
 def _is_django_path(directory):
     """ Detects the path of the very well known Django library (if used) """
     try:
-        with open(os.path.join(directory, 'manage.py'), 'rb') as f:
+        with open(directory.joinpath('manage.py'), 'rb') as f:
             return b"DJANGO_SETTINGS_MODULE" in f.read()
     except (FileNotFoundError, IsADirectoryError, PermissionError):
         return False
@@ -380,12 +368,14 @@ def get_default_project(path=None):
        ``requirements.txt`` and ``MANIFEST.in``.
     """
     if path is None:
-        path = os.getcwd()
+        path = Path.cwd()
+    elif isinstance(path, str):
+        path = Path(path)
 
-    check = os.path.realpath(path)
+    check = path.absolute()
     probable_path = None
     first_no_init_file = None
-    for dir in traverse_parents(check, include_current=True):
+    for dir in chain([check], check.parents):
         try:
             return Project.load(dir)
         except (FileNotFoundError, IsADirectoryError, PermissionError):
@@ -394,11 +384,11 @@ def get_default_project(path=None):
             continue
 
         if first_no_init_file is None:
-            if os.path.exists(os.path.join(dir, '__init__.py')):
+            if dir.joinpath('__init__.py').exists():
                 # In the case that a __init__.py exists, it's in 99% just a
                 # Python package and the project sits at least one level above.
                 continue
-            else:
+            elif not dir.is_file():
                 first_no_init_file = dir
 
         if _is_django_path(dir):
@@ -416,7 +406,7 @@ def get_default_project(path=None):
     if first_no_init_file is not None:
         return Project(first_no_init_file)
 
-    curdir = path if os.path.isdir(path) else os.path.dirname(path)
+    curdir = path if path.is_dir() else path.parent
     return Project(curdir)
 
 

@@ -2,8 +2,6 @@ import os
 import time
 from contextlib import contextmanager
 
-from jedi._compatibility import encoding, is_py3, u
-
 _inited = False
 
 
@@ -97,16 +95,14 @@ def increase_indent_cm(title=None, color='MAGENTA'):
             dbg('End: ' + title, color=color)
 
 
-def dbg(message, *args, **kwargs):
+def dbg(message, *args, color='GREEN'):
     """ Looks at the stack, to see if a debug message should be printed. """
-    # Python 2 compatibility, because it doesn't understand default args
-    color = kwargs.pop('color', 'GREEN')
     assert color
 
     if debug_function and enable_notice:
         i = ' ' * _debug_indent
         _lazy_colorama_init()
-        debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+        debug_function(color, i + 'dbg: ' + message % tuple(repr(a) for a in args))
 
 
 def warning(message, *args, **kwargs):
@@ -116,7 +112,7 @@ def warning(message, *args, **kwargs):
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
         if format:
-            message = message % tuple(u(repr(a)) for a in args)
+            message = message % tuple(repr(a) for a in args)
         debug_function('RED', i + 'warning: ' + message)
 
 
@@ -135,9 +131,4 @@ def print_to_stdout(color, str_out):
     """
     col = getattr(Fore, color)
     _lazy_colorama_init()
-    if not is_py3:
-        str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
-
-
-# debug_function = print_to_stdout

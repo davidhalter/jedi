@@ -91,7 +91,7 @@ def test_version_info(Script):
     assert c.docstring() == 'sys.version_info\n\nVersion information as a named tuple.'
 
 
-def test_builtin_docstring(goto_or_help_or_infer, skip_python2):
+def test_builtin_docstring(goto_or_help_or_infer):
     d, = goto_or_help_or_infer('open')
 
     doc = d.docstring()
@@ -99,7 +99,7 @@ def test_builtin_docstring(goto_or_help_or_infer, skip_python2):
     assert 'Open file' in doc
 
 
-def test_docstring_decorator(goto_or_help_or_infer, skip_python2):
+def test_docstring_decorator(goto_or_help_or_infer):
     code = dedent('''
         import types
 

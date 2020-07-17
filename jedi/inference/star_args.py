@@ -10,8 +10,8 @@ This means for example in this case::
 
 The signature here for bar should be `bar(b, c)` instead of bar(*args).
 """
+from inspect import Parameter
 
-from jedi._compatibility import Parameter
 from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
 from jedi.inference.helpers import is_big_annoying_library
@@ -32,8 +32,6 @@ def _iter_nodes_for_param(param_name):
             argument = name.parent
             if argument.type == 'argument' \
                     and argument.children[0] == '*' * param_name.star_count:
-                # No support for Python 2.7 here, but they are end-of-life
-                # anyway
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
                     context = execution_context.create_context(trailer)
@@ -210,7 +208,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
 
 class ParamNameFixedKind(ParamNameWrapper):
     def __init__(self, param_name, new_kind):
-        super(ParamNameFixedKind, self).__init__(param_name)
+        super().__init__(param_name)
         self._new_kind = new_kind
 
     def get_kind(self):

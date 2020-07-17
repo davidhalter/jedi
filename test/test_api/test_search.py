@@ -65,10 +65,7 @@ class SomeClass:
         ('SomeCl.twice', [], dict(all_scopes=True, complete=True, fuzzy=True)),
     ]
 )
-def test_simple_search(Script, string, descriptions, kwargs, skip_pre_python36):
-    if sys.version_info < (3, 6):
-        pytest.skip()
-
+def test_simple_search(Script, string, descriptions, kwargs):
     if kwargs.pop('complete', False) is True:
         defs = Script(path=__file__).complete_search(string, **kwargs)
     else:

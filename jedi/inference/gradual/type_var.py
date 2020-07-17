@@ -1,4 +1,3 @@
-from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.inference.base_value import ValueSet, NO_VALUES, ValueWrapper
 from jedi.inference.gradual.base import BaseTypingValue
@@ -40,17 +39,14 @@ class TypeVarClass(BaseTypingValue):
             return None
         else:
             safe_value = method(default=None)
-            if self.inference_state.environment.version_info.major == 2:
-                if isinstance(safe_value, bytes):
-                    return force_unicode(safe_value)
-            if isinstance(safe_value, (str, unicode)):
+            if isinstance(safe_value, str):
                 return safe_value
             return None
 
 
 class TypeVar(BaseTypingValue):
     def __init__(self, parent_context, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(parent_context, tree_name)
+        super().__init__(parent_context, tree_name)
         self._var_name = var_name
 
         self._constraints_lazy_values = []
@@ -124,7 +120,7 @@ class TypeVar(BaseTypingValue):
 
 class TypeWrapper(ValueWrapper):
     def __init__(self, wrapped_value, original_value):
-        super(TypeWrapper, self).__init__(wrapped_value)
+        super().__init__(wrapped_value)
         self._original_value = original_value
 
     def execute_annotation(self):

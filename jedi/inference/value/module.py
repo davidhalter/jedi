@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
@@ -16,7 +17,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
     """
-    api_type = u'instance'
+    api_type = 'instance'
 
     def __init__(self, parent_module, string_name, string_value=None):
         self.parent_context = parent_module
@@ -26,9 +27,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
     def infer(self):
         if self._string_value is not None:
             s = self._string_value
-            if self.parent_context.inference_state.environment.version_info.major == 2 \
-                    and not isinstance(s, bytes):
-                s = s.encode('utf-8')
             return ValueSet([
                 create_simple_object(self.parent_context.inference_state, s)
             ])
@@ -73,7 +71,7 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.inference_state, u'types', u'ModuleType')
+        c, = values_from_qualified_names(self.inference_state, 'types', 'ModuleType')
         return c
 
     def is_module(self):
@@ -92,9 +90,9 @@ class ModuleMixin(SubModuleDictMixin):
         names = ['__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
         dct = dict((n, _ModuleAttributeName(self, n)) for n in names)
-        file = self.py__file__()
-        if file is not None:
-            dct['__file__'] = _ModuleAttributeName(self, '__file__', file)
+        path = self.py__file__()
+        if path is not None:
+            dct['__file__'] = _ModuleAttributeName(self, '__file__', str(path))
         return dct
 
     def iter_star_filters(self):
@@ -137,11 +135,11 @@ class ModuleMixin(SubModuleDictMixin):
 
 
 class ModuleValue(ModuleMixin, TreeValue):
-    api_type = u'module'
+    api_type = 'module'
 
     def __init__(self, inference_state, module_node, code_lines, file_io=None,
                  string_names=None, is_package=False):
-        super(ModuleValue, self).__init__(
+        super().__init__(
             inference_state,
             parent_context=None,
             tree_node=module_node
@@ -150,32 +148,32 @@ class ModuleValue(ModuleMixin, TreeValue):
         if file_io is None:
             self._path = None
         else:
-            self._path = file_io.path
+            self._path = Path(file_io.path)
         self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
         self._is_package = is_package
 
     def is_stub(self):
-        if self._path is not None and self._path.endswith('.pyi'):
+        if self._path is not None and self._path.suffix == '.pyi':
             # Currently this is the way how we identify stubs when e.g. goto is
             # used in them. This could be changed if stubs would be identified
             # sooner and used as StubModuleValue.
             return True
-        return super(ModuleValue, self).is_stub()
+        return super().is_stub()
 
     def py__name__(self):
         if self.string_names is None:
             return None
         return '.'.join(self.string_names)
 
-    def py__file__(self):
+    def py__file__(self) -> Path:
         """
         In contrast to Python's __file__ can be None.
         """
         if self._path is None:
             return None
 
-        return os.path.abspath(self._path)
+        return self._path.absolute()
 
     def is_package(self):
         return self._is_package

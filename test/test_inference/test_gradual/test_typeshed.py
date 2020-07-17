@@ -14,19 +14,12 @@ TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 def test_get_typeshed_directories():
     def get_dirs(version_info):
         return {
-            p.path.replace(typeshed.TYPESHED_PATH, '').lstrip(os.path.sep)
+            p.path.replace(str(typeshed.TYPESHED_PATH), '').lstrip(os.path.sep)
             for p in typeshed._get_typeshed_directories(version_info)
         }
 
     def transform(set_):
         return {x.replace('/', os.path.sep) for x in set_}
-
-    dirs = get_dirs(PythonVersionInfo(2, 7))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/2', 'third_party/2and3', 'third_party/2'})
-
-    dirs = get_dirs(PythonVersionInfo(3, 5))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3',
-                              'third_party/2and3', 'third_party/3'})
 
     dirs = get_dirs(PythonVersionInfo(3, 6))
     assert dirs == transform({'stdlib/2and3', 'stdlib/3',
@@ -59,7 +52,7 @@ def test_keywords_variable(Script):
         assert seq.name == 'Sequence'
         # This points towards the typeshed implementation
         stub_seq, = seq.goto(only_stubs=True)
-        assert typeshed.TYPESHED_PATH in stub_seq.module_path
+        assert str(stub_seq.module_path).startswith(str(typeshed.TYPESHED_PATH))
 
 
 def test_class(Script):
@@ -98,8 +91,12 @@ def test_sys_exc_info(Script):
     none, def_ = Script(code + '[1]').infer()
     # It's an optional.
     assert def_.name == 'BaseException'
+    assert def_.module_path == typeshed.TYPESHED_PATH.joinpath(
+        'stdlib', '2and3', 'builtins.pyi'
+    )
     assert def_.type == 'instance'
     assert none.name == 'NoneType'
+    assert none.module_path is None
 
     none, def_ = Script(code + '[0]').infer()
     assert def_.name == 'BaseException'
@@ -110,18 +107,15 @@ def test_sys_getwindowsversion(Script, environment):
     # This should only exist on Windows, but type inference should happen
     # everywhere.
     definitions = Script('import sys; sys.getwindowsversion().major').infer()
-    if environment.version_info.major == 2:
-        assert not definitions
-    else:
-        def_, = definitions
-        assert def_.name == 'int'
+    def_, = definitions
+    assert def_.name == 'int'
 
 
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.complete()
     assert isinstance(def_._name, StubName), def_._name
-    assert typeshed.TYPESHED_PATH in def_.module_path
+    assert str(def_.module_path).startswith(str(typeshed.TYPESHED_PATH))
     def_, = script.infer()
     assert def_.name == 'int'
 
@@ -133,7 +127,7 @@ def test_math(Script):
     assert value
 
 
-def test_type_var(Script, skip_python2):
+def test_type_var(Script):
     def_, = Script('import typing; T = typing.TypeVar("T1")').infer()
     assert def_.name == 'TypeVar'
     assert def_.description == 'class TypeVar'
@@ -148,14 +142,14 @@ def test_type_var(Script, skip_python2):
 def test_math_is_stub(Script, code, full_name):
     s = Script(code)
     cos, = s.infer()
-    wanted = os.path.join('typeshed', 'stdlib', '2and3', 'math.pyi')
-    assert cos.module_path.endswith(wanted)
+    wanted = ('typeshed', 'stdlib', '2and3', 'math.pyi')
+    assert cos.module_path.parts[-4:] == wanted
     assert cos.is_stub() is True
     assert cos.goto(only_stubs=True) == [cos]
     assert cos.full_name == full_name
 
     cos, = s.goto()
-    assert cos.module_path.endswith(wanted)
+    assert cos.module_path.parts[-4:] == wanted
     assert cos.goto(only_stubs=True) == [cos]
     assert cos.is_stub() is True
     assert cos.full_name == full_name

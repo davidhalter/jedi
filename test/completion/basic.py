@@ -291,14 +291,6 @@ except ImportError as i_a:
     i_a
     #? ImportError()
     i_a
-try:
-    import math
-except ImportError, i_b:
-    # TODO check this only in Python2
-    ##? ['i_b']
-    i_b
-    ##? ImportError()
-    i_b
 
 
 class MyException(Exception):
@@ -343,8 +335,6 @@ def foo(my_t, my_ty
 def foo(my_t=some_defa
 #? ['some_default']
 def foo(my_t=some_defa, my_t2=some_defa
-
-# python > 2.7
 
 #? ['my_type']
 def foo(my_t: lala=some_defa, my_t2: my_typ

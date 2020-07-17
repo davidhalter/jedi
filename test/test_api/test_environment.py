@@ -4,7 +4,6 @@ import sys
 import pytest
 
 import jedi
-from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
     InvalidPythonEnvironment, find_system_environments, \
     get_system_environment, create_environment, InterpreterEnvironment, \
@@ -27,13 +26,13 @@ def test_find_system_environments():
 
 @pytest.mark.parametrize(
     'version',
-    ['2.7', '3.5', '3.6', '3.7']
+    ['3.6', '3.7', '3.8', '3.9']
 )
 def test_versions(version):
     try:
         env = get_system_environment(version)
     except InvalidPythonEnvironment:
-        if int(version.replace('.', '')) == py_version:
+        if int(version.replace('.', '')) == str(sys.version_info[0]) + str(sys.version_info[1]):
             # At least the current version has to work
             raise
         pytest.skip()
@@ -44,7 +43,7 @@ def test_versions(version):
 
 def test_load_module(inference_state):
     access_path = inference_state.compiled_subprocess.load_module(
-        dotted_name=u'math',
+        dotted_name='math',
         sys_path=inference_state.get_sys_path()
     )
     name, access_handle = access_path.accesses[0]
@@ -118,7 +117,6 @@ def test_create_environment_executable():
     assert environment.executable == sys.executable
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch):
     fake_python = os.path.join(str(tmpdir), 'fake_python')
     with open(fake_python, 'w', newline='') as f:

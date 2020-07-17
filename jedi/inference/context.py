@@ -164,7 +164,7 @@ class ValueContext(AbstractContext):
     Should be defined, otherwise the API returns empty types.
     """
     def __init__(self, value):
-        super(ValueContext, self).__init__(value.inference_state)
+        super().__init__(value.inference_state)
         self._value = value
 
     @property
@@ -323,8 +323,7 @@ class ModuleContext(TreeContextMixin, ValueContext):
             ),
             self.get_global_filter(),
         )
-        for f in filters:  # Python 2...
-            yield f
+        yield from filters
 
     def get_global_filter(self):
         return GlobalNameFilter(self, self.tree_node)
@@ -375,7 +374,7 @@ class ClassContext(TreeContextMixin, ValueContext):
 
 class CompForContext(TreeContextMixin, AbstractContext):
     def __init__(self, parent_context, comp_for):
-        super(CompForContext, self).__init__(parent_context.inference_state)
+        super().__init__(parent_context.inference_state)
         self.tree_node = comp_for
         self.parent_context = parent_context
 
@@ -439,13 +438,12 @@ def get_global_filters(context, until_position, origin_scope):
     For global name lookups. The filters will handle name resolution
     themselves, but here we gather possible filters downwards.
 
-    >>> from jedi._compatibility import u, no_unicode_pprint
     >>> from jedi import Script
-    >>> script = Script(u('''
+    >>> script = Script('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None
-    ... '''))
+    ... ''')
     >>> module_node = script._module_node
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
@@ -455,7 +453,7 @@ def get_global_filters(context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
+    >>> print(filters[0])  # doctest: +ELLIPSIS
     MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
     >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
     ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',

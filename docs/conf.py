@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Jedi documentation build configuration file, created by
 # sphinx-quickstart on Wed Dec 26 00:11:34 2012.
 #
@@ -43,8 +41,8 @@ source_encoding = 'utf-8'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Jedi'
-copyright = u'jedi contributors'
+project = 'Jedi'
+copyright = 'jedi contributors'
 
 import jedi
 from jedi.utils import version_info
@@ -205,8 +203,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ('index', 'Jedi.tex', u'Jedi Documentation',
-     u'Jedi contributors', 'manual'),
+    ('index', 'Jedi.tex', 'Jedi Documentation',
+     'Jedi contributors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -235,8 +233,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'jedi', u'Jedi Documentation',
-     [u'Jedi contributors'], 1)
+    ('index', 'jedi', 'Jedi Documentation',
+     ['Jedi contributors'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -249,8 +247,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Jedi', u'Jedi Documentation',
-     u'Jedi contributors', 'Jedi', 'Awesome Python autocompletion library.',
+    ('index', 'Jedi', 'Jedi Documentation',
+     'Jedi contributors', 'Jedi', 'Awesome Python autocompletion library.',
      'Miscellaneous'),
 ]
 

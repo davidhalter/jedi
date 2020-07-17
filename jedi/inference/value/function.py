@@ -1,6 +1,5 @@
 from parso.python import tree
 
-from jedi._compatibility import use_metaclass
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass
 from jedi.inference import compiled
@@ -26,7 +25,7 @@ from jedi.inference.gradual.generics import TupleGenericManager
 
 class LambdaName(AbstractNameDefinition):
     string_name = '<lambda>'
-    api_type = u'function'
+    api_type = 'function'
 
     def __init__(self, lambda_value):
         self._lambda_value = lambda_value
@@ -55,7 +54,7 @@ class FunctionAndClassBase(TreeValue):
 
 
 class FunctionMixin(object):
-    api_type = u'function'
+    api_type = 'function'
 
     def get_filters(self, origin_scope=None):
         cls = self.py__class__()
@@ -126,7 +125,7 @@ class FunctionMixin(object):
         return [TreeSignature(f) for f in self.get_signature_functions()]
 
 
-class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
+class FunctionValue(FunctionMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
@@ -161,7 +160,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return function
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.inference_state, u'types', u'FunctionType')
+        c, = values_from_qualified_names(self.inference_state, 'types', 'FunctionType')
         return c
 
     def get_default_param_context(self):
@@ -173,7 +172,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
 
 class FunctionNameInClass(NameWrapper):
     def __init__(self, class_context, name):
-        super(FunctionNameInClass, self).__init__(name)
+        super().__init__(name)
         self._class_context = class_context
 
     def get_defining_qualified_value(self):
@@ -182,7 +181,7 @@ class FunctionNameInClass(NameWrapper):
 
 class MethodValue(FunctionValue):
     def __init__(self, inference_state, class_context, *args, **kwargs):
-        super(MethodValue, self).__init__(inference_state, *args, **kwargs)
+        super().__init__(inference_state, *args, **kwargs)
         self.class_context = class_context
 
     def get_default_param_context(self):
@@ -198,7 +197,7 @@ class MethodValue(FunctionValue):
 
     @property
     def name(self):
-        return FunctionNameInClass(self.class_context, super(MethodValue, self).name)
+        return FunctionNameInClass(self.class_context, super().name)
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
@@ -238,7 +237,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                     try:
                         children = r.children
                     except AttributeError:
-                        ctx = compiled.builtin_from_name(self.inference_state, u'None')
+                        ctx = compiled.builtin_from_name(self.inference_state, 'None')
                         value_set |= ValueSet([ctx])
                     else:
                         value_set |= self.infer_node(children[1])
@@ -250,7 +249,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
     def _get_yield_lazy_value(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            ctx = compiled.builtin_from_name(self.inference_state, u'None')
+            ctx = compiled.builtin_from_name(self.inference_state, 'None')
             yield LazyKnownValue(ctx)
             return
 
@@ -330,8 +329,6 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
 
         if is_coroutine:
             if self.is_generator():
-                if inference_state.environment.version_info < (3, 6):
-                    return NO_VALUES
                 async_generator_classes = inference_state.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
@@ -339,13 +336,10 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 # The contravariant doesn't seem to be defined.
                 generics = (yield_values.py__class__(), NO_VALUES)
                 return ValueSet(
-                    # In Python 3.6 AsyncGenerator is still a class.
                     GenericClass(c, TupleGenericManager(generics))
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
-                if inference_state.environment.version_info < (3, 5):
-                    return NO_VALUES
                 async_classes = inference_state.typing_module.py__getattribute__('Coroutine')
                 return_values = self.get_return_values()
                 # Only the first generic is relevant.
@@ -362,7 +356,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
 
 class FunctionExecutionContext(BaseFunctionExecutionContext):
     def __init__(self, function_value, arguments):
-        super(FunctionExecutionContext, self).__init__(function_value)
+        super().__init__(function_value)
         self._arguments = arguments
 
     def get_filters(self, until_position=None, origin_scope=None):
@@ -403,7 +397,7 @@ class AnonymousFunctionExecution(BaseFunctionExecutionContext):
 
 class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
     def __init__(self, function, overloaded_functions):
-        super(OverloadedFunctionValue, self).__init__(function)
+        super().__init__(function)
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):

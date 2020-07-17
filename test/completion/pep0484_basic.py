@@ -1,7 +1,5 @@
 """ Pep-0484 type hinting """
 
-# python > 2.7
-
 
 class A():
     pass

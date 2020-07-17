@@ -2,19 +2,20 @@ import os
 import re
 from functools import wraps
 from collections import namedtuple
+from pathlib import Path
 
 from jedi import settings
 from jedi.file_io import FileIO
-from jedi._compatibility import FileNotFoundError, cast_path
+from jedi._compatibility import cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
 from jedi.inference.value import ModuleValue
 
-_jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
-DJANGO_INIT_PATH = os.path.join(_jedi_path, 'third_party', 'django-stubs',
-                                'django-stubs', '__init__.pyi')
+_jedi_path = Path(__file__).parent.parent.parent
+TYPESHED_PATH = _jedi_path.joinpath('third_party', 'typeshed')
+DJANGO_INIT_PATH = _jedi_path.joinpath('third_party', 'django-stubs',
+                                       'django-stubs', '__init__.pyi')
 
 _IMPORT_MAP = dict(
     _collections='collections',
@@ -38,8 +39,7 @@ def _create_stub_map(directory_path_info):
     def generate():
         try:
             listed = os.listdir(directory_path_info.path)
-        except (FileNotFoundError, OSError):
-            # OSError is Python 2
+        except (FileNotFoundError, NotADirectoryError):
             return
 
         for entry in listed:
@@ -59,20 +59,19 @@ def _create_stub_map(directory_path_info):
 
 
 def _get_typeshed_directories(version_info):
-    check_version_list = ['2and3', str(version_info.major)]
+    check_version_list = ['2and3', '3']
     for base in ['stdlib', 'third_party']:
-        base_path = os.path.join(TYPESHED_PATH, base)
+        base_path = TYPESHED_PATH.joinpath(base)
         base_list = os.listdir(base_path)
         for base_list_entry in base_list:
             match = re.match(r'(\d+)\.(\d+)$', base_list_entry)
             if match is not None:
-                if int(match.group(1)) == version_info.major \
-                        and int(match.group(2)) <= version_info.minor:
+                if match.group(1) == '3' and int(match.group(2)) <= version_info.minor:
                     check_version_list.append(base_list_entry)
 
         for check_version in check_version_list:
             is_third_party = base != 'stdlib'
-            yield PathInfo(os.path.join(base_path, check_version), is_third_party)
+            yield PathInfo(str(base_path.joinpath(check_version)), is_third_party)
 
 
 _version_cache = {}
@@ -111,7 +110,7 @@ def import_module_decorator(func):
                 # ``os``.
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, (n,), None, sys_path,)
-                    for n in [u'posixpath', u'ntpath', u'macpath', u'os2emxpath']
+                    for n in ['posixpath', 'ntpath', 'macpath', 'os2emxpath']
                 )
             else:
                 python_value_set = ValueSet.from_sets(
@@ -183,7 +182,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
             return _try_to_load_stub_from_file(
                 inference_state,
                 python_value_set,
-                file_io=FileIO(DJANGO_INIT_PATH),
+                file_io=FileIO(str(DJANGO_INIT_PATH)),
                 import_names=import_names,
             )
 
@@ -198,8 +197,8 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
             file_paths = []
             if c.is_namespace():
                 file_paths = [os.path.join(p, '__init__.pyi') for p in c.py__path__()]
-            elif file_path is not None and file_path.endswith('.py'):
-                file_paths = [file_path + 'i']
+            elif file_path is not None and file_path.suffix == '.py':
+                file_paths = [str(file_path) + 'i']
 
             for file_path in file_paths:
                 m = _try_to_load_stub_from_file(
@@ -274,7 +273,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
 def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, import_names):
     try:
         stub_module_node = parse_stub_module(inference_state, file_io)
-    except (OSError, IOError):  # IOError is Python 2 only
+    except OSError:
         # The file that you're looking for doesn't exist (anymore).
         return None
     else:

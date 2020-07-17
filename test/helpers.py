@@ -3,25 +3,18 @@ A helper module for testing, improves compatibility for testing (as
 ``jedi._compatibility``) as well as introducing helper functions.
 """
 
-import sys
 from contextlib import contextmanager
-
-if sys.hexversion < 0x02070000:
-    import unittest2 as unittest
-else:
-    import unittest
-TestCase = unittest.TestCase
 
 import os
 import pytest
-from os.path import abspath, dirname, join
 from functools import partial, wraps
 from jedi import Project
+from pathlib import Path
 
-test_dir = dirname(abspath(__file__))
+test_dir = Path(__file__).absolute().parent
 test_dir_project = Project(test_dir)
-root_dir = dirname(test_dir)
-example_dir = join(test_dir, 'examples')
+root_dir = test_dir.parent
+example_dir = test_dir.joinpath('examples')
 
 sample_int = 1  # This is used in completion/imports.py
 
@@ -32,7 +25,7 @@ skip_if_not_windows = partial(pytest.param,
 
 
 def get_example_dir(*names):
-    return join(example_dir, *names)
+    return example_dir.joinpath(*names)
 
 
 def cwd_at(path):
@@ -53,10 +46,10 @@ def cwd_at(path):
 
 @contextmanager
 def set_cwd(path, absolute_path=False):
-    repo_root = os.path.dirname(test_dir)
+    repo_root = test_dir.parent
 
-    oldcwd = os.getcwd()
-    os.chdir(os.path.join(repo_root, path))
+    oldcwd = Path.cwd()
+    os.chdir(repo_root.joinpath(path))
     try:
         yield
     finally:

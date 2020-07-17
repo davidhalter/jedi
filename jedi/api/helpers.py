@@ -6,11 +6,11 @@ from collections import namedtuple
 from textwrap import dedent
 from itertools import chain
 from functools import wraps
+from inspect import Parameter
 
 from parso.python.parser import Parser
 from parso.python import tree
 
-from jedi._compatibility import u, Parameter
 from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
@@ -44,7 +44,10 @@ def match(string, like_name, fuzzy=False):
 
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
-    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0, x.name))
+    return sorted(defs, key=lambda x: (str(x.module_path or ''),
+                                       x.line or 0,
+                                       x.column or 0,
+                                       x.name))
 
 
 def get_on_completion_name(module_node, lines, position):
@@ -84,18 +87,18 @@ def _get_code_for_stack(code_lines, leaf, position):
         # If we're not on a comment simply get the previous leaf and proceed.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
-            return u('')  # At the beginning of the file.
+            return ''  # At the beginning of the file.
 
     is_after_newline = leaf.type == 'newline'
     while leaf.type == 'newline':
         leaf = leaf.get_previous_leaf()
         if leaf is None:
-            return u('')
+            return ''
 
     if leaf.type == 'error_leaf' or leaf.type == 'string':
         if leaf.start_pos[0] < position[0]:
             # On a different line, we just begin anew.
-            return u('')
+            return ''
 
         # Error leafs cannot be parsed, completion in strings is also
         # impossible.
@@ -111,7 +114,7 @@ def _get_code_for_stack(code_lines, leaf, position):
             if user_stmt.start_pos[1] > position[1]:
                 # This means that it's actually a dedent and that means that we
                 # start without value (part of a suite).
-                return u('')
+                return ''
 
         # This is basically getting the relevant lines.
         return _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)
@@ -294,8 +297,7 @@ def _iter_arguments(nodes, position):
     # Returns Generator[Tuple[star_count, Optional[key_start: str], had_equal]]
     nodes_before = [c for c in nodes if c.start_pos < position]
     if nodes_before[-1].type == 'arglist':
-        for x in _iter_arguments(nodes_before[-1].children, position):
-            yield x  # Python 2 :(
+        yield from _iter_arguments(nodes_before[-1].children, position)
         return
 
     previous_node_yielded = False
@@ -320,7 +322,7 @@ def _iter_arguments(nodes, position):
                 else:
                     yield 0, None, False
             stars_seen = 0
-        elif node.type in ('testlist', 'testlist_star_expr'):  # testlist is Python 2
+        elif node.type == 'testlist_star_expr':
             for n in node.children[::2]:
                 if n.type == 'star_expr':
                     stars_seen = 1

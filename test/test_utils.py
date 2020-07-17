@@ -2,10 +2,9 @@ try:
     import readline
 except ImportError:
     readline = False
+import unittest
 
 from jedi import utils
-
-from .helpers import unittest
 
 
 @unittest.skipIf(not readline, "readline not found")
@@ -14,7 +13,7 @@ class TestSetupReadline(unittest.TestCase):
         pass
 
     def __init__(self, *args, **kwargs):
-        super(type(self), self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.namespace = self.NameSpace()
         utils.setup_readline(self.namespace)

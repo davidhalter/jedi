@@ -1,38 +1,32 @@
 import os
-import sys
 from textwrap import dedent
+from pathlib import Path
 
 import pytest
 
 import jedi
 
 
-@pytest.fixture(autouse=True)
-def skip_old_python(skip_pre_python36):
-    if sys.version_info < (3, 6):
-        pytest.skip()
-
-
 @pytest.fixture()
 def dir_with_content(tmpdir):
     with open(os.path.join(tmpdir.strpath, 'modx.py'), 'w', newline='') as f:
         f.write('import modx\nfoo\n')  # self reference
-    return tmpdir.strpath
+    return Path(tmpdir.strpath)
 
 
 def test_rename_mod(Script, dir_with_content):
     script = Script(
         'import modx; modx\n',
-        path=os.path.join(dir_with_content, 'some_script.py'),
+        path=dir_with_content.joinpath('some_script.py'),
         project=jedi.Project(dir_with_content),
     )
     refactoring = script.rename(line=1, new_name='modr')
     refactoring.apply()
 
-    p1 = os.path.join(dir_with_content, 'modx.py')
-    p2 = os.path.join(dir_with_content, 'modr.py')
+    p1 = dir_with_content.joinpath('modx.py')
+    p2 = dir_with_content.joinpath('modr.py')
     expected_code = 'import modr\nfoo\n'
-    assert not os.path.exists(p1)
+    assert not p1.exists()
     with open(p2, newline='') as f:
         assert f.read() == expected_code
 

@@ -5,8 +5,6 @@ Currently we're not supporting completion of them, but they should at least not
 raise errors or return extremely strange results.
 """
 
-# python >= 3.5
-
 async def x():
     return 1
 

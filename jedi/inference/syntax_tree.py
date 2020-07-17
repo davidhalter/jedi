@@ -5,7 +5,6 @@ import copy
 
 from parso.python import tree
 
-from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
@@ -225,12 +224,10 @@ def _infer_node(context, element):
                 | context.infer_node(element.children[-1]))
     elif typ == 'operator':
         # Must be an ellipsis, other operators are not inferred.
-        # In Python 2 ellipsis is coded as three single dot tokens, not
-        # as one token 3 dot token.
-        if element.value not in ('.', '...'):
+        if element.value != '...':
             origin = element.parent
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
-        return ValueSet([compiled.builtin_from_name(inference_state, u'Ellipsis')])
+        return ValueSet([compiled.builtin_from_name(inference_state, 'Ellipsis')])
     elif typ == 'dotted_name':
         value_set = infer_atom(context, element.children[0])
         for next_name in element.children[2::2]:
@@ -289,10 +286,6 @@ def infer_atom(context, atom):
     """
     state = context.inference_state
     if atom.type == 'name':
-        if atom.value in ('True', 'False', 'None'):
-            # Python 2...
-            return ValueSet([compiled.builtin_from_name(state, atom.value)])
-
         # This is the first global lookup.
         stmt = tree.search_ancestor(
             atom, 'expr_stmt', 'lambdef'
@@ -312,9 +305,6 @@ def infer_atom(context, atom):
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
             return ValueSet([compiled.builtin_from_name(state, atom.value)])
-        elif atom.value == 'print':
-            # print e.g. could be inferred like this in Python 2.7
-            return NO_VALUES
         elif atom.value == 'yield':
             # Contrary to yield from, yield can just appear alone to return a
             # value when used with `.send()`.
@@ -329,7 +319,7 @@ def infer_atom(context, atom):
         value_set = infer_atom(context, atom.children[0])
         for string in atom.children[1:]:
             right = infer_atom(context, string)
-            value_set = _infer_comparison(context, value_set, u'+', right)
+            value_set = _infer_comparison(context, value_set, '+', right)
         return value_set
     elif atom.type == 'fstring':
         return compiled.get_string_value_set(state)
@@ -567,7 +557,7 @@ def _is_tuple(value):
 
 
 def _bool_to_value(inference_state, bool_):
-    return compiled.builtin_from_name(inference_state, force_unicode(str(bool_)))
+    return compiled.builtin_from_name(inference_state, str(bool_))
 
 
 def _get_tuple_ints(value):
@@ -590,10 +580,10 @@ def _get_tuple_ints(value):
 def _infer_comparison_part(inference_state, context, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
-    if isinstance(operator, unicode):
+    if isinstance(operator, str):
         str_operator = operator
     else:
-        str_operator = force_unicode(str(operator.value))
+        str_operator = str(operator.value)
 
     if str_operator == '*':
         # for iterables, ignore * operations
@@ -747,7 +737,7 @@ def tree_name_to_values(inference_state, context, tree_name):
         types = infer_expr_stmt(context, node, tree_name)
     elif typ == 'with_stmt':
         value_managers = context.infer_node(node.get_test_node_from_name(tree_name))
-        enter_methods = value_managers.py__getattribute__(u'__enter__')
+        enter_methods = value_managers.py__getattribute__('__enter__')
         return enter_methods.execute_with_values()
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
@@ -861,8 +851,7 @@ def _infer_subscript_list(context, index):
         return ValueSet([iterable.Slice(context, None, None, None)])
 
     elif index.type == 'subscript' and not index.children[0] == '.':
-        # subscript basically implies a slice operation, except for Python 2's
-        # Ellipsis.
+        # subscript basically implies a slice operation
         # e.g. array[:3]
         result = []
         for el in index.children:

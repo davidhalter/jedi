@@ -1,8 +1,8 @@
 from abc import abstractmethod
+from inspect import Parameter
 
 from parso.tree import search_ancestor
 
-from jedi._compatibility import Parameter
 from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
@@ -123,7 +123,7 @@ class AbstractTreeName(AbstractNameDefinition):
             else:
                 return None
 
-        return super(AbstractTreeName, self).get_qualified_names(include_module_names)
+        return super().get_qualified_names(include_module_names)
 
     def _get_qualified_names(self):
         parent_names = self.parent_context.get_qualified_names()
@@ -242,7 +242,7 @@ class ValueNameMixin(object):
     def get_root_context(self):
         if self.parent_context is None:  # A module
             return self._value.as_context()
-        return super(ValueNameMixin, self).get_root_context()
+        return super().get_root_context()
 
     def get_defining_qualified_value(self):
         context = self.parent_context
@@ -257,7 +257,7 @@ class ValueNameMixin(object):
 
 class ValueName(ValueNameMixin, AbstractTreeName):
     def __init__(self, value, tree_name):
-        super(ValueName, self).__init__(value.parent_context, tree_name)
+        super().__init__(value.parent_context, tree_name)
         self._value = value
 
     def goto(self):
@@ -372,7 +372,7 @@ class _ParamMixin(object):
 
 
 class ParamNameInterface(_ParamMixin):
-    api_type = u'param'
+    api_type = 'param'
 
     def get_kind(self):
         raise NotImplementedError
@@ -429,7 +429,7 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
 
 class _ActualTreeParamName(BaseTreeParamName):
     def __init__(self, function_value, tree_name):
-        super(_ActualTreeParamName, self).__init__(
+        super().__init__(
             function_value.get_default_param_context(), tree_name)
         self.function_value = function_value
 
@@ -499,11 +499,11 @@ class _ActualTreeParamName(BaseTreeParamName):
 class AnonymousParamName(_ActualTreeParamName):
     @plugin_manager.decorate(name='goto_anonymous_param')
     def goto(self):
-        return super(AnonymousParamName, self).goto()
+        return super().goto()
 
     @plugin_manager.decorate(name='infer_anonymous_param')
     def infer(self):
-        values = super(AnonymousParamName, self).infer()
+        values = super().infer()
         if values:
             return values
         from jedi.inference.dynamic_params import dynamic_param_lookup
@@ -527,11 +527,11 @@ class AnonymousParamName(_ActualTreeParamName):
 
 class ParamName(_ActualTreeParamName):
     def __init__(self, function_value, tree_name, arguments):
-        super(ParamName, self).__init__(function_value, tree_name)
+        super().__init__(function_value, tree_name)
         self.arguments = arguments
 
     def infer(self):
-        values = super(ParamName, self).infer()
+        values = super().infer()
         if values:
             return values
 
@@ -627,7 +627,7 @@ class StubNameMixin(object):
 
         names = convert_names(names, prefer_stub_to_compiled=False)
         if self in names:
-            return super(StubNameMixin, self).py__doc__()
+            return super().py__doc__()
         else:
             # We have signatures ourselves in stubs, so don't use signatures
             # from the implementation.
@@ -637,7 +637,7 @@ class StubNameMixin(object):
 # From here on down we make looking up the sys.version_info fast.
 class StubName(StubNameMixin, TreeNameDefinition):
     def infer(self):
-        inferred = super(StubName, self).infer()
+        inferred = super().infer()
         if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
             from jedi.inference.gradual.stub_value import VersionInfo
             return ValueSet(VersionInfo(c) for c in inferred)

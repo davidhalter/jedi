@@ -4,11 +4,9 @@ Used only for REPL Completion.
 
 import inspect
 import os
-import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
-from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.cache import memoize_method
 from jedi.inference import compiled
@@ -44,7 +42,7 @@ class MixedObject(ValueWrapper):
     to modify the runtime.
     """
     def __init__(self, compiled_value, tree_value):
-        super(MixedObject, self).__init__(tree_value)
+        super().__init__(tree_value)
         self.compiled_value = compiled_value
         self.access_handle = compiled_value.access_handle
 
@@ -115,7 +113,7 @@ class MixedName(NameWrapper):
     The ``CompiledName._compiled_value`` is our MixedObject.
     """
     def __init__(self, wrapped_name, parent_tree_value):
-        super(MixedName, self).__init__(wrapped_name)
+        super().__init__(wrapped_name)
         self._parent_tree_value = parent_tree_value
 
     @property
@@ -141,12 +139,12 @@ class MixedName(NameWrapper):
 
 class MixedObjectFilter(compiled.CompiledValueFilter):
     def __init__(self, inference_state, compiled_value, tree_value):
-        super(MixedObjectFilter, self).__init__(inference_state, compiled_value)
+        super().__init__(inference_state, compiled_value)
         self._tree_value = tree_value
 
     def _create_name(self, name):
         return MixedName(
-            super(MixedObjectFilter, self)._create_name(name),
+            super()._create_name(name),
             self._tree_value,
         )
 
@@ -163,12 +161,11 @@ def _load_module(inference_state, path):
 
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
-    if sys.version_info[0] > 2:
-        try:
-            python_object = unwrap(python_object)
-        except ValueError:
-            # Can return a ValueError when it wraps around
-            pass
+    try:
+        python_object = inspect.unwrap(python_object)
+    except ValueError:
+        # Can return a ValueError when it wraps around
+        pass
 
     if (inspect.ismodule(python_object)
             or inspect.isclass(python_object)

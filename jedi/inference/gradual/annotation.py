@@ -6,10 +6,10 @@ as annotations in future python versions.
 """
 
 import re
+from inspect import Parameter
 
 from parso import ParserSyntaxError, parse
 
-from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import DefineGenericBaseClass, GenericClass
@@ -53,7 +53,7 @@ def _infer_annotation_string(context, string, index=None):
     value_set = context.infer_node(node)
     if index is not None:
         value_set = value_set.filter(
-            lambda value: value.array_type == u'tuple'  # noqa
+            lambda value: value.array_type == 'tuple'  # noqa
                             and len(list(value.py__iter__())) >= index
         ).py__simple_getitem__(index)
     return value_set
@@ -62,7 +62,7 @@ def _infer_annotation_string(context, string, index=None):
 def _get_forward_reference_node(context, string):
     try:
         new_node = context.inference_state.grammar.parse(
-            force_unicode(string),
+            string,
             start_symbol='eval_input',
             error_recovery=False
         )
@@ -138,8 +138,7 @@ def _infer_param(function_value, param):
     """
     annotation = param.annotation
     if annotation is None:
-        # If no Python 3-style annotation, look for a Python 2-style comment
-        # annotation.
+        # If no Python 3-style annotation, look for a comment annotation.
         # Identify parameters to function in the same sequence as they would
         # appear in a type comment.
         all_params = [child for child in param.parent.children
@@ -204,7 +203,8 @@ def infer_return_types(function, arguments):
     all_annotations = py__annotations__(function.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
-        # If there is no Python 3-type annotation, look for a Python 2-type annotation
+        # If there is no Python 3-type annotation, look for an annotation
+        # comment.
         node = function.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:

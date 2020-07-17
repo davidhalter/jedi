@@ -7,15 +7,14 @@ Alternatively, if you don't need a custom function and are happy with printing
 debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
 """
-import os
 import sys
 import warnings
-from functools import wraps
+from pathlib import Path
 
 import parso
 from parso.python import tree
 
-from jedi._compatibility import force_unicode, cast_path, is_py3
+from jedi._compatibility import cast_path
 from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
@@ -49,18 +48,6 @@ from jedi.inference.utils import to_list
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
 sys.setrecursionlimit(3000)
-
-
-def _no_python2_support(func):
-    # TODO remove when removing Python 2/3.5
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if self._inference_state.grammar.version_info < (3, 6) or sys.version_info < (3, 6):
-            raise NotImplementedError(
-                "No support for refactorings/search on Python 2/3.5"
-            )
-        return func(self, *args, **kwargs)
-    return wrapper
 
 
 class Script(object):
@@ -109,10 +96,7 @@ class Script(object):
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
-    :type path: str or None
-    :param encoding: Deprecated, cast to unicode yourself. The encoding of
-        ``code``, if it is not a ``unicode`` object (default ``'utf-8'``).
-    :type encoding: str
+    :type path: str or pathlib.Path or None
     :param sys_path: Deprecated, use the project parameter.
     :type sys_path: typing.List[str]
     :param Environment environment: Provide a predefined :ref:`Environment <environments>`
@@ -122,21 +106,14 @@ class Script(object):
         also ways to modify the sys path and other things.
     """
     def __init__(self, code=None, line=None, column=None, path=None,
-                 encoding=None, sys_path=None, environment=None,
-                 project=None, source=None):
+                 sys_path=None, environment=None, project=None, source=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
-        self.path = os.path.abspath(path) if path else None
+        if isinstance(path, str):
+            path = Path(path)
 
-        if encoding is None:
-            encoding = 'utf-8'
-        else:
-            warnings.warn(
-                "Deprecated since version 0.17.0. You should cast to valid "
-                "unicode yourself, especially if you are not using utf-8.",
-                DeprecationWarning,
-                stacklevel=2
-            )
+        self.path = path.absolute() if path else None
+
         if line is not None:
             warnings.warn(
                 "Providing the line is now done in the functions themselves "
@@ -163,14 +140,9 @@ class Script(object):
             with open(path, 'rb') as f:
                 code = f.read()
 
-        if sys_path is not None and not is_py3:
-            sys_path = list(map(force_unicode, sys_path))
-
         if project is None:
             # Load the Python grammar of the current interpreter.
-            project = get_default_project(
-                os.path.dirname(self.path) if path else None
-            )
+            project = get_default_project(None if self.path is None else self.path.parent)
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
@@ -188,8 +160,7 @@ class Script(object):
         self._module_node, code = self._inference_state.parse_and_get_code(
             code=code,
             path=self.path,
-            encoding=encoding,
-            use_latest_grammar=path and path.endswith('.pyi'),
+            use_latest_grammar=path and path.suffix == 'pyi',
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
@@ -221,7 +192,7 @@ class Script(object):
             file_io = None
         else:
             file_io = KnownContentFileIO(cast_path(self.path), self._code)
-        if self.path is not None and self.path.endswith('.pyi'):
+        if self.path is not None and self.path.suffix == '.pyi':
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._inference_state,
@@ -242,7 +213,7 @@ class Script(object):
             code_lines=self._code_lines,
             is_package=is_package,
         )
-        if names[0] not in ('builtins', '__builtin__', 'typing'):
+        if names[0] not in ('builtins', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
             self._inference_state.module_cache.add(names, ValueSet([module]))
         return module
@@ -258,7 +229,7 @@ class Script(object):
         )
 
     @validate_line_column
-    def complete(self, line=None, column=None, **kwargs):
+    def complete(self, line=None, column=None, *, fuzzy=False):
         """
         Completes objects under the cursor.
 
@@ -272,9 +243,6 @@ class Script(object):
             before magic methods and name mangled names that start with ``__``.
         :rtype: list of :class:`.Completion`
         """
-        return self._complete(line, column, **kwargs)
-
-    def _complete(self, line, column, fuzzy=False):  # Python 2...
         with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
@@ -291,7 +259,7 @@ class Script(object):
         return self.complete(*self._pos, fuzzy=fuzzy)
 
     @validate_line_column
-    def infer(self, line=None, column=None, **kwargs):
+    def infer(self, line=None, column=None, *, only_stubs=False, prefer_stubs=False):
         """
         Return the definitions of under the cursor. It is basically a wrapper
         around Jedi's type inference.
@@ -307,18 +275,6 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
-        with debug.increase_indent_cm('infer'):
-            return self._infer(line, column, **kwargs)
-
-    def goto_definitions(self, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.infer(*self._pos, **kwargs)
-
-    def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
         pos = line, column
         leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
@@ -341,6 +297,14 @@ class Script(object):
         # the API.
         return helpers.sorted_definitions(set(defs))
 
+    def goto_definitions(self, **kwargs):
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.infer(*self._pos, **kwargs)
+
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
         warnings.warn(
             "Deprecated since version 0.16.0. Use Script(...).goto instead.",
@@ -353,7 +317,8 @@ class Script(object):
                          **kwargs)
 
     @validate_line_column
-    def goto(self, line=None, column=None, **kwargs):
+    def goto(self, line=None, column=None, *, follow_imports=False, follow_builtin_imports=False,
+             only_stubs=False, prefer_stubs=False):
         """
         Goes to the name that defined the object under the cursor. Optionally
         you can follow imports.
@@ -367,11 +332,6 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
-        with debug.increase_indent_cm('goto'):
-            return self._goto(line, column, **kwargs)
-
-    def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
-              only_stubs=False, prefer_stubs=False):
         tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
@@ -407,8 +367,7 @@ class Script(object):
         # Avoid duplicates
         return list(set(helpers.sorted_definitions(defs)))
 
-    @_no_python2_support
-    def search(self, string, **kwargs):
+    def search(self, string, *, all_scopes=False):
         """
         Searches a name in the current file. For a description of how the
         search string should look like, please have a look at
@@ -419,9 +378,6 @@ class Script(object):
             functions and classes.
         :yields: :class:`.Name`
         """
-        return self._search(string, **kwargs)  # Python 2 ...
-
-    def _search(self, string, all_scopes=False):
         return self._search_func(string, all_scopes=all_scopes)
 
     @to_list
@@ -685,8 +641,7 @@ class Script(object):
         ]
         return sorted(defs, key=lambda x: x.start_pos)
 
-    @_no_python2_support
-    def rename(self, line=None, column=None, **kwargs):
+    def rename(self, line=None, column=None, *, new_name):
         """
         Renames all references of the variable under the cursor.
 
@@ -695,14 +650,11 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._rename(line, column, **kwargs)
-
-    def _rename(self, line, column, new_name):  # Python 2...
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._inference_state, definitions, new_name)
 
-    @_no_python2_support
-    def extract_variable(self, line, column, **kwargs):
+    @validate_line_column
+    def extract_variable(self, line, column, *, new_name, until_line=None, until_column=None):
         """
         Moves an expression to a new statemenet.
 
@@ -727,10 +679,6 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._extract_variable(line, column, **kwargs)  # Python 2...
-
-    @validate_line_column
-    def _extract_variable(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None
         else:
@@ -744,8 +692,8 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @_no_python2_support
-    def extract_function(self, line, column, **kwargs):
+    @validate_line_column
+    def extract_function(self, line, column, *, new_name, until_line=None, until_column=None):
         """
         Moves an expression to a new function.
 
@@ -778,10 +726,6 @@ class Script(object):
         :raises: :exc:`.RefactoringError`
         :rtype: :class:`.Refactoring`
         """
-        return self._extract_function(line, column, **kwargs)  # Python 2...
-
-    @validate_line_column
-    def _extract_function(self, line, column, new_name, until_line=None, until_column=None):
         if until_line is None and until_column is None:
             until_pos = None
         else:
@@ -795,7 +739,6 @@ class Script(object):
             new_name, (line, column), until_pos
         )
 
-    @_no_python2_support
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor. This is basically the opposite of
@@ -855,8 +798,8 @@ class Interpreter(Script):
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
-        super(Interpreter, self).__init__(code, environment=environment,
-                                          project=Project(os.getcwd()), **kwds)
+        super().__init__(code, environment=environment,
+                         project=Project(Path.cwd()), **kwds)
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
@@ -864,7 +807,7 @@ class Interpreter(Script):
     def _get_module_context(self):
         tree_module_value = ModuleValue(
             self._inference_state, self._module_node,
-            file_io=KnownContentFileIO(self.path, self._code),
+            file_io=KnownContentFileIO(str(self.path), self._code),
             string_names=('__main__',),
             code_lines=self._code_lines,
         )
@@ -874,7 +817,7 @@ class Interpreter(Script):
         )
 
 
-def names(source=None, path=None, encoding='utf-8', all_scopes=False,
+def names(source=None, path=None, all_scopes=False,
           definitions=True, references=False, environment=None):
     warnings.warn(
         "Deprecated since version 0.16.0. Use Script(...).get_names instead.",
@@ -882,7 +825,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         stacklevel=2
     )
 
-    return Script(source, path=path, encoding=encoding).get_names(
+    return Script(source, path=path).get_names(
         all_scopes=all_scopes,
         definitions=definitions,
         references=references,
@@ -899,7 +842,7 @@ def preload_module(*modules):
     """
     for m in modules:
         s = "import %s as x; x." % m
-        Script(s, path=None).complete(1, len(s))
+        Script(s).complete(1, len(s))
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

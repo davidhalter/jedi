@@ -40,7 +40,7 @@ def test_goto_assignment(Script, source, solution):
 def test_simple_completions(Script):
     # completion
     completions = script_with_path(Script, 'from pkg import ').complete()
-    names = [str(c.name) for c in completions]  # str because of unicode
+    names = [c.name for c in completions]
     compare = ['foo', 'ns1_file', 'ns1_folder', 'ns2_folder', 'ns2_file',
                'pkg_resources', 'pkgutil', '__name__', '__path__',
                '__package__', '__file__', '__doc__']
@@ -80,9 +80,6 @@ def test_relative_import(Script, environment, tmpdir):
     """
     Attempt a relative import in a very simple namespace package.
     """
-    if environment.version_info < (3, 5):
-        pytest.skip()
-
     directory = get_example_dir('namespace_package_relative_import')
     # Need to copy the content in a directory where there's no __init__.py.
     py.path.local(directory).copy(tmpdir)

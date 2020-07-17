@@ -1,15 +1,5 @@
-from os.path import dirname
-
-import pytest
-
 from test.helpers import get_example_dir, example_dir
 from jedi import Project
-
-
-@pytest.fixture(autouse=True)
-def skip_not_supported_versions(environment):
-    if environment.version_info < (3, 5):
-        pytest.skip()
 
 
 def test_implicit_namespace_package(Script):

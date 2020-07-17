@@ -107,7 +107,7 @@ Completions
    >>> code = '''import json; json.l'''
    >>> script = jedi.Script(code, path='example.py')
    >>> script
-   <Script: 'example.py' <SameEnvironment: 3.5.2 in /usr>>
+   <Script: 'example.py' <SameEnvironment: 3.9.0 in /usr>>
    >>> completions = script.complete(1, 19)
    >>> completions
    [<Completion: load>, <Completion: loads>]

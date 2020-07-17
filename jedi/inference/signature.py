@@ -1,4 +1,5 @@
-from jedi._compatibility import Parameter
+from inspect import Parameter
+
 from jedi.cache import memoize_method
 from jedi import debug
 from jedi import parser_utils
@@ -67,7 +68,7 @@ class AbstractSignature(_SignatureMixin):
 
 class TreeSignature(AbstractSignature):
     def __init__(self, value, function_value=None, is_bound=False):
-        super(TreeSignature, self).__init__(value, is_bound)
+        super().__init__(value, is_bound)
         self._function_value = function_value or value
 
     def bind(self, value):
@@ -121,7 +122,7 @@ class TreeSignature(AbstractSignature):
 
 class BuiltinSignature(AbstractSignature):
     def __init__(self, value, return_string, function_value=None, is_bound=False):
-        super(BuiltinSignature, self).__init__(value, is_bound)
+        super().__init__(value, is_bound)
         self._return_string = return_string
         self.__function_value = function_value
 

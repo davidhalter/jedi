@@ -8,7 +8,6 @@ import pytest
 
 import jedi
 from jedi.api.environment import get_system_environment, InterpreterEnvironment
-from jedi._compatibility import py_version
 from test.helpers import test_dir
 
 collect_ignore = [
@@ -18,9 +17,6 @@ collect_ignore = [
     'build/',
     'test/examples',
 ]
-if sys.version_info < (3, 6):
-    # Python 2 not supported syntax
-    collect_ignore.append('test/test_inference/test_mixed.py')
 
 
 # The following hooks (pytest_configure, pytest_unconfigure) are used
@@ -45,7 +41,7 @@ def pytest_addoption(parser):
                      help="Warnings are treated as errors.")
 
     parser.addoption("--env", action='store',
-                     help="Execute the tests in that environment (e.g. 35 for python3.5).")
+                     help="Execute the tests in that environment (e.g. 39 for python3.9).")
     parser.addoption("--interpreter-env", "-I", action='store_true',
                      help="Don't use subprocesses to guarantee having safe "
                           "code execution. Useful for debugging.")
@@ -97,7 +93,8 @@ def clean_jedi_cache(request):
 def environment(request):
     version = request.config.option.env
     if version is None:
-        version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+        v = str(sys.version_info[0]) + str(sys.version_info[1])
+        version = os.environ.get('JEDI_TEST_ENVIRONMENT', v)
 
     if request.config.option.interpreter_env or version == 'interpreter':
         return InterpreterEnvironment()
@@ -137,17 +134,6 @@ def goto_or_help_or_infer(request, Script):
 
 
 @pytest.fixture(scope='session')
-def has_typing(environment):
-    if environment.version_info >= (3, 5, 0):
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        return True
-
-    script = jedi.Script('import typing', environment=environment)
-    return bool(script.infer())
-
-
-@pytest.fixture(scope='session')
 def has_django(environment):
     script = jedi.Script('import django', environment=environment)
     return bool(script.infer())
@@ -156,14 +142,6 @@ def has_django(environment):
 @pytest.fixture(scope='session')
 def jedi_path():
     return os.path.dirname(__file__)
-
-
-@pytest.fixture()
-def skip_python2(environment):
-    if environment.version_info.major == 2:
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        pytest.skip()
 
 
 @pytest.fixture()
@@ -177,22 +155,6 @@ def skip_pre_python38(environment):
 @pytest.fixture()
 def skip_pre_python37(environment):
     if environment.version_info < (3, 7):
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        pytest.skip()
-
-
-@pytest.fixture()
-def skip_pre_python35(environment):
-    if environment.version_info < (3, 5):
-        # This if is just needed to avoid that tests ever skip way more than
-        # they should for all Python versions.
-        pytest.skip()
-
-
-@pytest.fixture()
-def skip_pre_python36(environment):
-    if environment.version_info < (3, 6):
         # This if is just needed to avoid that tests ever skip way more than
         # they should for all Python versions.
         pytest.skip()

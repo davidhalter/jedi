@@ -9,7 +9,7 @@ just use IPython instead::
 Then you will be able to use Jedi completer in your Python interpreter::
 
     $ python
-    Python 2.7.2+ (default, Jul 20 2012, 22:15:08)
+    Python 3.9.2+ (default, Jul 20 2020, 22:15:08)
     [GCC 4.6.1] on linux2
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import os

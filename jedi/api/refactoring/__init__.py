@@ -1,7 +1,6 @@
-from os.path import dirname, basename, join, relpath
-import os
-import re
 import difflib
+from pathlib import Path
+from typing import Dict
 
 from parso import split_lines
 
@@ -43,15 +42,15 @@ class ChangedFile(object):
         if self._from_path is None:
             from_p = ''
         else:
-            from_p = relpath(self._from_path, project_path)
+            from_p = self._from_path.relative_to(project_path)
         if self._to_path is None:
             to_p = ''
         else:
-            to_p = relpath(self._to_path, project_path)
+            to_p = self._to_path.relative_to(project_path)
         diff = difflib.unified_diff(
             old_lines, new_lines,
-            fromfile=from_p,
-            tofile=to_p,
+            fromfile=str(from_p),
+            tofile=str(to_p),
         )
         # Apparently there's a space at the end of the diff - for whatever
         # reason.
@@ -79,17 +78,15 @@ class Refactoring(object):
         self._renames = renames
         self._file_to_node_changes = file_to_node_changes
 
-    def get_changed_files(self):
-        """
-        Returns a path to ``ChangedFile`` map.
-        """
+    def get_changed_files(self) -> Dict[Path, ChangedFile]:
         def calculate_to_path(p):
             if p is None:
                 return p
+            p = str(p)
             for from_, to in renames:
-                if p.startswith(from_):
-                    p = to + p[len(from_):]
-            return p
+                if p.startswith(str(from_)):
+                    p = str(to) + p[len(str(from_)):]
+            return Path(p)
 
         renames = self.get_renames()
         return {
@@ -115,7 +112,7 @@ class Refactoring(object):
         project_path = self._inference_state.project.path
         for from_, to in self.get_renames():
             text += 'rename from %s\nrename to %s\n' \
-                % (relpath(from_, project_path), relpath(to, project_path))
+                % (from_.relative_to(project_path), to.relative_to(project_path))
 
         return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
@@ -127,17 +124,14 @@ class Refactoring(object):
             f.apply()
 
         for old, new in self.get_renames():
-            os.rename(old, new)
+            old.rename(new)
 
 
 def _calculate_rename(path, new_name):
-    name = basename(path)
-    dir_ = dirname(path)
-    if name in ('__init__.py', '__init__.pyi'):
-        parent_dir = dirname(dir_)
-        return dir_, join(parent_dir, new_name)
-    ending = re.search(r'\.pyi?$', name).group(0)
-    return path, join(dir_, new_name + ending)
+    dir_ = path.parent
+    if path.name in ('__init__.py', '__init__.pyi'):
+        return dir_, dir_.parent.joinpath(new_name)
+    return path, dir_.joinpath(new_name + path.suffix)
 
 
 def rename(inference_state, definitions, new_name):
@@ -150,7 +144,8 @@ def rename(inference_state, definitions, new_name):
     for d in definitions:
         tree_name = d._name.tree_name
         if d.type == 'module' and tree_name is None:
-            file_renames.add(_calculate_rename(d.module_path, new_name))
+            p = None if d.module_path is None else Path(d.module_path)
+            file_renames.add(_calculate_rename(p, new_name))
         else:
             # This private access is ok in a way. It's not public to
             # protect Jedi users from seeing it.

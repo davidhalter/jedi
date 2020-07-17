@@ -9,19 +9,14 @@ goals:
 
 import os
 import sys
+import queue
 import subprocess
-import socket
-import errno
 import traceback
+import weakref
 from functools import partial
 from threading import Thread
-try:
-    from queue import Queue, Empty
-except ImportError:
-    from Queue import Queue, Empty  # python 2.7
 
-from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, GeneralizedPopen, weakref
+from jedi._compatibility import pickle_dump, pickle_load
 from jedi import debug
 from jedi.cache import memoize_method
 from jedi.inference.compiled.subprocess import functions
@@ -31,11 +26,27 @@ from jedi.api.exceptions import InternalError
 
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
+PICKLE_PROTOCOL = 4
 
 
-def _enqueue_output(out, queue):
+class _GeneralizedPopen(subprocess.Popen):
+    def __init__(self, *args, **kwargs):
+        if os.name == 'nt':
+            try:
+                # Was introduced in Python 3.7.
+                CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
+            except AttributeError:
+                CREATE_NO_WINDOW = 0x08000000
+            kwargs['creationflags'] = CREATE_NO_WINDOW
+        # The child process doesn't need file descriptors except 0, 1, 2.
+        # This is unix only.
+        kwargs['close_fds'] = 'posix' in sys.builtin_module_names
+        super().__init__(*args, **kwargs)
+
+
+def _enqueue_output(out, queue_):
     for line in iter(out.readline, b''):
-        queue.put(line)
+        queue_.put(line)
 
 
 def _add_stderr_to_debug(stderr_queue):
@@ -46,7 +57,7 @@ def _add_stderr_to_debug(stderr_queue):
             line = stderr_queue.get_nowait()
             line = line.decode('utf-8', 'replace')
             debug.warning('stderr output: %s' % line.rstrip('\n'))
-        except Empty:
+        except queue.Empty:
             break
 
 
@@ -105,7 +116,7 @@ class InferenceStateSameProcess(_InferenceStateProcess):
 
 class InferenceStateSubprocess(_InferenceStateProcess):
     def __init__(self, inference_state, compiled_subprocess):
-        super(InferenceStateSubprocess, self).__init__(inference_state)
+        super().__init__(inference_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 
@@ -153,8 +164,6 @@ class InferenceStateSubprocess(_InferenceStateProcess):
 
 class CompiledSubprocess(object):
     is_crashed = False
-    # Start with 2, gets set after _get_info.
-    _pickle_protocol = 2
 
     def __init__(self, executable, env_vars=None):
         self._executable = executable
@@ -164,10 +173,9 @@ class CompiledSubprocess(object):
 
     def __repr__(self):
         pid = os.getpid()
-        return '<%s _executable=%r, _pickle_protocol=%r, is_crashed=%r, pid=%r>' % (
+        return '<%s _executable=%r, is_crashed=%r, pid=%r>' % (
             self.__class__.__name__,
             self._executable,
-            self._pickle_protocol,
             self.is_crashed,
             pid,
         )
@@ -182,17 +190,14 @@ class CompiledSubprocess(object):
             os.path.dirname(os.path.dirname(parso_path)),
             '.'.join(str(x) for x in sys.version_info[:3]),
         )
-        process = GeneralizedPopen(
+        process = _GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            # Use system default buffering on Python 2 to improve performance
-            # (this is already the case on Python 3).
-            bufsize=-1,
             env=self._env_vars
         )
-        self._stderr_queue = Queue()
+        self._stderr_queue = queue.Queue()
         self._stderr_thread = t = Thread(
             target=_enqueue_output,
             args=(process.stderr, self._stderr_queue)
@@ -231,20 +236,10 @@ class CompiledSubprocess(object):
         if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
-        if not is_py3:
-            # Python 2 compatibility
-            kwargs = {force_unicode(key): value for key, value in kwargs.items()}
-
         data = inference_state_id, function, args, kwargs
         try:
-            pickle_dump(data, self._get_process().stdin, self._pickle_protocol)
-        except (socket.error, IOError) as e:
-            # Once Python2 will be removed we can just use `BrokenPipeError`.
-            # Also, somehow in windows it returns EINVAL instead of EPIPE if
-            # the subprocess dies.
-            if e.errno not in (errno.EPIPE, errno.EINVAL):
-                # Not a broken pipe
-                raise
+            pickle_dump(data, self._get_process().stdin, PICKLE_PROTOCOL)
+        except BrokenPipeError:
             self._kill()
             raise InternalError("The subprocess %s was killed. Maybe out of memory?"
                                 % self._executable)
@@ -286,12 +281,11 @@ class CompiledSubprocess(object):
 
 
 class Listener(object):
-    def __init__(self, pickle_protocol):
+    def __init__(self):
         self._inference_states = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
         self._process = _InferenceStateProcess(Listener)
-        self._pickle_protocol = pickle_protocol
 
     def _get_inference_state(self, function, inference_state_id):
         from jedi.inference import InferenceState
@@ -334,15 +328,8 @@ class Listener(object):
         # because stdout is used for IPC.
         sys.stdout = open(os.devnull, 'w')
         stdin = sys.stdin
-        if sys.version_info[0] > 2:
-            stdout = stdout.buffer
-            stdin = stdin.buffer
-        # Python 2 opens streams in text mode on Windows. Set stdout and stdin
-        # to binary mode.
-        elif sys.platform == 'win32':
-            import msvcrt
-            msvcrt.setmode(stdout.fileno(), os.O_BINARY)
-            msvcrt.setmode(stdin.fileno(), os.O_BINARY)
+        stdout = stdout.buffer
+        stdin = stdin.buffer
 
         while True:
             try:
@@ -356,7 +343,7 @@ class Listener(object):
             except Exception as e:
                 result = True, traceback.format_exc(), e
 
-            pickle_dump(result, stdout, self._pickle_protocol)
+            pickle_dump(result, stdout, PICKLE_PROTOCOL)
 
 
 class AccessHandle(object):
@@ -385,9 +372,8 @@ class AccessHandle(object):
         if name in ('id', 'access') or name.startswith('_'):
             raise AttributeError("Something went wrong with unpickling")
 
-        # if not is_py3: print >> sys.stderr, name
         # print('getattr', name, file=sys.stderr)
-        return partial(self._workaround, force_unicode(name))
+        return partial(self._workaround, name)
 
     def _workaround(self, name, *args, **kwargs):
         """

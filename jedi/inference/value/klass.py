@@ -37,7 +37,6 @@ py__doc__()                            Returns the docstring for a value.
 
 """
 from jedi import debug
-from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
     inference_state_method_generator_cache
@@ -56,7 +55,7 @@ from jedi.plugins import plugin_manager
 
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(name_context, tree_name)
+        super().__init__(name_context, tree_name)
         self._apply_decorators = apply_decorators
         self._class_value = class_value
 
@@ -78,7 +77,7 @@ class ClassName(TreeNameDefinition):
 class ClassFilter(ParserTreeFilter):
     def __init__(self, class_value, node_context=None, until_position=None,
                  origin_scope=None, is_instance=False):
-        super(ClassFilter, self).__init__(
+        super().__init__(
             class_value.as_context(), node_context,
             until_position=until_position,
             origin_scope=origin_scope,
@@ -125,7 +124,7 @@ class ClassFilter(ParserTreeFilter):
             or self._equals_origin_scope()
 
     def _filter(self, names):
-        names = super(ClassFilter, self)._filter(names)
+        names = super()._filter(names)
         return [name for name in names if self._access_possible(name)]
 
 
@@ -145,7 +144,7 @@ class ClassMixin(object):
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.inference_state, u'type')
+        return compiled.builtin_from_name(self.inference_state, 'type')
 
     @property
     def name(self):
@@ -192,13 +191,11 @@ class ClassMixin(object):
         if include_metaclasses:
             metaclasses = self.get_metaclasses()
             if metaclasses:
-                for f in self.get_metaclass_filters(metaclasses, is_instance):
-                    yield f  # Python 2..
+                yield from self.get_metaclass_filters(metaclasses, is_instance)
 
         for cls in self.py__mro__():
             if cls.is_compiled():
-                for filter in cls.get_filters(is_instance=is_instance):
-                    yield filter
+                yield from cls.get_filters(is_instance=is_instance)
             else:
                 yield ClassFilter(
                     self, node_context=cls.as_context(),
@@ -207,7 +204,7 @@ class ClassMixin(object):
                 )
         if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
-            type_ = builtin_from_name(self.inference_state, u'type')
+            type_ = builtin_from_name(self.inference_state, 'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
                 # We are not using execute_with_values here, because the
@@ -321,8 +318,8 @@ class ClassMixin(object):
         return ValueSet({self})
 
 
-class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
-    api_type = u'class'
+class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
+    api_type = 'class'
 
     @inference_state_method_cache()
     def list_type_vars(self):

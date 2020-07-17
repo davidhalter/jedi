@@ -3,7 +3,6 @@ import re
 
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import FileNotFoundError
 from jedi.debug import dbg
 from jedi.file_io import KnownContentFileIO
 from jedi.inference.imports import SubModuleName, load_module_from_path
@@ -273,9 +272,8 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
         return
 
     file_io_iterator = _find_python_files_in_sys_path(inference_state, module_contexts)
-    for x in search_in_file_ios(inference_state, file_io_iterator, name,
-                                limit_reduction=limit_reduction):
-        yield x  # Python 2...
+    yield from search_in_file_ios(inference_state, file_io_iterator, name,
+                                  limit_reduction=limit_reduction)
 
 
 def search_in_file_ios(inference_state, file_io_iterator, name, limit_reduction=1):

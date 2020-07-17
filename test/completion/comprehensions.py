@@ -174,8 +174,6 @@ class X():
 #? int()
 X([1]).foo()
 
-# set/dict comprehensions were introduced in 2.7, therefore:
-# python >= 2.7
 # -----------------
 # dict comprehensions
 # -----------------

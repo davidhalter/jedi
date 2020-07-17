@@ -21,7 +21,6 @@ from textwrap import dedent
 
 from parso import parse, ParserSyntaxError
 
-from jedi._compatibility import u
 from jedi import debug
 from jedi.common import indent_block
 from jedi.inference.cache import inference_state_method_cache
@@ -184,7 +183,7 @@ def _strip_rst_role(type_str):
 
 
 def _infer_for_statement_string(module_context, string):
-    code = dedent(u("""
+    code = dedent("""
     def pseudo_docstring_stuff():
         '''
         Create a pseudo function for docstring statements.
@@ -192,7 +191,7 @@ def _infer_for_statement_string(module_context, string):
         is still a function.
         '''
     {}
-    """))
+    """)
     if string is None:
         return []
 
@@ -201,11 +200,8 @@ def _infer_for_statement_string(module_context, string):
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
 
-    # Take the default grammar here, if we load the Python 2.7 grammar here, it
-    # will be impossible to use `...` (Ellipsis) as a token. Docstring types
-    # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_context.inference_state.latest_grammar
+    grammar = module_context.inference_state.grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:

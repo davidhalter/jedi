@@ -114,7 +114,6 @@ import pytest
 
 import jedi
 from jedi import debug
-from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Name
 from jedi.api.completion import get_user_context
 from jedi import parser_utils
@@ -165,7 +164,7 @@ class BaseTestCase(object):
 class IntegrationTestCase(BaseTestCase):
     def __init__(self, test_type, correct, line_nr, column, start, line,
                  path=None, skip_version_info=None):
-        super(IntegrationTestCase, self).__init__(skip_version_info)
+        super().__init__(skip_version_info)
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -295,7 +294,7 @@ class StaticAnalysisCase(BaseTestCase):
         for line in self._source.splitlines():
             skip_version_info = skip_python_version(line) or skip_version_info
 
-        super(StaticAnalysisCase, self).__init__(skip_version_info)
+        super().__init__(skip_version_info)
 
     def collect_comparison(self):
         cases = []
@@ -401,12 +400,8 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
 
             path = os.path.join(base_dir, f_name)
 
-            if is_py3:
-                with open(path, encoding='utf-8', newline='') as f:
-                    source = f.read()
-            else:
-                with open(path) as f:
-                    source = unicode(f.read(), 'UTF-8')
+            with open(path, newline='') as f:
+                source = f.read()
 
             for case in collect_file_tests(path, StringIO(source),
                                            lines_to_execute):
@@ -431,7 +426,7 @@ Options:
     --pdb           Enable pdb debugging on fail.
     -d, --debug     Enable text output debugging (please install ``colorama``).
     --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
-    --env <dotted>  A Python version, like 2.7, 3.8, etc.
+    --env <dotted>  A Python version, like 3.9, 3.8, etc.
 """
 if __name__ == '__main__':
     import docopt

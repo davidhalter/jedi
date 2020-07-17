@@ -1,8 +1,8 @@
 import re
+from itertools import zip_longest
 
 from parso.python import tree
 
-from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
@@ -142,11 +142,8 @@ def unpack_arglist(arglist):
     if arglist is None:
         return
 
-    # Allow testlist here as well for Python2's class inheritance
-    # definitions.
-    if not (arglist.type in ('arglist', 'testlist') or (
-            # in python 3.5 **arg is an argument, not arglist
-            arglist.type == 'argument' and arglist.children[0] in ('*', '**'))):
+    if arglist.type != 'arglist' and not (
+            arglist.type == 'argument' and arglist.children[0] in ('*', '**')):
         yield 0, arglist
         return
 
@@ -189,8 +186,6 @@ class TreeArguments(AbstractArguments):
                 iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
                 for values in list(zip_longest(*iterators)):
-                    # TODO zip_longest yields None, that means this would raise
-                    # an exception?
                     yield None, get_merged_lazy_value(
                         [v for v in values if v is not None]
                     )

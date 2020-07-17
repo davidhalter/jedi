@@ -1,7 +1,7 @@
 import os
 from textwrap import dedent
+from pathlib import Path
 
-from jedi._compatibility import force_unicode
 from jedi.inference.sys_path import _get_parent_dir_with_file, \
     _get_buildout_script_paths, check_sys_path_modifications
 
@@ -14,18 +14,18 @@ def check_module_test(Script, code):
 
 
 def test_parent_dir_with_file(Script):
-    path = get_example_dir('buildout_project', 'src', 'proj_name')
+    path = Path(get_example_dir('buildout_project', 'src', 'proj_name'))
     parent = _get_parent_dir_with_file(path, 'buildout.cfg')
     assert parent is not None
-    assert parent.endswith(os.path.join('test', 'examples', 'buildout_project'))
+    assert str(parent).endswith(os.path.join('test', 'examples', 'buildout_project'))
 
 
 def test_buildout_detection(Script):
-    path = get_example_dir('buildout_project', 'src', 'proj_name')
-    scripts = list(_get_buildout_script_paths(os.path.join(path, 'module_name.py')))
-    assert len(scripts) == 1
+    path = Path(get_example_dir('buildout_project', 'src', 'proj_name'))
+    paths = list(_get_buildout_script_paths(path.joinpath('module_name.py')))
+    assert len(paths) == 1
     appdir_path = os.path.normpath(os.path.join(path, '../../bin/app'))
-    assert scripts[0] == appdir_path
+    assert str(paths[0]) == appdir_path
 
 
 def test_append_on_non_sys_path(Script):
@@ -58,17 +58,17 @@ def test_sys_path_with_modifications(Script):
     """)
 
     paths = Script(code, path=path)._inference_state.get_sys_path()
-    assert '/tmp/.buildout/eggs/important_package.egg' in paths
+    assert os.path.abspath('/tmp/.buildout/eggs/important_package.egg') in paths
 
 
 def test_path_from_sys_path_assignment(Script):
-    code = dedent("""
+    code = dedent(f"""
         #!/usr/bin/python
 
         import sys
         sys.path[0:0] = [
-          '/usr/lib/python3.8/site-packages',
-          '/home/test/.buildout/eggs/important_package.egg'
+          {os.path.abspath('/usr/lib/python3.8/site-packages')!r},
+          {os.path.abspath('/home/test/.buildout/eggs/important_package.egg')!r},
           ]
 
         path[0:0] = [1]
@@ -79,6 +79,6 @@ def test_path_from_sys_path_assignment(Script):
             sys.exit(important_package.main())""")
 
     paths = check_module_test(Script, code)
-    paths = list(map(force_unicode, paths))
     assert 1 not in paths
-    assert '/home/test/.buildout/eggs/important_package.egg' in paths
+    assert os.path.abspath('/home/test/.buildout/eggs/important_package.egg') \
+        in map(str, paths)

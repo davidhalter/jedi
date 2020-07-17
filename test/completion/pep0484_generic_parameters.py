@@ -1,4 +1,3 @@
-# python >= 3.4
 from typing import (
     Callable,
     Dict,

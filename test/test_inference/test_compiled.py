@@ -1,6 +1,5 @@
 from textwrap import dedent
 import math
-import sys
 from collections import Counter
 from datetime import datetime
 
@@ -13,26 +12,22 @@ from jedi.inference.syntax_tree import _infer_comparison_part
 
 
 def test_simple(inference_state, environment):
-    obj = compiled.create_simple_object(inference_state, u'_str_')
-    upper, = obj.py__getattribute__(u'upper')
+    obj = compiled.create_simple_object(inference_state, '_str_')
+    upper, = obj.py__getattribute__('upper')
     objs = list(upper.execute_with_values())
     assert len(objs) == 1
-    if environment.version_info.major == 2:
-        expected = 'unicode'
-    else:
-        expected = 'str'
-    assert objs[0].name.string_name == expected
+    assert objs[0].name.string_name == 'str'
 
 
 def test_builtin_loading(inference_state):
-    string, = inference_state.builtins_module.py__getattribute__(u'str')
-    from_name, = string.py__getattribute__(u'__init__')
+    string, = inference_state.builtins_module.py__getattribute__('str')
+    from_name, = string.py__getattribute__('__init__')
     assert from_name.tree_node
     assert not from_name.py__doc__()  # It's a stub
 
 
 def test_next_docstr(inference_state):
-    next_ = compiled.builtin_from_name(inference_state, u'next')
+    next_ = compiled.builtin_from_name(inference_state, 'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
     for non_stub in _stub_to_python_value_set(next_):
@@ -53,9 +48,9 @@ def test_doc(inference_state):
     Even CompiledValue docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    str_ = compiled.create_simple_object(inference_state, u'')
+    str_ = compiled.create_simple_object(inference_state, '')
     # Equals `''.__getnewargs__`
-    obj, = str_.py__getattribute__(u'__getnewargs__')
+    obj, = str_.py__getattribute__('__getnewargs__')
     assert obj.py__doc__() == ''
 
 
@@ -66,13 +61,9 @@ def test_string_literals(Script, environment):
 
     assert typ('""') == 'str'
     assert typ('r""') == 'str'
-    if environment.version_info.major > 2:
-        assert typ('br""') == 'bytes'
-        assert typ('b""') == 'bytes'
-        assert typ('u""') == 'str'
-    else:
-        assert typ('b""') == 'str'
-        assert typ('u""') == 'unicode'
+    assert typ('br""') == 'bytes'
+    assert typ('b""') == 'bytes'
+    assert typ('u""') == 'str'
 
 
 def test_method_completion(Script, environment):
@@ -95,9 +86,6 @@ def test_time_docstring(Script):
 
 
 def test_dict_values(Script, environment):
-    if environment.version_info.major == 2:
-        # It looks like typeshed for Python 2 returns Any.
-        pytest.skip()
     assert Script('import sys\nsys.modules["alshdb;lasdhf"]').infer()
 
 
@@ -142,13 +130,10 @@ def test_parent_context(same_process_inference_state, attribute, expected_name, 
     x, = o.py__getattribute__(attribute)
     assert x.py__name__() == expected_name
     module_name = x.parent_context.py__name__()
-    if module_name == '__builtin__':
-        module_name = 'builtins'  # Python 2
     assert module_name == expected_parent
     assert x.parent_context.parent_context is None
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'obj, expected_names', [
         ('', ['str']),
@@ -177,7 +162,7 @@ def test_operation(Script, inference_state, create_compiled_object):
     false, true = _infer_comparison_part(
         inference_state, b.parent_context,
         left=list(b.execute_with_values())[0],
-        operator=u'is not',
+        operator='is not',
         right=b,
     )
     assert false.py__name__() == 'bool'

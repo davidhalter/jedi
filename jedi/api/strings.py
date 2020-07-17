@@ -9,7 +9,6 @@ names in a module, but pretty much an arbitrary string.
 """
 import re
 
-from jedi._compatibility import unicode
 from jedi.inference.names import AbstractArbitraryName
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.api.classes import Completion
@@ -19,7 +18,7 @@ _sentinel = object()
 
 
 class StringName(AbstractArbitraryName):
-    api_type = u'string'
+    api_type = 'string'
     is_value_name = False
 
 
@@ -65,7 +64,7 @@ def _completions_for_dicts(inference_state, dicts, literal_string, cut_end_quote
 
 
 def _create_repr_string(literal_string, dict_key):
-    if not isinstance(dict_key, (unicode, bytes)) or not literal_string:
+    if not isinstance(dict_key, (str, bytes)) or not literal_string:
         return repr(dict_key)
 
     r = repr(dict_key)

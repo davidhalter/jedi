@@ -11,8 +11,8 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 import os
+from inspect import Parameter
 
-from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
@@ -182,14 +182,9 @@ def argument_clinic(clinic_string, want_value=False, want_context=False,
 
 @argument_clinic('iterator[, default], /', want_inference_state=True)
 def builtins_next(iterators, defaults, inference_state):
-    if inference_state.environment.version_info.major == 2:
-        name = 'next'
-    else:
-        name = '__next__'
-
     # TODO theoretically we have to check here if something is an iterator.
     # That is probably done by checking if it's not a class.
-    return defaults | iterators.py__getattribute__(name).execute_with_values()
+    return defaults | iterators.py__getattribute__('__next__').execute_with_values()
 
 
 @argument_clinic('iterator[, default], /')
@@ -208,7 +203,7 @@ def builtins_getattr(objects, names, defaults=None):
                 debug.warning('getattr called without str')
                 continue
             else:
-                return value.py__getattribute__(force_unicode(string))
+                return value.py__getattribute__(string)
     return NO_VALUES
 
 
@@ -259,14 +254,13 @@ def builtins_super(types, objects, context):
 
 class ReversedObject(AttributeOverwrite):
     def __init__(self, reversed_obj, iter_list):
-        super(ReversedObject, self).__init__(reversed_obj)
+        super().__init__(reversed_obj)
         self._iter_list = iter_list
 
     def py__iter__(self, contextualized_node):
         return self._iter_list
 
-    @publish_method('next', python_version_match=2)
-    @publish_method('__next__', python_version_match=3)
+    @publish_method('__next__')
     def _next(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
@@ -329,7 +323,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
                     analysis.add(lazy_value.context, 'type-error-isinstance', node, message)
 
     return ValueSet(
-        compiled.builtin_from_name(inference_state, force_unicode(str(b)))
+        compiled.builtin_from_name(inference_state, str(b))
         for b in bool_results
     )
 
@@ -346,7 +340,7 @@ def builtins_staticmethod(functions):
 
 class ClassMethodObject(ValueWrapper):
     def __init__(self, class_method_obj, function):
-        super(ClassMethodObject, self).__init__(class_method_obj)
+        super().__init__(class_method_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
@@ -358,7 +352,7 @@ class ClassMethodObject(ValueWrapper):
 
 class ClassMethodGet(ValueWrapper):
     def __init__(self, get_method, klass, function):
-        super(ClassMethodGet, self).__init__(get_method)
+        super().__init__(get_method)
         self._class = klass
         self._function = function
 
@@ -371,7 +365,7 @@ class ClassMethodGet(ValueWrapper):
 
 class ClassMethodArguments(TreeArgumentsWrapper):
     def __init__(self, klass, arguments):
-        super(ClassMethodArguments, self).__init__(arguments)
+        super().__init__(arguments)
         self._class = klass
 
     def unpack(self, func=None):
@@ -391,7 +385,7 @@ def builtins_classmethod(functions, value, arguments):
 
 class PropertyObject(AttributeOverwrite, ValueWrapper):
     def __init__(self, property_obj, function):
-        super(PropertyObject, self).__init__(property_obj)
+        super().__init__(property_obj)
         self._function = function
 
     def py__get__(self, instance, class_value):
@@ -426,11 +420,11 @@ def collections_namedtuple(value, arguments, callback):
     inference_state = value.inference_state
 
     # Process arguments
-    name = u'jedi_unknown_namedtuple'
+    name = 'jedi_unknown_namedtuple'
     for c in _follow_param(inference_state, arguments, 0):
         x = get_str_or_none(c)
         if x is not None:
-            name = force_unicode(x)
+            name = x
             break
 
     # TODO here we only use one of the types, we should use all.
@@ -440,10 +434,10 @@ def collections_namedtuple(value, arguments, callback):
     _fields = list(param_values)[0]
     string = get_str_or_none(_fields)
     if string is not None:
-        fields = force_unicode(string).replace(',', ' ').split()
+        fields = string.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
-            force_unicode(get_str_or_none(v))
+            get_str_or_none(v)
             for lazy_value in _fields.py__iter__()
             for v in lazy_value.infer()
         ]
@@ -456,7 +450,7 @@ def collections_namedtuple(value, arguments, callback):
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
-        arg_list=repr(tuple(fields)).replace("u'", "").replace("'", "")[1:-1],
+        arg_list=repr(tuple(fields)).replace("'", "")[1:-1],
         repr_fmt='',
         field_defs='\n'.join(_NAMEDTUPLE_FIELD_TEMPLATE.format(index=index, name=name)
                              for index, name in enumerate(fields))
@@ -475,7 +469,7 @@ def collections_namedtuple(value, arguments, callback):
 
 class PartialObject(ValueWrapper):
     def __init__(self, actual_value, arguments, instance=None):
-        super(PartialObject, self).__init__(actual_value)
+        super().__init__(actual_value)
         self._arguments = arguments
         self._instance = instance
 
@@ -538,7 +532,7 @@ class PartialMethodObject(PartialObject):
 
 class PartialSignature(SignatureWrapper):
     def __init__(self, wrapped_signature, skipped_arg_count, skipped_arg_set):
-        super(PartialSignature, self).__init__(wrapped_signature)
+        super().__init__(wrapped_signature)
         self._skipped_arg_count = skipped_arg_count
         self._skipped_arg_set = skipped_arg_set
 
@@ -631,7 +625,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
 
 class DataclassSignature(AbstractSignature):
     def __init__(self, value, param_names):
-        super(DataclassSignature, self).__init__(value)
+        super().__init__(value)
         self._param_names = param_names
 
     def get_param_names(self, resolve_stars=False):
@@ -640,7 +634,7 @@ class DataclassSignature(AbstractSignature):
 
 class DataclassParamName(BaseTreeParamName):
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
-        super(DataclassParamName, self).__init__(parent_context, tree_name)
+        super().__init__(parent_context, tree_name)
         self.annotation_node = annotation_node
         self.default_node = default_node
 
@@ -656,7 +650,7 @@ class DataclassParamName(BaseTreeParamName):
 
 class ItemGetterCallable(ValueWrapper):
     def __init__(self, instance, args_value_set):
-        super(ItemGetterCallable, self).__init__(instance)
+        super().__init__(instance)
         self._args_value_set = args_value_set
 
     @repack_with_argument_clinic('item, /')
@@ -694,7 +688,7 @@ class WrapsCallable(ValueWrapper):
 
 class Wrapped(ValueWrapper, FunctionMixin):
     def __init__(self, func, original_function):
-        super(Wrapped, self).__init__(func)
+        super().__init__(func)
         self._original_function = original_function
 
     @property
@@ -732,7 +726,7 @@ def _create_string_input_function(func):
 @argument_clinic('*args, /', want_callback=True)
 def _os_path_join(args_set, callback):
     if len(args_set) == 1:
-        string = u''
+        string = ''
         sequence, = args_set
         is_first = True
         for lazy_value in sequence.py__iter__():
@@ -744,7 +738,7 @@ def _os_path_join(args_set, callback):
                 break
             if not is_first:
                 string += os.path.sep
-            string += force_unicode(s)
+            string += s
             is_first = False
         else:
             return ValueSet([compiled.create_simple_object(sequence.inference_state, string)])

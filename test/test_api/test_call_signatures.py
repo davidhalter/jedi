@@ -1,10 +1,9 @@
-import sys
 from textwrap import dedent
 import inspect
+from unittest import TestCase
 
 import pytest
 
-from ..helpers import TestCase
 from jedi import cache
 from jedi.parser_utils import get_signature
 from jedi import Interpreter
@@ -126,7 +125,7 @@ def test_get_signatures_whitespace(Script):
     abs( 
     def x():
         pass
-    """)
+    """)  # noqa
     assert_signature(Script, s, 'abs', 0, line=1, column=5)
 
 
@@ -240,13 +239,12 @@ def test_complex(Script, environment):
     func1, = sig1._name.infer()
     func2, = sig2._name.infer()
 
-    if environment.version_info.major == 3:
-        # Do these checks just for Python 3, I'm too lazy to deal with this
-        # legacy stuff. ~ dave.
-        assert get_signature(func1.tree_node) \
-            == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
-        assert get_signature(func2.tree_node) \
-            == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
+    # Do these checks just for Python 3, I'm too lazy to deal with this
+    # legacy stuff. ~ dave.
+    assert get_signature(func1.tree_node) \
+        == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
+    assert get_signature(func2.tree_node) \
+        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
 
     # jedi-vim #70
     s = """def foo("""
@@ -374,10 +372,8 @@ def test_keyword_argument_index(Script, environment):
     def get(source, column=None):
         return Script(source).get_signatures(column=column)[0]
 
-    # The signature of sorted changed from 2 to 3.
-    py2_offset = int(environment.version_info.major == 2)
-    assert get('sorted([], key=a').index == 1 + py2_offset
-    assert get('sorted([], key=').index == 1 + py2_offset
+    assert get('sorted([], key=a').index == 1
+    assert get('sorted([], key=').index == 1
     assert get('sorted([], no_key=a').index is None
 
     kw_func = 'def foo(a, b): pass\nfoo(b=3, a=4)'
@@ -504,7 +500,7 @@ _calls = [
 
 @pytest.mark.parametrize('ending', ['', ')'])
 @pytest.mark.parametrize('code, call, expected_index', _calls)
-def test_signature_index(skip_python2, Script, environment, code, call, expected_index, ending):
+def test_signature_index(Script, environment, code, call, expected_index, ending):
     if isinstance(expected_index, tuple):
         expected_index = expected_index[environment.version_info > (3, 8)]
     if environment.version_info < (3, 8):
@@ -515,7 +511,6 @@ def test_signature_index(skip_python2, Script, environment, code, call, expected
     assert expected_index == index
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't support __signature__")
 @pytest.mark.parametrize('code', ['foo', 'instance.foo'])
 def test_arg_defaults(Script, environment, code):
     def foo(arg="bla", arg1=1):

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from jedi._compatibility import is_py3
 from jedi import parser_utils
 from parso import parse
 from parso.python import tree
@@ -55,10 +53,7 @@ def test_hex_values_in_docstring():
         '''
 
     doc = parser_utils.clean_scope_docstring(next(parse(source).iter_funcdefs()))
-    if is_py3:
-        assert doc == '\xff'
-    else:
-        assert doc == u'�'
+    assert doc == '\xff'
 
 
 @pytest.mark.parametrize(
@@ -68,7 +63,7 @@ def test_hex_values_in_docstring():
         ('lambda x, y, z: x + y * z\n', '<lambda>(x, y, z)')
     ])
 def test_get_signature(code, signature):
-    node = parse(code, version='3.5').children[0]
+    node = parse(code, version='3.8').children[0]
     if node.type == 'simple_stmt':
         node = node.children[0]
     assert parser_utils.get_signature(node) == signature

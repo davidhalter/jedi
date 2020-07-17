@@ -1,5 +1,4 @@
 from typing import Generic, TypeVar, List
-import sys
 
 import pytest
 
@@ -86,7 +85,6 @@ def test_mixed_module_cache():
     assert isinstance(jedi_module, ModuleValue)
 
 
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
 def test_signature():
     """
     For performance reasons we use the signature of the compiled object and not
@@ -104,10 +102,11 @@ def test_signature():
     assert s.docstring() == 'some_signature(*, bar=1)'
 
 
-@pytest.mark.skipif(sys.version_info[0:2] < (3, 5), reason="Typing was introduced in Python 3.5")
 def test_compiled_signature_annotation_string():
     import typing
-    def func(x: typing.Type, y: typing.Union[typing.Type, int]): pass
+
+    def func(x: typing.Type, y: typing.Union[typing.Type, int]):
+        pass
     func.__name__ = 'not_func'
 
     s, = jedi.Interpreter('func()', [locals()]).get_signatures(1, 5)

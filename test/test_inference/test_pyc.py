@@ -39,16 +39,14 @@ def pyc_project_path(tmpdir):
     compileall.compile_file(dummy_path)
     os.remove(dummy_path)
 
-    if sys.version_info.major == 3:
-        # Python3 specific:
-        # To import pyc modules, we must move them out of the __pycache__
-        # directory and rename them to remove ".cpython-%s%d"
-        # see: http://stackoverflow.com/questions/11648440/python-does-not-detect-pyc-files
-        pycache = os.path.join(dummy_package_path, "__pycache__")
-        for f in os.listdir(pycache):
-            dst = f.replace('.cpython-%s%s' % sys.version_info[:2], "")
-            dst = os.path.join(dummy_package_path, dst)
-            shutil.copy(os.path.join(pycache, f), dst)
+    # To import pyc modules, we must move them out of the __pycache__
+    # directory and rename them to remove ".cpython-%s%d"
+    # see: http://stackoverflow.com/questions/11648440/python-does-not-detect-pyc-files
+    pycache = os.path.join(dummy_package_path, "__pycache__")
+    for f in os.listdir(pycache):
+        dst = f.replace('.cpython-%s%s' % sys.version_info[:2], "")
+        dst = os.path.join(dummy_package_path, dst)
+        shutil.copy(os.path.join(pycache, f), dst)
     try:
         yield path
     finally:
@@ -56,7 +54,6 @@ def pyc_project_path(tmpdir):
 
 
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
-@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 def test_pyc(pyc_project_path, environment, load_unsafe_extensions):
     """
     The list of completion must be greater than 2.

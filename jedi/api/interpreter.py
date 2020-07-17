@@ -47,7 +47,7 @@ class MixedParserTreeFilter(ParserTreeFilter):
 
 class MixedModuleContext(ModuleContext):
     def __init__(self, tree_module_value, namespaces):
-        super(MixedModuleContext, self).__init__(tree_module_value)
+        super().__init__(tree_module_value)
         self.mixed_values = [
             self._get_mixed_object(
                 _create(self.inference_state, NamespaceObject(n))

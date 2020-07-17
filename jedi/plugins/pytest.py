@@ -1,5 +1,6 @@
+from pathlib import Path
+
 from parso.python.tree import search_ancestor
-from jedi._compatibility import FileNotFoundError
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
@@ -129,7 +130,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
         sys_path = module_context.inference_state.get_sys_path()
         while any(folder.path.startswith(p) for p in sys_path):
             file_io = folder.get_file_io('conftest.py')
-            if file_io.path != module_context.py__file__():
+            if Path(file_io.path) != module_context.py__file__():
                 try:
                     m = load_module_from_path(module_context.inference_state, file_io)
                     yield m.as_context()
@@ -144,7 +145,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
-        for name in super(FixtureFilter, self)._filter(names):
+        for name in super()._filter(names):
             funcdef = name.parent
             if funcdef.type == 'funcdef':
                 # Class fixtures are not supported

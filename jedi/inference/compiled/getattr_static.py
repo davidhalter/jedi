@@ -7,7 +7,6 @@ information returned to enable Jedi to make decisions.
 import types
 
 from jedi import debug
-from jedi._compatibility import py_version
 
 _sentinel = object()
 
@@ -39,7 +38,7 @@ def _is_type(obj):
     return True
 
 
-def _shadowed_dict_newstyle(klass):
+def _shadowed_dict(klass):
     dict_attr = type.__dict__["__dict__"]
     for entry in _static_getmro(klass):
         try:
@@ -54,7 +53,7 @@ def _shadowed_dict_newstyle(klass):
     return _sentinel
 
 
-def _static_getmro_newstyle(klass):
+def _static_getmro(klass):
     mro = type.__dict__['__mro__'].__get__(klass)
     if not isinstance(mro, (tuple, list)):
         # There are unfortunately no tests for this, I was not able to
@@ -65,70 +64,8 @@ def _static_getmro_newstyle(klass):
     return mro
 
 
-if py_version >= 30:
-    _shadowed_dict = _shadowed_dict_newstyle
-    _get_type = type
-    _static_getmro = _static_getmro_newstyle
-else:
-    def _shadowed_dict(klass):
-        """
-        In Python 2 __dict__ is not overwritable:
-
-            class Foo(object): pass
-            setattr(Foo, '__dict__', 4)
-
-            Traceback (most recent call last):
-              File "<stdin>", line 1, in <module>
-            TypeError: __dict__ must be a dictionary object
-
-        It applies to both newstyle and oldstyle classes:
-
-            class Foo(object): pass
-            setattr(Foo, '__dict__', 4)
-            Traceback (most recent call last):
-              File "<stdin>", line 1, in <module>
-            AttributeError: attribute '__dict__' of 'type' objects is not writable
-
-        It also applies to instances of those objects. However to keep things
-        straight forward, newstyle classes always use the complicated way of
-        accessing it while oldstyle classes just use getattr.
-        """
-        if type(klass) is _oldstyle_class_type:
-            return getattr(klass, '__dict__', _sentinel)
-        return _shadowed_dict_newstyle(klass)
-
-    class _OldStyleClass:
-        pass
-
-    _oldstyle_instance_type = type(_OldStyleClass())
-    _oldstyle_class_type = type(_OldStyleClass)
-
-    def _get_type(obj):
-        type_ = object.__getattribute__(obj, '__class__')
-        if type_ is _oldstyle_instance_type:
-            # Somehow for old style classes we need to access it directly.
-            return obj.__class__
-        return type_
-
-    def _static_getmro(klass):
-        if type(klass) is _oldstyle_class_type:
-            def oldstyle_mro(klass):
-                """
-                Oldstyle mro is a really simplistic way of look up mro:
-                https://stackoverflow.com/questions/54867/what-is-the-difference-between-old-style-and-new-style-classes-in-python
-                """
-                yield klass
-                for base in klass.__bases__:
-                    for yield_from in oldstyle_mro(base):
-                        yield yield_from
-
-            return oldstyle_mro(klass)
-
-        return _static_getmro_newstyle(klass)
-
-
 def _safe_hasattr(obj, name):
-    return _check_class(_get_type(obj), name) is not _sentinel
+    return _check_class(type(obj), name) is not _sentinel
 
 
 def _safe_is_data_descriptor(obj):
@@ -151,7 +88,7 @@ def getattr_static(obj, attr, default=_sentinel):
     """
     instance_result = _sentinel
     if not _is_type(obj):
-        klass = _get_type(obj)
+        klass = type(obj)
         dict_attr = _shadowed_dict(klass)
         if (dict_attr is _sentinel or type(dict_attr) is types.MemberDescriptorType):
             instance_result = _check_instance(obj, attr)

@@ -8,10 +8,11 @@ just one.
 """
 from functools import reduce
 from operator import add
+from itertools import zip_longest
+
 from parso.python.tree import Name
 
 from jedi import debug
-from jedi._compatibility import zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.utils import safe_property
@@ -92,7 +93,7 @@ class HelperValueMixin(object):
         return values
 
     def py__await__(self):
-        await_value_set = self.py__getattribute__(u"__await__")
+        await_value_set = self.py__getattribute__("__await__")
         if not await_value_set:
             debug.warning('Tried to run __await__ on value %s', self)
         return await_value_set.execute_with_values()
@@ -357,7 +358,7 @@ class ValueWrapper(_ValueWrapperBase):
 
 class TreeValue(Value):
     def __init__(self, inference_state, parent_context, tree_node):
-        super(TreeValue, self).__init__(inference_state, parent_context)
+        super().__init__(inference_state, parent_context)
         self.tree_node = tree_node
 
     def __repr__(self):
@@ -385,7 +386,7 @@ def _getitem(value, index_values, contextualized_node):
     unused_values = set()
     for index_value in index_values:
         index = index_value.get_safe_value(default=None)
-        if type(index) in (float, int, str, unicode, slice, bytes):
+        if type(index) in (float, int, str, slice, bytes):
             try:
                 result |= value.py__simple_getitem__(index)
                 continue
