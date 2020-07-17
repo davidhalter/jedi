@@ -156,20 +156,11 @@ class CompiledSubprocess(object):
     # Start with 2, gets set after _get_info.
     _pickle_protocol = 2
 
-    def __init__(self, executable, env_vars={}):
+    def __init__(self, executable, env_vars=None):
         self._executable = executable
-        self._env_vars = dict(env_vars)
+        self._env_vars = env_vars
         self._inference_state_deletion_queue = queue.deque()
         self._cleanup_callable = lambda: None
-
-        # Use explicit envionment to ensure reliable results (#1540)
-        if os.name == 'nt':
-            # if SYSTEMROOT (or case variant) exists in environment,
-            # ensure it goes to subprocess
-            for k, v in os.environ.items():
-                if 'SYSTEMROOT' == k.upper():
-                    self._env_vars.update({k: os.environ[k]})
-                    break  # don't risk multiple entries
 
     def __repr__(self):
         pid = os.getpid()
