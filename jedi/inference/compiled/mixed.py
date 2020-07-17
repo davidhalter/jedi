@@ -84,6 +84,9 @@ class MixedObject(ValueWrapper):
             return self.compiled_value.py__simple_getitem__(index)
         return self._wrapped_value.py__simple_getitem__(index)
 
+    def negate(self):
+        return self.compiled_value.negate()
+
     def _as_context(self):
         if self.parent_context is None:
             return MixedModuleContext(self)

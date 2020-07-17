@@ -704,3 +704,11 @@ def test_variable_reuse():
     x = 1
     d, = jedi.Interpreter('y = x\ny', [locals()]).infer()
     assert d.name == 'int'
+
+
+def test_negate():
+    code = "x = -y"
+    x, = jedi.Interpreter(code, [{'y': 3}]).infer(1, 0)
+    assert x.name == 'int'
+    value, = x._name.infer()
+    assert value.get_safe_value() == -3
