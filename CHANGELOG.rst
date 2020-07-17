@@ -6,11 +6,15 @@ Changelog
 Unreleased
 ++++++++++
 
+0.17.2 (2020-07-17)
++++++++++++++++++++
+
 - Added an option to pass environment variables to ``Environment``
 - ``Project(...).path`` exists now
 - Support for Python 3.9
+- A few bugfixes
 
-This will probably the last release that supports Python 2 and Python 3.5.
+This will the last release that supports Python 2 and Python 3.5.
 ``0.18.0`` will be Python 3.6+.
 
 0.17.1 (2020-06-20)
