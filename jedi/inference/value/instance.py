@@ -255,20 +255,19 @@ class _BaseTreeInstance(AbstractInstanceValue):
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):
-                if generator.is_instance() and not generator.is_compiled():
-                    # `__next__` logic.
-                    name = '__next__'
-                    next_slot_names = generator.get_function_slot_names(name)
-                    if next_slot_names:
-                        yield LazyKnownValues(
-                            generator.execute_function_slots(next_slot_names)
-                        )
-                    else:
-                        debug.warning('Instance has no __next__ function in %s.', generator)
-                else:
-                    for lazy_value in generator.py__iter__():
-                        yield lazy_value
+                for lazy_value in generator.py__next__(contextualized_node):
+                    yield lazy_value
         return iterate()
+
+    def py__next__(self, contextualized_node=None):
+        name = u'__next__'
+        next_slot_names = self.get_function_slot_names(name)
+        if next_slot_names:
+            yield LazyKnownValues(
+                self.execute_function_slots(next_slot_names)
+            )
+        else:
+            debug.warning('Instance has no __next__ function in %s.', self)
 
     def py__call__(self, arguments):
         names = self.get_function_slot_names('__call__')

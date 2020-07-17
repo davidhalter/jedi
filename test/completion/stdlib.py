@@ -212,10 +212,32 @@ z.read('name').upper
 # contextlib
 # -----------------
 
+from typing import Iterator
 import contextlib
 with contextlib.closing('asd') as string:
     #? str()
     string
+
+@contextlib.contextmanager
+def cm1() -> Iterator[float]:
+    yield 1
+with cm1() as x:
+    #? float()
+    x
+
+@contextlib.contextmanager
+def cm2() -> float:
+    yield 1
+with cm2() as x:
+    #?
+    x
+
+@contextlib.contextmanager
+def cm3():
+    yield 3
+with cm3() as x:
+    #? int()
+    x
 
 # -----------------
 # operator

@@ -260,9 +260,8 @@ class ReversedObject(AttributeOverwrite):
     def py__iter__(self, contextualized_node):
         return self._iter_list
 
-    @publish_method('next')
     @publish_method('__next__')
-    def py__next__(self, arguments):
+    def _next(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )

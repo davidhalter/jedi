@@ -561,11 +561,17 @@ def test_param_annotation_completion(class_is_findable):
         ('mixed[Non', 9, ['e']),
 
         ('implicit[10', None, ['00']),
+
+        ('inherited["', None, ['blablu"']),
     ]
 )
 def test_dict_completion(code, column, expected):
     strs = {'asdf': 1, """foo""": 2, r'fbar': 3}
     mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
+
+    class Inherited(dict):
+        pass
+    inherited = Inherited(blablu=3)
 
     namespaces = [locals(), {'implicit': {1000: 3}}]
     comps = jedi.Interpreter(code, namespaces).complete(column=column)
@@ -646,3 +652,28 @@ def test_string_annotation(annotations, result, code):
     x.__annotations__ = annotations
     defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result
+
+
+def test_name_not_inferred_properly():
+    """
+    In IPython notebook it is typical that some parts of the code that is
+    provided was already executed. In that case if something is not properly
+    inferred, it should still infer from the variables it already knows.
+    """
+    x = 1
+    d, = jedi.Interpreter('x = UNDEFINED; x', [locals()]).infer()
+    assert d.name == 'int'
+
+
+def test_variable_reuse():
+    x = 1
+    d, = jedi.Interpreter('y = x\ny', [locals()]).infer()
+    assert d.name == 'int'
+
+
+def test_negate():
+    code = "x = -y"
+    x, = jedi.Interpreter(code, [{'y': 3}]).infer(1, 0)
+    assert x.name == 'int'
+    value, = x._name.infer()
+    assert value.get_safe_value() == -3
