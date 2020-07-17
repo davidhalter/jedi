@@ -23,6 +23,9 @@ from jedi.inference.value.dynamic_arrays import check_array_additions
 
 
 class IterableMixin(object):
+    def py__next__(self, contextualized_node=None):
+        return self.py__iter__(contextualized_node)
+
     def py__stop_iteration_returns(self):
         return ValueSet([compiled.builtin_from_name(self.inference_state, u'None')])
 
@@ -64,7 +67,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     @publish_method('send')
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
-    def py__next__(self, arguments):
+    def _next(self, arguments):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
 
     def py__stop_iteration_returns(self):

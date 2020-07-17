@@ -267,7 +267,7 @@ class ReversedObject(AttributeOverwrite):
 
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
-    def py__next__(self, arguments):
+    def _next(self, arguments):
         return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )

@@ -175,6 +175,9 @@ class Value(HelperValueMixin):
                 message="TypeError: '%s' object is not iterable" % self)
         return iter([])
 
+    def py__next__(self, contextualized_node=None):
+        return self.py__iter__(contextualized_node)
+
     def get_signatures(self):
         return []
 
