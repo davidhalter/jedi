@@ -68,6 +68,10 @@ Docs
 Resources
 ---------
 
+If you want to stay **up-to-date** with releases, please **subscribe** to this
+mailing list: https://groups.google.com/g/jedi-announce. To subscribe you can
+simply send an empty email to ``jedi-announce+subscribe@googlegroups.com``.
+
 - `Source Code on Github <https://github.com/davidhalter/jedi>`_
 - `Travis Testing <https://travis-ci.org/davidhalter/jedi>`_
 - `Python Package Index <https://pypi.python.org/pypi/jedi/>`_
