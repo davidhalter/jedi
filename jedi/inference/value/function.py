@@ -202,7 +202,7 @@ class MethodValue(FunctionValue):
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
-    def _infer_annotations(self):
+    def infer_annotations(self):
         raise NotImplementedError
 
     @inference_state_method_cache(default=NO_VALUES)
@@ -216,7 +216,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             value_set = NO_VALUES
             returns = get_yield_exprs(self.inference_state, funcdef)
         else:
-            value_set = self._infer_annotations()
+            value_set = self.infer_annotations()
             if value_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.
@@ -373,7 +373,7 @@ class FunctionExecutionContext(BaseFunctionExecutionContext):
             arguments=self._arguments
         )
 
-    def _infer_annotations(self):
+    def infer_annotations(self):
         from jedi.inference.gradual.annotation import infer_return_types
         return infer_return_types(self._value, self._arguments)
 
@@ -385,7 +385,7 @@ class FunctionExecutionContext(BaseFunctionExecutionContext):
 
 
 class AnonymousFunctionExecution(BaseFunctionExecutionContext):
-    def _infer_annotations(self):
+    def infer_annotations(self):
         # I don't think inferring anonymous executions is a big thing.
         # Anonymous contexts are mostly there for the user to work in. ~ dave
         return NO_VALUES

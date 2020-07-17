@@ -49,13 +49,12 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     array_type = None
 
     def _get_wrapped_value(self):
-        generator, = self.inference_state.typing_module \
-            .py__getattribute__('Generator') \
-            .execute_annotation()
-        return generator
+        instance, = self._get_cls().execute_annotation()
+        return instance
 
-    def is_instance(self):
-        return False
+    def _get_cls(self):
+        generator, = self.inference_state.typing_module.py__getattribute__('Generator')
+        return generator
 
     def py__bool__(self):
         return True
@@ -77,6 +76,12 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     def name(self):
         return compiled.CompiledValueName(self, 'Generator')
 
+    def get_annotated_class_object(self):
+        from jedi.inference.gradual.generics import TupleGenericManager
+        gen_values = self.merge_types_of_iterate().py__class__()
+        gm = TupleGenericManager((gen_values, NO_VALUES, NO_VALUES))
+        return self._get_cls().with_generics(gm)
+
 
 class Generator(GeneratorBase):
     """Handling of `yield` functions."""
@@ -85,6 +90,9 @@ class Generator(GeneratorBase):
         self._func_execution_context = func_execution_context
 
     def py__iter__(self, contextualized_node=None):
+        iterators = self._func_execution_context.infer_annotations()
+        if iterators:
+            return iterators.iterate(contextualized_node)
         return self._func_execution_context.get_yield_lazy_values()
 
     def py__stop_iteration_returns(self):
