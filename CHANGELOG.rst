@@ -6,6 +6,15 @@ Changelog
 Unreleased
 ++++++++++
 
+- Dropped Python 2 and Python 3.5
+- Using ``pathlib.Path()`` as an output instead of ``str`` in most places:
+  - ``Project.path``
+  - ``Script.path``
+  - ``Definition.module_path``
+  - ``Refactoring.get_renames``
+  - ``Refactoring.get_changed_files``
+- Started using annotations
+
 0.17.2 (2020-07-17)
 +++++++++++++++++++
 

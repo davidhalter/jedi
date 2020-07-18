@@ -1,6 +1,6 @@
 import difflib
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterable, Tuple
 
 from parso import split_lines
 
@@ -99,11 +99,9 @@ class Refactoring(object):
             ) for path, map_ in sorted(self._file_to_node_changes.items())
         }
 
-    def get_renames(self):
+    def get_renames(self) -> Iterable[Tuple[Path, Path]]:
         """
         Files can be renamed in a refactoring.
-
-        Returns ``Iterable[Tuple[str, str]]``.
         """
         return sorted(self._renames)
 

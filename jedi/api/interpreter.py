@@ -29,7 +29,7 @@ class MixedTreeName(TreeNameDefinition):
         provided was already executed. In that case if something is not properly
         inferred, it should still infer from the variables it already knows.
         """
-        inferred = super(MixedTreeName, self).infer()
+        inferred = super().infer()
         if not inferred:
             for compiled_value in self.parent_context.mixed_values:
                 for f in compiled_value.get_filters():
