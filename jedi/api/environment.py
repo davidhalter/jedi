@@ -311,7 +311,7 @@ def find_virtualenvs(paths=None, *, safe=True, use_environment_vars=True):
                 pass
 
 
-def find_system_environments(*, env_vars={}):
+def find_system_environments(*, env_vars=None):
     """
     Ignores virtualenvs and returns the Python versions that were installed on
     your system. This might return nothing, if you're running Python e.g. from
@@ -330,7 +330,7 @@ def find_system_environments(*, env_vars={}):
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_system_environment(version, *, env_vars={}):
+def get_system_environment(version, *, env_vars=None):
     """
     Return the first Python environment found for a string of the form 'X.Y'
     where X and Y are the major and minor versions of Python.
