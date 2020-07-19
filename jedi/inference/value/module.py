@@ -67,8 +67,7 @@ class ModuleMixin(SubModuleDictMixin):
         )
         yield DictFilter(self.sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
-        for star_filter in self.iter_star_filters():
-            yield star_filter
+        yield from self.iter_star_filters()
 
     def py__class__(self):
         c, = values_from_qualified_names(self.inference_state, 'types', 'ModuleType')

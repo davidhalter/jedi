@@ -184,8 +184,7 @@ class CompiledValue(Value):
 
     def py__iter__(self, contextualized_node=None):
         if not self.access_handle.has_iter():
-            for x in super().py__iter__(contextualized_node):
-                yield x
+            yield from super().py__iter__(contextualized_node)
 
         access_path_list = self.access_handle.py__iter__list()
         if access_path_list is None:
@@ -220,10 +219,8 @@ class CompiledValue(Value):
                 continue
             else:
                 bltn_obj = builtin_from_name(self.inference_state, name)
-                for result in self.inference_state.execute(bltn_obj, params):
-                    yield result
-        for type_ in docstrings.infer_return_types(self):
-            yield type_
+                yield from self.inference_state.execute(bltn_obj, params)
+        yield from docstrings.infer_return_types(self)
 
     def get_safe_value(self, default=_sentinel):
         try:

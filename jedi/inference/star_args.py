@@ -96,8 +96,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
         if is_big_annoying_library(param_names[0].parent_context):
             # At first this feature can look innocent, but it does a lot of
             # type inference in some cases, so we just ditch it.
-            for p in param_names:
-                yield p
+            yield from param_names
             return
 
     used_names = set()

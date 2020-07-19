@@ -59,8 +59,7 @@ class FunctionMixin(object):
     def get_filters(self, origin_scope=None):
         cls = self.py__class__()
         for instance in cls.execute_with_values():
-            for filter in instance.get_filters(origin_scope=origin_scope):
-                yield filter
+            yield from instance.get_filters(origin_scope=origin_scope)
 
     def py__get__(self, instance, class_value):
         from jedi.inference.value.instance import BoundMethod
@@ -256,8 +255,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
             cn = ContextualizedNode(self, node.children[1])
-            for lazy_value in cn.infer().iterate(cn):
-                yield lazy_value
+            yield from cn.infer().iterate(cn)
         else:
             yield LazyTreeValue(self, node)
 
@@ -296,8 +294,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             if for_stmt is None:
                 # No for_stmt, just normal yields.
                 for yield_ in yields:
-                    for result in self._get_yield_lazy_value(yield_):
-                        yield result
+                    yield from self._get_yield_lazy_value(yield_)
             else:
                 input_node = for_stmt.get_testlist()
                 cn = ContextualizedNode(self, input_node)
@@ -307,8 +304,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                     dct = {str(for_stmt.children[1].value): lazy_value.infer()}
                     with self.predefine_names(for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
-                            for result in self._get_yield_lazy_value(yield_in_same_for_stmt):
-                                yield result
+                            yield from self._get_yield_lazy_value(yield_in_same_for_stmt)
 
     def merge_yield_values(self, is_async=False):
         return ValueSet.from_sets(

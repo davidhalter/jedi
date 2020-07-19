@@ -71,5 +71,4 @@ class MixedModuleContext(ModuleContext):
         )
 
         for mixed_object in self.mixed_values:
-            for filter in mixed_object.get_filters(until_position, origin_scope):
-                yield filter
+            yield from mixed_object.get_filters(until_position, origin_scope)

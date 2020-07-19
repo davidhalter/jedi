@@ -323,9 +323,7 @@ class _OverwriteMeta(type):
 class _AttributeOverwriteMixin(object):
     def get_filters(self, *args, **kwargs):
         yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_value)
-
-        for filter in self._wrapped_value.get_filters(*args, **kwargs):
-            yield filter
+        yield from self._wrapped_value.get_filters(*args, **kwargs)
 
 
 class LazyAttributeOverwrite(_AttributeOverwriteMixin, LazyValueWrapper,

@@ -55,14 +55,12 @@ class HelperValueMixin(object):
 
     def _get_value_filters(self, name_or_str):
         origin_scope = name_or_str if isinstance(name_or_str, Name) else None
-        for f in self.get_filters(origin_scope=origin_scope):
-            yield f
+        yield from self.get_filters(origin_scope=origin_scope)
         # This covers the case where a stub files are incomplete.
         if self.is_stub():
             from jedi.inference.gradual.conversion import convert_values
             for c in convert_values(ValueSet({self})):
-                for f in c.get_filters():
-                    yield f
+                yield from c.get_filters()
 
     def goto(self, name_or_str, name_context=None, analysis_errors=True):
         from jedi.inference import finder
@@ -439,8 +437,7 @@ class ValueSet(object):
         return self._from_frozen_set(self._set & other._set)
 
     def __iter__(self):
-        for element in self._set:
-            yield element
+        return iter(self._set)
 
     def __bool__(self):
         return bool(self._set)

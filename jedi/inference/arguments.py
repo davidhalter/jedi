@@ -192,8 +192,7 @@ class TreeArguments(AbstractArguments):
             elif star_count == 2:
                 arrays = self.context.infer_node(el)
                 for dct in arrays:
-                    for key, values in _star_star_dict(self.context, dct, el, funcdef):
-                        yield key, values
+                    yield from _star_star_dict(self.context, dct, el, funcdef)
             else:
                 if el.type == 'argument':
                     c = el.children
@@ -216,8 +215,7 @@ class TreeArguments(AbstractArguments):
 
         # Reordering arguments is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
-        for named_arg in named_args:
-            yield named_arg
+        yield from named_args
 
     def _as_tree_tuple_objects(self):
         for star_count, argument in unpack_arglist(self.argument_node):
@@ -318,8 +316,7 @@ def _iterate_star_args(context, array, input_node, funcdef=None):
     except AttributeError:
         pass
     else:
-        for lazy_value in iter_():
-            yield lazy_value
+        yield from iter_()
 
 
 def _star_star_dict(context, array, input_node, funcdef):

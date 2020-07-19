@@ -43,11 +43,8 @@ class StubModuleValue(ModuleValue):
         filters = super().get_filters(origin_scope)
         next(filters, None)  # Ignore the first filter and replace it with our own
         stub_filters = self._get_stub_filters(origin_scope=origin_scope)
-        for f in stub_filters:
-            yield f
-
-        for f in filters:
-            yield f
+        yield from stub_filters
+        yield from filters
 
     def _as_context(self):
         return StubModuleContext(self)
@@ -66,8 +63,7 @@ class TypingModuleWrapper(StubModuleValue):
         f = next(filters, None)
         assert f is not None
         yield TypingModuleFilterWrapper(f)
-        for f in filters:
-            yield f
+        yield from filters
 
     def _as_context(self):
         return TypingModuleContext(self)
@@ -77,8 +73,7 @@ class TypingModuleContext(ModuleContext):
     def get_filters(self, *args, **kwargs):
         filters = super().get_filters(*args, **kwargs)
         yield TypingModuleFilterWrapper(next(filters, None))
-        for f in filters:
-            yield f
+        yield from filters
 
 
 class StubFilter(ParserTreeFilter):

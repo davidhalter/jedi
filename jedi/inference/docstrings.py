@@ -95,8 +95,7 @@ def _search_return_in_numpydocstr(docstr):
         # Return names are optional and if so the type is in the name
         if not r_type:
             r_type = r_name
-        for type_ in _expand_typestr(r_type):
-            yield type_
+        yield from _expand_typestr(r_type)
 
 
 def _expand_typestr(type_str):
@@ -295,9 +294,7 @@ def infer_return_types(function_value):
             if match:
                 yield _strip_rst_role(match.group(1))
         # Check for numpy style return hint
-        for type_ in _search_return_in_numpydocstr(code):
-            yield type_
+        yield from _search_return_in_numpydocstr(code)
 
     for type_str in search_return_in_docstr(function_value.py__doc__()):
-        for value in _infer_for_statement_string(function_value.get_root_context(), type_str):
-            yield value
+        yield from _infer_for_statement_string(function_value.get_root_context(), type_str)

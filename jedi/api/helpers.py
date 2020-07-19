@@ -198,8 +198,7 @@ def filter_follow_imports(names, follow_builtin_imports=False):
             if found_builtin:
                 yield name
             else:
-                for new_name in new_names:
-                    yield new_name
+                yield from new_names
         else:
             yield name
 

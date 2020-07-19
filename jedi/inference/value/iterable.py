@@ -153,8 +153,7 @@ class ComprehensionMixin(object):
             )
             with context.predefine_names(comp_for, dct):
                 try:
-                    for result in self._nested(comp_fors[1:], context):
-                        yield result
+                    yield from self._nested(comp_fors[1:], context)
                 except IndexError:
                     iterated = context.infer_node(self._entry_node)
                     if self.array_type == 'dict':
@@ -166,8 +165,7 @@ class ComprehensionMixin(object):
     @to_list
     def _iterate(self):
         comp_fors = tuple(get_sync_comp_fors(self._sync_comp_for_node))
-        for result in self._nested(comp_fors):
-            yield result
+        yield from self._nested(comp_fors)
 
     def py__iter__(self, contextualized_node=None):
         for set_ in self._iterate():
@@ -358,8 +356,7 @@ class SequenceLiteralValue(Sequence):
                 yield LazyKnownValue(Slice(self._defining_context, None, None, None))
             else:
                 yield LazyTreeValue(self._defining_context, node)
-        for addition in check_array_additions(self._defining_context, self):
-            yield addition
+        yield from check_array_additions(self._defining_context, self)
 
     def py__len__(self):
         # This function is not really used often. It's more of a try.
@@ -566,8 +563,7 @@ class MergedArray(Sequence):
 
     def py__iter__(self, contextualized_node=None):
         for array in self._arrays:
-            for lazy_value in array.py__iter__():
-                yield lazy_value
+            yield from array.py__iter__()
 
     def py__simple_getitem__(self, index):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())

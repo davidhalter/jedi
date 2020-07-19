@@ -166,8 +166,7 @@ def _get_paths_from_buildout_script(inference_state, buildout_script_path):
         string_names=None,
         code_lines=get_cached_code_lines(inference_state.grammar, str(buildout_script_path)),
     ).as_context()
-    for path in check_sys_path_modifications(module_context):
-        yield path
+    yield from check_sys_path_modifications(module_context)
 
 
 def _get_parent_dir_with_file(path: Path, filename):

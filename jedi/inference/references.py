@@ -38,8 +38,7 @@ def _resolve_names(definition_names, avoid_names=()):
             yield name
 
         if name.api_type == 'module':
-            for n in _resolve_names(name.goto(), definition_names):
-                yield n
+            yield from _resolve_names(name.goto(), definition_names)
 
 
 def _dictionarize(names):
@@ -90,8 +89,7 @@ def _add_names_in_same_context(context, string_name):
         names = set(filter_.get(string_name))
         if not names:
             break
-        for name in names:
-            yield name
+        yield from names
         ordered = sorted(names, key=lambda x: x.start_pos)
         until_position = ordered[0].start_pos
 
@@ -109,8 +107,7 @@ def _find_global_variables(names, search_name):
             for global_name in method().get(search_name):
                 yield global_name
                 c = module_context.create_context(global_name.tree_name)
-                for n in _add_names_in_same_context(c, global_name.string_name):
-                    yield n
+                yield from _add_names_in_same_context(c, global_name.string_name)
 
 
 def find_references(module_context, tree_name, only_in_module=False):

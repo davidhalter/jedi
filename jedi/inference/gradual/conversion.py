@@ -135,8 +135,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
                 if converted:
                     converted_names = converted.goto(name.get_public_name())
                     if converted_names:
-                        for n in converted_names:
-                            yield n
+                        yield from converted_names
                         continue
         if fallback_to_python:
             # This is the part where if we haven't found anything, just return

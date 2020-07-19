@@ -215,12 +215,10 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 for name, trailer in potential_nodes:
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
                         random_context = execution_context.create_context(name)
-                        iterator = _check_name_for_execution(
+                        yield from _check_name_for_execution(
                             inference_state,
                             random_context,
                             compare_node,
                             name,
                             trailer
                         )
-                        for arguments in iterator:
-                            yield arguments

@@ -255,8 +255,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):
-                for lazy_value in generator.py__next__(contextualized_node):
-                    yield lazy_value
+                yield from generator.py__next__(contextualized_node)
         return iterate()
 
     def py__next__(self, contextualized_node=None):
@@ -526,8 +525,7 @@ class LazyInstanceClassName(NameWrapper):
     @iterator_to_value_set
     def infer(self):
         for result_value in self._wrapped_name.infer():
-            for c in result_value.py__get__(self._instance, self._instance.py__class__()):
-                yield c
+            yield from result_value.py__get__(self._instance, self._instance.py__class__())
 
     def get_signatures(self):
         return self.infer().get_signatures()
@@ -616,5 +614,4 @@ class InstanceArguments(TreeArgumentsWrapper):
 
     def unpack(self, func=None):
         yield None, LazyKnownValue(self.instance)
-        for values in self._wrapped_arguments.unpack(func):
-            yield values
+        yield from self._wrapped_arguments.unpack(func)

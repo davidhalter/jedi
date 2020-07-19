@@ -25,8 +25,7 @@ class _BoundTypeVarName(AbstractNameDefinition):
                 # Replace any with the constraints if they are there.
                 from jedi.inference.gradual.typing import AnyClass
                 if isinstance(value, AnyClass):
-                    for constraint in self._type_var.constraints:
-                        yield constraint
+                    yield from self._type_var.constraints
                 else:
                     yield value
         return ValueSet(iter_())
@@ -73,8 +72,7 @@ class _AnnotatedClassContext(ClassContext):
         filters = super().get_filters(
             *args, **kwargs
         )
-        for f in filters:
-            yield f
+        yield from filters
 
         # The type vars can only be looked up if it's a global search and
         # not a direct lookup on the class.

@@ -68,8 +68,7 @@ class ClassName(TreeNameDefinition):
 
         for result_value in inferred:
             if self._apply_decorators:
-                for c in result_value.py__get__(instance=None, class_value=self._class_value):
-                    yield c
+                yield from result_value.py__get__(instance=None, class_value=self._class_value)
             else:
                 yield result_value
 
