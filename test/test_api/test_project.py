@@ -69,8 +69,9 @@ def test_load_save_project(tmpdir):
 
         ('class sample_int.real', [], {}),
         ('foo sample_int.real', [], {}),
-        ('def sample_int.real', ['stub:builtins.int.real'], {}),
-        ('function sample_int.real', ['stub:builtins.int.real'], {}),
+        ('def sample_int.to_bytes', ['stub:builtins.int.to_bytes'], {}),
+        ('function sample_int.to_bytes', ['stub:builtins.int.to_bytes'], {}),
+        ('property sample_int.real', ['stub:builtins.int.real'], {}),
 
         # With modules
         ('test_project.test_search', ['test_api.test_project.test_search'], {}),
