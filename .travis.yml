@@ -14,20 +14,27 @@ env:
 
 matrix:
   include:
-    - python: 3.7
-      env:
-        - TOXENV=cov-py37
-        - JEDI_TEST_ENVIRONMENT=37
-    # For now ignore pypy, there are so many issues that we don't really need
-    # to run it.
-    #- python: pypy
-    # The 3.9 dev build does not seem to be available end 2019.
-    #- python: 3.9-dev
-    #  env:
-    #    - JEDI_TEST_ENVIRONMENT=39
+    - python: 3.8
+      script: 
+        - 'pip install coverage'
+        - 'coverage run --source jedi -m pytest'
+        - 'coverage report'
+      after_script:
+          - |
+            pip install --quiet codecov coveralls
+            coverage xml
+            coverage report -m
+            coveralls
+            bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
+    - python: 3.8
+      install:
+        - 'pip install .[qa]'
+      script:
+        # Ignore F401, which are unused imports. flake8 is a primitive tool and is sometimes wrong.
+        - 'flake8 --extend-ignore F401 {posargs:jedi}'
 install:
-    - pip install --quiet tox-travis
     - sudo apt-get -y install python3-venv
+    - pip install .[testing]
 script:
     - |
       # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
@@ -57,13 +64,4 @@ script:
         fi
       fi
       set +ex
-    - tox
-after_script:
-    - |
-      if [ $TOXENV == "cov-py37" ]; then
-        pip install --quiet codecov coveralls
-        coverage xml
-        coverage report -m
-        coveralls
-        bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
-      fi
+    - pytest
