@@ -16,9 +16,9 @@ matrix:
   include:
     - python: 3.8
       script: 
-        pip install coverage
-        coverage run --source jedi -m pytest
-        coverage report
+        - 'pip install coverage'
+        - 'coverage run --source jedi -m pytest'
+        - 'coverage report'
       after_script:
           - |
             pip install --quiet codecov coveralls
@@ -28,10 +28,10 @@ matrix:
             bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
     - python: 3.8
       install:
-        - pip install .[qa]
+        - 'pip install .[qa]'
       script:
         # Ignore F401, which are unused imports. flake8 is a primitive tool and is sometimes wrong.
-        - run: 'flake8 --extend-ignore F401 {posargs:jedi}'
+        - 'flake8 --extend-ignore F401 {posargs:jedi}'
 install:
     - sudo apt-get -y install python3-venv
     - pip install .[testing]
