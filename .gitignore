@@ -2,7 +2,6 @@
 *.sw?
 *.pyc
 .ropeproject
-.tox
 .coveralls.yml
 .coverage
 .idea

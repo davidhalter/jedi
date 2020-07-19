@@ -24,7 +24,7 @@ git checkout $BRANCH
 git submodule update --init
 
 # Test first.
-tox
+pytest
 
 # Create tag
 tag=v$(python3 -c "import $PROJECT_NAME; print($PROJECT_NAME.__version__)")
