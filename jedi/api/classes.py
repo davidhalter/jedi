@@ -174,7 +174,7 @@ class BaseName(object):
         'function'
 
         Valid values for type are ``module``, ``class``, ``instance``, ``function``,
-        ``param``, ``path``, ``keyword`` and ``statement``.
+        ``param``, ``path``, ``keyword``, ``property`` and ``statement``.
 
         """
         tree_name = self._name.tree_name

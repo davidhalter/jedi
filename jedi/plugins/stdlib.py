@@ -384,6 +384,8 @@ def builtins_classmethod(functions, value, arguments):
 
 
 class PropertyObject(AttributeOverwrite, ValueWrapper):
+    api_type = 'property'
+
     def __init__(self, property_obj, function):
         super().__init__(property_obj)
         self._function = function

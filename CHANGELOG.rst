@@ -13,7 +13,11 @@ Unreleased
   - ``Definition.module_path``
   - ``Refactoring.get_renames``
   - ``Refactoring.get_changed_files``
+- Functions with ``@property`` now return ``property`` instead of ``function``
+  in ``Name().type``
 - Started using annotations
+
+This is likely going to be the last minor release before 1.0.
 
 0.17.2 (2020-07-17)
 +++++++++++++++++++

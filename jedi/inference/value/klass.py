@@ -37,7 +37,8 @@ py__doc__()                            Returns the docstring for a value.
 
 """
 from jedi import debug
-from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted
+from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted, \
+    function_is_property
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
     inference_state_method_generator_cache
 from jedi.inference import compiled
@@ -71,6 +72,20 @@ class ClassName(TreeNameDefinition):
                 yield from result_value.py__get__(instance=None, class_value=self._class_value)
             else:
                 yield result_value
+
+    @property
+    def api_type(self):
+        if self.tree_name is not None:
+            definition = self.tree_name.get_definition()
+            if definition.type == 'funcdef':
+                if function_is_property(definition):
+                    # This essentially checks if there is an @property before
+                    # the function. @property could be something different, but
+                    # any programmer that redefines property as something that
+                    # is not really a property anymore, should be shot. (i.e.
+                    # this is a heuristic).
+                    return 'property'
+        return super().api_type
 
 
 class ClassFilter(ParserTreeFilter):

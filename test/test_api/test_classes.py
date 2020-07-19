@@ -373,6 +373,34 @@ def test_type_II(Script):
             assert c.type == 'keyword'
 
 
+@pytest.mark.parametrize(
+    'added_code, expected_type, expected_infer_type', [
+        ('Foo().x', 'property', 'instance'),
+        ('Foo.x', 'property', 'property'),
+        ('Foo().y', 'function', 'function'),
+        ('Foo.y', 'function', 'function'),
+        ('Foo().z', 'function', 'function'),
+        ('Foo.z', 'function', 'function'),
+    ]
+)
+def test_class_types(goto_or_help_or_infer, added_code, expected_type,
+                     expected_infer_type):
+    code = dedent('''\
+        class Foo:
+            @property
+            def x(self): return 1
+            @staticmethod
+            def y(self): ...
+            @classmethod
+            def z(self): ...
+        ''')
+    d, = goto_or_help_or_infer(code + added_code)
+    if goto_or_help_or_infer.type == 'infer':
+        assert d.type == expected_infer_type
+    else:
+        assert d.type == expected_type
+
+
 """
 This tests the BaseName.goto function, not the jedi
 function. They are not really different in functionality, but really

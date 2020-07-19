@@ -316,3 +316,4 @@ def _function_is_x_method(method_name):
 
 function_is_staticmethod = _function_is_x_method('staticmethod')
 function_is_classmethod = _function_is_x_method('classmethod')
+function_is_property = _function_is_x_method('property')
