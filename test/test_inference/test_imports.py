@@ -250,8 +250,7 @@ def test_named_import(Script):
     assert len(Script(s, path='/').infer(1, 10)) == 1
 
 
-@pytest.mark.skipif('True', reason='The nested import stuff is still very messy.')
-def test_goto_following_on_imports(Script):
+def test_nested_import(Script):
     s = "import multiprocessing.dummy; multiprocessing.dummy"
     g = Script(s).goto()
     assert len(g) == 1
