@@ -14,7 +14,6 @@ These classes are the much biggest part of the API, because they contain
 the interesting information about all operations.
 """
 import re
-import warnings
 from typing import Optional
 
 from parso.python.tree import search_ancestor
@@ -453,14 +452,6 @@ class BaseName(object):
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in names]
 
-    def goto_assignments(self, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use .goto.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.goto(**kwargs)
-
     @debug.increase_indent_cm('infer on name')
     def infer(self, *, only_stubs=False, prefer_stubs=False):
         """
@@ -496,28 +487,6 @@ class BaseName(object):
         resulting_names = [c.name for c in values]
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in resulting_names]
-
-    @property
-    @memoize_method
-    def params(self):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use get_signatures()[...].params",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        # Only return the first one. There might be multiple one, especially
-        # with overloading.
-        for signature in self._get_signatures():
-            return [
-                Name(self._inference_state, n)
-                for n in signature.get_param_names(resolve_stars=True)
-            ]
-
-        if self.type == 'function' or self.type == 'class':
-            # Fallback, if no signatures were defined (which is probably by
-            # itself a bug).
-            return []
-        raise AttributeError('There are no params defined on this.')
 
     def parent(self):
         """
@@ -762,15 +731,6 @@ class Name(BaseName):
     """
     def __init__(self, inference_state, definition):
         super().__init__(inference_state, definition)
-
-    @property
-    def desc_with_module(self):
-        warnings.warn(
-            "Deprecated since version 0.17.0. No replacement for now, maybe .full_name helps",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return "%s:%s" % (self.module_name, self.description)
 
     @memoize_method
     def defined_names(self):
