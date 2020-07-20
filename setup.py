@@ -12,8 +12,6 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 version = get_module_constant("jedi", "__version__")
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
-with open('requirements.txt') as f:
-    install_requires = f.read().splitlines()
 
 assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
     "Please download the typeshed submodule first (Hint: git submodule update --init)"
@@ -34,7 +32,7 @@ setup(name='jedi',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
       python_requires='>=3.6',
-      install_requires=install_requires,
+      install_requires=['parso>=0.7.0,<0.8.0'],
       extras_require={
           'testing': [
               'pytest<6.0.0',
