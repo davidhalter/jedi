@@ -45,7 +45,7 @@ setup(name='jedi',
               'Django<3.1',  # For now pin this.
           ],
           'qa': [
-              'flake8==3.7.9',
+              'flake8==3.8.3',
           ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',
