@@ -17,16 +17,15 @@ import re
 import warnings
 from typing import Optional
 
-from parso.python.tree import search_ancestor
+from parso.tree import search_ancestor
 
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
 from jedi.cache import memoize_method
-from jedi.inference import imports
-from jedi.inference.imports import ImportName
 from jedi.inference.compiled.mixed import MixedName
-from jedi.inference.gradual.typeshed import StubModuleValue
+from jedi.inference.names import ImportName, SubModuleName
+from jedi.inference.gradual.stub_value import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
@@ -186,7 +185,7 @@ class BaseName(object):
                     tree_name.is_definition():
                 resolve = True
 
-        if isinstance(self._name, imports.SubModuleName) or resolve:
+        if isinstance(self._name, SubModuleName) or resolve:
             for value in self._name.infer():
                 return value.api_type
         return self._name.api_type
