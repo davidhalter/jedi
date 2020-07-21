@@ -53,8 +53,10 @@ def _infer_annotation_string(context, string, index=None):
     value_set = context.infer_node(node)
     if index is not None:
         value_set = value_set.filter(
-            lambda value: value.array_type == 'tuple'  # noqa
-                            and len(list(value.py__iter__())) >= index
+            lambda value: (
+                value.array_type == 'tuple'
+                and len(list(value.py__iter__())) >= index
+            )
         ).py__simple_getitem__(index)
     return value_set
 
