@@ -3,9 +3,11 @@ Filters are objects that you can use to filter names in different scopes. They
 are needed for name resolution.
 """
 from abc import abstractmethod
+from typing import List, MutableMapping
 import weakref
 
 from parso.tree import search_ancestor
+from parso.python.tree import Name, UsedNamesMapping
 
 from jedi.inference import flow_analysis
 from jedi.inference.base_value import ValueSet, ValueWrapper, \
@@ -15,6 +17,7 @@ from jedi.inference.utils import to_list
 from jedi.inference.names import TreeNameDefinition, ParamName, \
     AnonymousParamName, AbstractNameDefinition
 
+_definition_name_cache: MutableMapping[UsedNamesMapping, List[Name]]
 _definition_name_cache = weakref.WeakKeyDictionary()
 
 
