@@ -1,7 +1,13 @@
-_cache = {}
+from typing import Dict, Tuple, Callable
+
+CacheValues = Tuple[str, str, str]
+CacheValuesCallback = Callable[[], CacheValues]
 
 
-def save_entry(module_name, name, cache):
+_cache: Dict[str, Dict[str, CacheValues]] = {}
+
+
+def save_entry(module_name: str, name: str, cache: CacheValues) -> None:
     try:
         module_cache = _cache[module_name]
     except KeyError:
@@ -9,8 +15,8 @@ def save_entry(module_name, name, cache):
     module_cache[name] = cache
 
 
-def _create_get_from_cache(number):
-    def _get_from_cache(module_name, name, get_cache_values):
+def _create_get_from_cache(number: int) -> Callable[[str, str, CacheValuesCallback], str]:
+    def _get_from_cache(module_name: str, name: str, get_cache_values: CacheValuesCallback) -> str:
         try:
             return _cache[module_name][name][number]
         except KeyError:
