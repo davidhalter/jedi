@@ -121,11 +121,8 @@ def test_multiple_signatures(Script):
 
 
 def test_get_signatures_whitespace(Script):
-    s = dedent("""\
-    abs( 
-    def x():
-        pass
-    """)  # noqa
+    # note: trailing space after 'abs'
+    s = 'abs( \ndef x():\n    pass\n'
     assert_signature(Script, s, 'abs', 0, line=1, column=5)
 
 
