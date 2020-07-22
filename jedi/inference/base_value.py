@@ -111,7 +111,7 @@ class HelperValueMixin(object):
                         .py__getattribute__('__anext__').execute_with_values()
                         .py__getattribute__('__await__').execute_with_values()
                         .py__stop_iteration_returns()
-                )  # noqa
+                )  # noqa: E124
             ])
         return self.py__iter__(contextualized_node)
 

@@ -69,8 +69,11 @@ Adds an opening bracket after a function for completions.
 # ----------------
 
 if platform.system().lower() == 'windows':
-    _cache_directory = os.path.join(os.getenv('LOCALAPPDATA') or 
-                                    os.path.expanduser('~'), 'Jedi', 'Jedi')
+    _cache_directory = os.path.join(
+        os.getenv('LOCALAPPDATA') or os.path.expanduser('~'),
+        'Jedi',
+        'Jedi',
+    )
 elif platform.system().lower() == 'darwin':
     _cache_directory = os.path.join('~', 'Library', 'Caches', 'Jedi')
 else:

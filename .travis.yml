@@ -15,7 +15,7 @@ env:
 matrix:
   include:
     - python: 3.8
-      script: 
+      script:
         - 'pip install coverage'
         - 'coverage run --source jedi -m pytest'
         - 'coverage report'
@@ -31,7 +31,7 @@ matrix:
         - 'pip install .[qa]'
       script:
         # Ignore F401, which are unused imports. flake8 is a primitive tool and is sometimes wrong.
-        - 'flake8 --extend-ignore F401 {posargs:jedi}'
+        - 'flake8 --extend-ignore F401 jedi setup.py'
 install:
     - sudo apt-get -y install python3-venv
     - pip install .[testing]
