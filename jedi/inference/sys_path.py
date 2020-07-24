@@ -14,8 +14,8 @@ from jedi import debug
 _BUILDOUT_PATH_INSERTION_LIMIT = 10
 
 
-def _abs_path(module_context, path: str):
-    path = Path(path)
+def _abs_path(module_context, str_path: str):
+    path = Path(str_path)
     if path.is_absolute():
         return path
 
