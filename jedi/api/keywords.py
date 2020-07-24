@@ -3,7 +3,11 @@ from contextlib import suppress
 
 from jedi.inference.names import AbstractArbitraryName
 
-from pydoc_data import topics as pydoc_topics
+try:
+    from pydoc_data import topics as pydoc_topics
+except ImportError:
+    # Python 3.6.8 embeddable does not have pydoc_data.
+    pydoc_topics = None
 
 
 class KeywordName(AbstractArbitraryName):
