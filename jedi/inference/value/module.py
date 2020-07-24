@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
@@ -145,7 +146,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         )
         self.file_io = file_io
         if file_io is None:
-            self._path = None
+            self._path: Optional[Path] = None
         else:
             self._path = Path(file_io.path)
         self.string_names = string_names  # Optional[Tuple[str, ...]]
