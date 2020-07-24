@@ -103,7 +103,7 @@ class BaseName(object):
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            path = self._get_module_context().py__file__()
+            path: Optional[Path] = self._get_module_context().py__file__()
             if path is not None:
                 return path
 
