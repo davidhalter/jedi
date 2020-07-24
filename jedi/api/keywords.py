@@ -1,10 +1,12 @@
 import pydoc
 from contextlib import suppress
+from typing import Dict, Optional
 
 from jedi.inference.names import AbstractArbitraryName
 
 try:
-    from pydoc_data import topics as pydoc_topics
+    from pydoc_data import topics
+    pydoc_topics: Optional[Dict[str, str]] = topics.topics
 except ImportError:
     # Python 3.6.8 embeddable does not have pydoc_data.
     pydoc_topics = None
@@ -44,6 +46,6 @@ def imitate_pydoc(string):
         return ''
 
     try:
-        return pydoc_topics.topics[label].strip() if pydoc_topics else ''
+        return pydoc_topics[label].strip() if pydoc_topics else ''
     except KeyError:
         return ''
