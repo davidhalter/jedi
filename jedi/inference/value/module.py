@@ -165,7 +165,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             return None
         return '.'.join(self.string_names)
 
-    def py__file__(self) -> Path:
+    def py__file__(self) -> Optional[Path]:
         """
         In contrast to Python's __file__ can be None.
         """
