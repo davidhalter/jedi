@@ -2,7 +2,7 @@
 Utilities for end-users.
 """
 
-import __main__
+import __main__  # type: ignore[import]
 from collections import namedtuple
 import logging
 import traceback
