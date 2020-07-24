@@ -5,7 +5,8 @@ from typing import Dict, Optional
 from jedi.inference.names import AbstractArbitraryName
 
 try:
-    from pydoc_data import topics
+    # https://github.com/python/typeshed/pull/4351 adds pydoc_data
+    from pydoc_data import topics  # type: ignore[import]
     pydoc_topics: Optional[Dict[str, str]] = topics.topics
 except ImportError:
     # Python 3.6.8 embeddable does not have pydoc_data.
