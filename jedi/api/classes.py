@@ -497,7 +497,7 @@ class BaseName(object):
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in resulting_names]
 
-    @property
+    @property  # type: ignore[misc]
     @memoize_method
     def params(self):
         warnings.warn(

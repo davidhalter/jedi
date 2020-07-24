@@ -80,7 +80,7 @@ class ModuleMixin(SubModuleDictMixin):
     def is_stub(self):
         return False
 
-    @property
+    @property  # type: ignore[misc]
     @inference_state_method_cache()
     def name(self):
         return self._module_name_class(self, self.string_names[-1])
