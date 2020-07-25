@@ -33,7 +33,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
         return compiled.get_string_value_set(self.parent_context.inference_state)
 
 
-class SubModuleDictMixin(object):
+class SubModuleDictMixin:
     @inference_state_method_cache()
     def sub_modules_dict(self):
         """

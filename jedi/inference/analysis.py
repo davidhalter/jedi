@@ -26,7 +26,7 @@ CODES = {
 }
 
 
-class Error(object):
+class Error:
     def __init__(self, name, module_path, start_pos, message=None):
         self.path = module_path
         self._start_pos = start_pos

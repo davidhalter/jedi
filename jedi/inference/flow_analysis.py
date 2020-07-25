@@ -3,7 +3,7 @@ from jedi.inference.recursion import execution_allowed
 from jedi.inference.helpers import is_big_annoying_library
 
 
-class Status(object):
+class Status:
     lookup_table = {}
 
     def __init__(self, value, name):

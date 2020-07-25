@@ -134,7 +134,7 @@ def load_module(inference_state, dotted_name, sys_path):
     return create_access_path(inference_state, module)
 
 
-class AccessPath(object):
+class AccessPath:
     def __init__(self, accesses):
         self.accesses = accesses
 
@@ -156,7 +156,7 @@ def get_api_type(obj):
     return 'instance'
 
 
-class DirectObjectAccess(object):
+class DirectObjectAccess:
     def __init__(self, inference_state, obj):
         self._inference_state = inference_state
         self._obj = obj

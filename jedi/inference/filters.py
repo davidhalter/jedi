@@ -18,7 +18,7 @@ from jedi.inference.names import TreeNameDefinition, ParamName, \
 _definition_name_cache = weakref.WeakKeyDictionary()
 
 
-class AbstractFilter(object):
+class AbstractFilter:
     _until_position = None
 
     def _filter(self, names):
@@ -35,7 +35,7 @@ class AbstractFilter(object):
         raise NotImplementedError
 
 
-class FilterWrapper(object):
+class FilterWrapper:
     name_wrapper_class = None
 
     def __init__(self, wrapped_filter):
@@ -229,7 +229,7 @@ class DictFilter(AbstractFilter):
         return '<%s: for {%s}>' % (self.__class__.__name__, keys)
 
 
-class MergedFilter(object):
+class MergedFilter:
     def __init__(self, *filters):
         self._filters = filters
 
@@ -320,7 +320,7 @@ class _OverwriteMeta(type):
         cls.overwritten_methods = base_dct
 
 
-class _AttributeOverwriteMixin(object):
+class _AttributeOverwriteMixin:
     def get_filters(self, *args, **kwargs):
         yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_value)
         yield from self._wrapped_value.get_filters(*args, **kwargs)

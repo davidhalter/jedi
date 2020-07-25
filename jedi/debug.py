@@ -45,7 +45,7 @@ try:
             _inited = True
 
 except ImportError:
-    class Fore(object):
+    class Fore:
         RED = ''
         GREEN = ''
         YELLOW = ''

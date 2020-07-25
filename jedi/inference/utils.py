@@ -70,7 +70,7 @@ def reraise_uncaught(func):
     return wrapper
 
 
-class PushBackIterator(object):
+class PushBackIterator:
     def __init__(self, iterator):
         self.pushes = []
         self.iterator = iterator

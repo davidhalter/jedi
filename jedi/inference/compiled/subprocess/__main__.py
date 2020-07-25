@@ -16,7 +16,7 @@ def _get_paths():
     return {'jedi': _jedi_path, 'parso': _parso_path}
 
 
-class _ExactImporter(object):
+class _ExactImporter:
     def __init__(self, path_dct):
         self._path_dct = path_dct
 

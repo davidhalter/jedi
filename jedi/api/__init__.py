@@ -50,7 +50,7 @@ from jedi.inference.utils import to_list
 sys.setrecursionlimit(3000)
 
 
-class Script(object):
+class Script:
     """
     A Script is the base for completions, goto or whatever you want to do with
     Jedi. The counter part of this class is :class:`Interpreter`, which works

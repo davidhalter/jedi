@@ -65,7 +65,7 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
             level=logging.DEBUG
         )
 
-    class JediRL(object):
+    class JediRL:
         def complete(self, text, state):
             """
             This complete stuff is pretty weird, a generator would make

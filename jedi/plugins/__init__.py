@@ -1,7 +1,7 @@
 from functools import wraps
 
 
-class _PluginManager(object):
+class _PluginManager:
     def __init__(self):
         self._registered_plugins = []
         self._cached_base_callbacks = {}

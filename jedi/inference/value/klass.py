@@ -142,7 +142,7 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(object):
+class ClassMixin:
     def is_class(self):
         return True
 

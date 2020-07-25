@@ -37,7 +37,7 @@ class _BoundTypeVarName(AbstractNameDefinition):
         return '<%s %s -> %s>' % (self.__class__.__name__, self.py__name__(), self._value_set)
 
 
-class _TypeVarFilter(object):
+class _TypeVarFilter:
     """
     A filter for all given variables in a class.
 
@@ -246,7 +246,7 @@ class GenericClass(DefineGenericBaseClass, ClassMixin):
         return type_var_dict
 
 
-class _LazyGenericBaseClass(object):
+class _LazyGenericBaseClass:
     def __init__(self, class_value, lazy_base_class, generics_manager):
         self._class_value = class_value
         self._lazy_base_class = lazy_base_class

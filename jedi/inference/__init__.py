@@ -81,7 +81,7 @@ from jedi.inference.imports import follow_error_node_imports_if_possible
 from jedi.plugins import plugin_manager
 
 
-class InferenceState(object):
+class InferenceState:
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
             environment = project.get_environment()

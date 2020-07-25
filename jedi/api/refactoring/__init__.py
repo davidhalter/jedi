@@ -12,7 +12,7 @@ EXPRESSION_PARTS = (
 ).split()
 
 
-class ChangedFile(object):
+class ChangedFile:
     def __init__(self, inference_state, from_path, to_path,
                  module_node, node_to_str_map):
         self._inference_state = inference_state
@@ -72,7 +72,7 @@ class ChangedFile(object):
         return '<%s: %s>' % (self.__class__.__name__, self._from_path)
 
 
-class Refactoring(object):
+class Refactoring:
     def __init__(self, inference_state, file_to_node_changes, renames=()):
         self._inference_state = inference_state
         self._renames = renames
