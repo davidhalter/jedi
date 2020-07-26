@@ -22,7 +22,7 @@ from jedi.inference.signature import BuiltinSignature
 from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
-class CheckAttribute(object):
+class CheckAttribute:
     """Raises :exc:`AttributeError` if the attribute X is not available."""
     def __init__(self, check_name=None):
         # Remove the py in front of e.g. py__call__.

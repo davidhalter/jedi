@@ -81,7 +81,7 @@ def _cleanup_process(process, thread):
             pass
 
 
-class _InferenceStateProcess(object):
+class _InferenceStateProcess:
     def __init__(self, inference_state):
         self._inference_state_weakref = weakref.ref(inference_state)
         self._inference_state_id = id(inference_state)
@@ -162,7 +162,7 @@ class InferenceStateSubprocess(_InferenceStateProcess):
             self._compiled_subprocess.delete_inference_state(self._inference_state_id)
 
 
-class CompiledSubprocess(object):
+class CompiledSubprocess:
     is_crashed = False
 
     def __init__(self, executable, env_vars=None):
@@ -280,7 +280,7 @@ class CompiledSubprocess(object):
         self._inference_state_deletion_queue.append(inference_state_id)
 
 
-class Listener(object):
+class Listener:
     def __init__(self):
         self._inference_states = {}
         # TODO refactor so we don't need to process anymore just handle
@@ -346,7 +346,7 @@ class Listener(object):
             pickle_dump(result, stdout, PICKLE_PROTOCOL)
 
 
-class AccessHandle(object):
+class AccessHandle:
     def __init__(self, subprocess, access, id_):
         self.access = access
         self._subprocess = subprocess

@@ -203,7 +203,7 @@ def filter_follow_imports(names, follow_builtin_imports=False):
             yield name
 
 
-class CallDetails(object):
+class CallDetails:
     def __init__(self, bracket_leaf, children, position):
         ['bracket_leaf', 'call_index', 'keyword_name_str']
         self.bracket_leaf = bracket_leaf

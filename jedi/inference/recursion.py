@@ -50,7 +50,7 @@ A function may not be executed more than this number of times recursively.
 """
 
 
-class RecursionDetector(object):
+class RecursionDetector:
     def __init__(self):
         self.pushed_nodes = []
 
@@ -92,7 +92,7 @@ def execution_recursion_decorator(default=NO_VALUES):
     return decorator
 
 
-class ExecutionRecursionDetector(object):
+class ExecutionRecursionDetector:
     """
     Catches recursions of executions.
     """

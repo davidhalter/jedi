@@ -229,7 +229,7 @@ def _get_source(loader, fullname):
                           name=fullname)
 
 
-class ImplicitNSInfo(object):
+class ImplicitNSInfo:
     """Stores information returned from an implicit namespace spec"""
     def __init__(self, name, paths):
         self.name = name

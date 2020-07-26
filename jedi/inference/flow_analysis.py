@@ -5,7 +5,7 @@ from jedi.inference.recursion import execution_allowed
 from jedi.inference.helpers import is_big_annoying_library
 
 
-class Status(object):
+class Status:
     lookup_table: Dict[Optional[bool], 'Status'] = {}
 
     def __init__(self, value: Optional[bool], name: str) -> None:

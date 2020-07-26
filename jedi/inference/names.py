@@ -24,7 +24,7 @@ def _merge_name_docs(names):
     return doc
 
 
-class AbstractNameDefinition(object):
+class AbstractNameDefinition:
     start_pos: Optional[Tuple[int, int]] = None
     string_name: str
     parent_context = None
@@ -224,7 +224,7 @@ class AbstractTreeName(AbstractNameDefinition):
         return self.tree_name.start_pos
 
 
-class ValueNameMixin(object):
+class ValueNameMixin:
     def infer(self):
         return ValueSet([self._value])
 
@@ -347,7 +347,7 @@ class TreeNameDefinition(AbstractTreeName):
         return ''
 
 
-class _ParamMixin(object):
+class _ParamMixin:
     def maybe_positional_argument(self, include_star=True):
         options = [Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD]
         if include_star:
@@ -605,7 +605,7 @@ class SubModuleName(ImportName):
     _level = 1
 
 
-class NameWrapper(object):
+class NameWrapper:
     def __init__(self, wrapped_name):
         self._wrapped_name = wrapped_name
 
@@ -616,7 +616,7 @@ class NameWrapper(object):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
 
 
-class StubNameMixin(object):
+class StubNameMixin:
     def py__doc__(self):
         from jedi.inference.gradual.conversion import convert_names
         # Stubs are not complicated and we can just follow simple statements

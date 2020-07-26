@@ -54,7 +54,7 @@ def _values_to_definitions(values):
     return [Name(c.inference_state, c.name) for c in values]
 
 
-class BaseName(object):
+class BaseName:
     """
     The base class for all definitions, completions and signatures.
     """

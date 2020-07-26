@@ -22,7 +22,7 @@ from jedi.cache import memoize_method
 sentinel = object()
 
 
-class HelperValueMixin(object):
+class HelperValueMixin:
     def get_root_context(self):
         value = self
         if value.parent_context is None:
@@ -363,7 +363,7 @@ class TreeValue(Value):
         return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
 
 
-class ContextualizedNode(object):
+class ContextualizedNode:
     def __init__(self, context, node):
         self.context = context
         self.node = node
@@ -405,7 +405,7 @@ def _getitem(value, index_values, contextualized_node):
     return result
 
 
-class ValueSet(object):
+class ValueSet:
     def __init__(self, iterable):
         self._set = frozenset(iterable)
         for value in iterable:

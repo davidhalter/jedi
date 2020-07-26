@@ -56,7 +56,7 @@ def _remove_duplicates_from_path(path):
         yield p
 
 
-class Project(object):
+class Project:
     """
     Projects are a simple way to manage Python folders and define how Jedi does
     import resolution. It is mostly used as a parameter to :class:`.Script`.

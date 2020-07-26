@@ -124,7 +124,7 @@ def _parse_argument_clinic(string):
             allow_kwargs = True
 
 
-class _AbstractArgumentsMixin(object):
+class _AbstractArgumentsMixin:
     def unpack(self, funcdef=None):
         raise NotImplementedError
 

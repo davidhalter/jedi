@@ -45,7 +45,7 @@ try:
             _inited = True
 
 except ImportError:
-    class Fore(object):  # type: ignore[no-redef]
+    class Fore:  # type: ignore[no-redef]
         RED = ''
         GREEN = ''
         YELLOW = ''

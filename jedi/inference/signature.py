@@ -5,7 +5,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-class _SignatureMixin(object):
+class _SignatureMixin:
     def to_string(self):
         def param_strings():
             is_positional = False

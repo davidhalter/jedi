@@ -17,7 +17,7 @@ def _create(inference_state, obj):
     )
 
 
-class NamespaceObject(object):
+class NamespaceObject:
     def __init__(self, dct):
         self.__dict__ = dct
 
