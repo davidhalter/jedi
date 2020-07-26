@@ -3,7 +3,7 @@ Filters are objects that you can use to filter names in different scopes. They
 are needed for name resolution.
 """
 from abc import abstractmethod
-from typing import List, Optional, MutableMapping, Type
+from typing import List, MutableMapping, Type
 import weakref
 
 from parso.tree import search_ancestor
