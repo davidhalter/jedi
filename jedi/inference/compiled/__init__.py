@@ -1,22 +1,9 @@
+# This file also re-exports symbols for wider use. We configure mypy and flake8
+# to be aware that this file does this.
+
 from jedi.inference.compiled.value import CompiledValue, CompiledName, \
     CompiledValueFilter, CompiledValueName, create_from_access_path
 from jedi.inference.base_value import LazyValueWrapper
-
-__all__ = (
-    'CompiledValue',
-    'CompiledName',
-    'CompiledValueFilter',
-    'CompiledValueName',
-    'create_from_access_path',
-
-    'LazyValueWrapper',
-
-    'builtin_from_name',
-    'ExactValue',
-    'create_simple_object',
-    'get_string_value_set',
-    'load_module',
-)
 
 
 def builtin_from_name(inference_state, string):
