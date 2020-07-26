@@ -39,7 +39,7 @@ class AbstractFilter(object):
 
 
 class FilterWrapper(object):
-    name_wrapper_class: Optional[Type[NameWrapper]] = None
+    name_wrapper_class: Type[NameWrapper]
 
     def __init__(self, wrapped_filter):
         self._wrapped_filter = wrapped_filter

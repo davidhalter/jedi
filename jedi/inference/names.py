@@ -26,7 +26,7 @@ def _merge_name_docs(names):
 
 class AbstractNameDefinition(object):
     start_pos: Optional[Tuple[int, int]] = None
-    string_name: Optional[str] = None
+    string_name: str
     parent_context = None
     tree_name = None
     is_value_name = True
