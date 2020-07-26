@@ -1,6 +1,7 @@
 import os
 import time
 from contextlib import contextmanager
+from typing import Callable, Optional
 
 _inited = False
 
@@ -62,7 +63,7 @@ enable_warning = False
 enable_notice = False
 
 # callback, interface: level, str
-debug_function = None
+debug_function: Optional[Callable[[str, str], None]] = None
 _debug_indent = 0
 _start_time = time.time()
 
