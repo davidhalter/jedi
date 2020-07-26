@@ -120,6 +120,7 @@ class InferenceState(object):
         debug.dbg('execute result: %s in %s', value_set, value)
         return value_set
 
+    # mypy doesn't suppport decorated propeties (https://github.com/python/mypy/issues/1362)
     @property  # type: ignore[misc]
     @inference_state_function_cache()
     def builtins_module(self):
