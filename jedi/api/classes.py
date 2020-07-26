@@ -96,8 +96,6 @@ class BaseName(object):
     def module_path(self) -> Optional[Path]:
         """
         Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
-
-        :rtype: Path or None
         """
         module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
