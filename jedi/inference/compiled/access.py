@@ -117,13 +117,13 @@ def load_module(inference_state, dotted_name, sys_path):
         __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        print('Module %s not importable in path %s.' % (dotted_name, sys_path), file=sys.stderr)
+        warnings.warn('Module %s not importable in path %s.' % (dotted_name, sys_path), UserWarning)
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
         # catch any error here and print it.
         import traceback
-        print("Cannot import:\n%s" % traceback.format_exc(), file=sys.stderr)
+        warnings.warn("Cannot import:\n%s" % traceback.format_exc(), UserWarning)
         return None
     finally:
         sys.path = temp
