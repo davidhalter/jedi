@@ -17,7 +17,12 @@ def test_django_default_project(Script):
     )
     c, = script.complete()
     assert c.name == "SomeModel"
-    assert script._inference_state.project._django is True
+
+    project = script._inference_state.project
+    assert project._django is True
+    assert project.sys_path is None
+    assert project.smart_sys_path is True
+    assert project.load_unsafe_extensions is False
 
 
 def test_django_default_project_of_file(Script):

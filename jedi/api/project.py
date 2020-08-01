@@ -152,6 +152,29 @@ class Project:
         """
         return self._path
 
+    @property
+    def sys_path(self):
+        """
+        The sys path provided to this project. This can be None and in that
+        case will be auto generated.
+        """
+        return self._sys_path
+
+    @property
+    def smart_sys_path(self):
+        """
+        If the sys path is going to be calculated in a smart way, where
+        additional paths are added.
+        """
+        return self._smart_sys_path
+
+    @property
+    def load_unsafe_extensions(self):
+        """
+        Wheter the project loads unsafe extensions.
+        """
+        return self._load_unsafe_extensions
+
     @inference_state_as_method_param_cache()
     def _get_base_sys_path(self, inference_state):
         # The sys path has not been set explicitly.

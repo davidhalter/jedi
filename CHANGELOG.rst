@@ -16,6 +16,7 @@ Unreleased
 - Functions with ``@property`` now return ``property`` instead of ``function``
   in ``Name().type``
 - Started using annotations
+- Project attributes are now read accessible
 
 This is likely going to be the last minor release before 1.0.
 
