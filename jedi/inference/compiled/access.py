@@ -1,5 +1,6 @@
 import inspect
 import types
+import traceback
 import sys
 import operator as op
 from collections import namedtuple
@@ -117,13 +118,18 @@ def load_module(inference_state, dotted_name, sys_path):
         __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        warnings.warn('Module %s not importable in path %s.' % (dotted_name, sys_path), UserWarning)
+        warnings.warn(
+            "Module %s not importable in path %s." % (dotted_name, sys_path),
+            UserWarning,
+            stacklevel=2,
+        )
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
         # catch any error here and print it.
-        import traceback
-        warnings.warn("Cannot import:\n%s" % traceback.format_exc(), UserWarning)
+        warnings.warn(
+            "Cannot import:\n%s" % traceback.format_exc(), UserWarning, stacklevel=2
+        )
         return None
     finally:
         sys.path = temp
