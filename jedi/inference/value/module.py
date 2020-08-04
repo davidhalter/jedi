@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import AbstractNameDefinition, ModuleName
@@ -79,7 +80,7 @@ class ModuleMixin(SubModuleDictMixin):
     def is_stub(self):
         return False
 
-    @property
+    @property  # type: ignore[misc]
     @inference_state_method_cache()
     def name(self):
         return self._module_name_class(self, self.string_names[-1])
@@ -145,7 +146,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         )
         self.file_io = file_io
         if file_io is None:
-            self._path = None
+            self._path: Optional[Path] = None
         else:
             self._path = Path(file_io.path)
         self.string_names = string_names  # Optional[Tuple[str, ...]]
@@ -165,7 +166,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             return None
         return '.'.join(self.string_names)
 
-    def py__file__(self) -> Path:
+    def py__file__(self) -> Optional[Path]:
         """
         In contrast to Python's __file__ can be None.
         """

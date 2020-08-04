@@ -44,6 +44,7 @@ setup(name='jedi',
           ],
           'qa': [
               'flake8==3.8.3',
+              'mypy==0.782',
           ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',

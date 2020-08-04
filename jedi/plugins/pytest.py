@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from parso.python.tree import search_ancestor
+from parso.tree import search_ancestor
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter

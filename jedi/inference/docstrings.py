@@ -50,7 +50,7 @@ def _get_numpy_doc_string_cls():
     global _numpy_doc_string_cache
     if isinstance(_numpy_doc_string_cache, (ImportError, SyntaxError)):
         raise _numpy_doc_string_cache
-    from numpydoc.docscrape import NumpyDocString
+    from numpydoc.docscrape import NumpyDocString  # type: ignore[import]
     _numpy_doc_string_cache = NumpyDocString
     return _numpy_doc_string_cache
 

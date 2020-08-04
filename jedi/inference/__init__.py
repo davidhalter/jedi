@@ -120,14 +120,15 @@ class InferenceState:
         debug.dbg('execute result: %s in %s', value_set, value)
         return value_set
 
-    @property
+    # mypy doesn't suppport decorated propeties (https://github.com/python/mypy/issues/1362)
+    @property  # type: ignore[misc]
     @inference_state_function_cache()
     def builtins_module(self):
         module_name = 'builtins'
         builtins_module, = self.import_module((module_name,), sys_path=())
         return builtins_module
 
-    @property
+    @property  # type: ignore[misc]
     @inference_state_function_cache()
     def typing_module(self):
         typing_module, = self.import_module(('typing',))

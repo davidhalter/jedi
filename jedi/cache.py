@@ -13,14 +13,15 @@ these variables are being cleaned after every API usage.
 """
 import time
 from functools import wraps
+from typing import Any, Dict, Tuple
 
 from jedi import settings
 from parso.cache import parser_cache
 
-_time_caches = {}
+_time_caches: Dict[str, Dict[Any, Tuple[float, Any]]] = {}
 
 
-def clear_time_caches(delete_all=False):
+def clear_time_caches(delete_all: bool = False) -> None:
     """ Jedi caches many things, that should be completed after each completion
     finishes.
 

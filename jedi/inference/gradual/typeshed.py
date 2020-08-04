@@ -2,6 +2,7 @@ import os
 import re
 from functools import wraps
 from collections import namedtuple
+from typing import Dict, Mapping, Tuple
 from pathlib import Path
 
 from jedi import settings
@@ -74,7 +75,7 @@ def _get_typeshed_directories(version_info):
             yield PathInfo(str(base_path.joinpath(check_version)), is_third_party)
 
 
-_version_cache = {}
+_version_cache: Dict[Tuple[int, int], Mapping[str, PathInfo]] = {}
 
 
 def _cache_stub_file_map(version_info):

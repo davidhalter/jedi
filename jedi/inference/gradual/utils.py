@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from jedi.inference.gradual.typeshed import TYPESHED_PATH, create_stub_module

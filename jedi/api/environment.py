@@ -384,7 +384,8 @@ def _get_executable_path(path, safe=True):
 
 
 def _get_executables_from_windows_registry(version):
-    import winreg
+    # https://github.com/python/typeshed/pull/3794 adds winreg
+    import winreg  # type: ignore[import]
 
     # TODO: support Python Anaconda.
     sub_keys = [

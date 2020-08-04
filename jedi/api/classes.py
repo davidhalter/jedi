@@ -15,18 +15,18 @@ the interesting information about all operations.
 """
 import re
 import warnings
+from pathlib import Path
 from typing import Optional
 
-from parso.python.tree import search_ancestor
+from parso.tree import search_ancestor
 
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
 from jedi.cache import memoize_method
-from jedi.inference import imports
-from jedi.inference.imports import ImportName
 from jedi.inference.compiled.mixed import MixedName
-from jedi.inference.gradual.typeshed import StubModuleValue
+from jedi.inference.names import ImportName, SubModuleName
+from jedi.inference.gradual.stub_value import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
@@ -93,17 +93,15 @@ class BaseName:
         return self._name.get_root_context()
 
     @property
-    def module_path(self) -> Optional[str]:
+    def module_path(self) -> Optional[Path]:
         """
         Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
-
-        :rtype: str or None
         """
         module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            path = self._get_module_context().py__file__()
+            path: Optional[Path] = self._get_module_context().py__file__()
             if path is not None:
                 return path
 
@@ -186,7 +184,7 @@ class BaseName:
                     tree_name.is_definition():
                 resolve = True
 
-        if isinstance(self._name, imports.SubModuleName) or resolve:
+        if isinstance(self._name, SubModuleName) or resolve:
             for value in self._name.infer():
                 return value.api_type
         return self._name.api_type
@@ -497,7 +495,7 @@ class BaseName:
         return [self if n == self._name else Name(self._inference_state, n)
                 for n in resulting_names]
 
-    @property
+    @property  # type: ignore[misc]
     @memoize_method
     def params(self):
         warnings.warn(

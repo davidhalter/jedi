@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from inspect import Parameter
+from typing import Optional, Tuple
 
 from parso.tree import search_ancestor
 
@@ -24,8 +25,8 @@ def _merge_name_docs(names):
 
 
 class AbstractNameDefinition:
-    start_pos = None
-    string_name = None
+    start_pos: Optional[Tuple[int, int]] = None
+    string_name: str
     parent_context = None
     tree_name = None
     is_value_name = True

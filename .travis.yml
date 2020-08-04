@@ -30,8 +30,8 @@ matrix:
       install:
         - 'pip install .[qa]'
       script:
-        # Ignore F401, which are unused imports. flake8 is a primitive tool and is sometimes wrong.
-        - 'flake8 --extend-ignore F401 jedi setup.py'
+        - 'flake8 jedi setup.py'
+        - 'mypy jedi sith.py'
 install:
     - sudo apt-get -y install python3-venv
     - pip install .[testing]
