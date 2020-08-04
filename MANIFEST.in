@@ -6,7 +6,6 @@ include .coveragerc
 include sith.py
 include conftest.py
 include pytest.ini
-include requirements.txt
 recursive-include jedi/third_party *.pyi
 include jedi/third_party/typeshed/LICENSE
 include jedi/third_party/django-stubs/LICENSE.txt
