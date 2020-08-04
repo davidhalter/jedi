@@ -4,6 +4,7 @@ Used only for REPL Completion.
 
 import inspect
 import os
+from pathlib import Path
 
 from jedi.parser_utils import get_cached_code_lines
 
@@ -190,7 +191,8 @@ def _find_syntax_node_name(inference_state, python_object):
     except TypeError:
         # The type might not be known (e.g. class_with_dict.__weakref__)
         return None
-    if path is None or not os.path.exists(path):
+    path = None if path is None else Path(path)
+    if path is None or not path.exists():
         # The path might not exist or be e.g. <stdin>.
         return None
 

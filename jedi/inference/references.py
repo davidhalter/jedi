@@ -203,11 +203,11 @@ def recurse_find_python_folders_and_files(folder_io, except_paths=()):
         # Delete folders that we don't want to iterate over.
         for file_io in file_ios:
             path = file_io.path
-            if path.endswith('.py') or path.endswith('.pyi'):
+            if path.suffix in ('.py', '.pyi'):
                 if path not in except_paths:
                     yield None, file_io
 
-            if path.endswith('.gitignore'):
+            if path.name == '.gitignore':
                 ignored_paths, ignored_names = \
                     gitignored_lines(root_folder_io, file_io)
                 except_paths |= ignored_paths

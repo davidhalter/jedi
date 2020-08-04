@@ -29,13 +29,13 @@ def test_find_module_basic():
 
 def test_find_module_package():
     file_io, is_package = _find_module('json')
-    assert file_io.path.endswith(os.path.join('json', '__init__.py'))
+    assert file_io.path.parts[-2:] == ('json', '__init__.py')
     assert is_package is True
 
 
 def test_find_module_not_package():
     file_io, is_package = _find_module('io')
-    assert file_io.path.endswith('io.py')
+    assert file_io.path.name == 'io.py'
     assert is_package is False
 
 
@@ -55,8 +55,8 @@ def test_find_module_package_zipped(Script, inference_state, environment):
         full_name='pkg'
     )
     assert file_io is not None
-    assert file_io.path.endswith(os.path.join('pkg.zip', 'pkg', '__init__.py'))
-    assert file_io._zip_path.endswith('pkg.zip')
+    assert file_io.path.parts[-3:] == ('pkg.zip', 'pkg', '__init__.py')
+    assert file_io._zip_path.name == 'pkg.zip'
     assert is_package is True
 
 
@@ -108,7 +108,7 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
         string='not_pkg',
         full_name='not_pkg'
     )
-    assert file_io.path.endswith(os.path.join('not_pkg.zip', 'not_pkg.py'))
+    assert file_io.path.parts[-2:] == ('not_pkg.zip', 'not_pkg.py')
     assert is_package is False
 
 
