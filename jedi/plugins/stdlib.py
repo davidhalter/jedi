@@ -591,16 +591,15 @@ def _random_choice(sequences):
 
 
 def _simple_namespace(value, arguments, callback):
-    # TODO copied roughly from dataclass, obviously wrong
-    for c in _follow_param(value.inference_state, arguments, 0):
-        if c.is_class():
-            return ValueSet([SimpleNamespaceWrapper(c)])
-        else:
-            return ValueSet([value])
-    return NO_VALUES
-
+    # TODO how do I incorporate SimpleNamespaceWrapper correctly?
+    return ValueSet([SimpleNamespaceWrapper(value, arguments)])
 
 class SimpleNamespaceWrapper(ValueWrapper, ClassMixin):
+    def __init__(self, cls, arguments):
+        self.inference_state = cls.inference_state
+        self._cls = cls
+        self._arguments = arguments
+
     def get_filters(self, origin_scope=None):
         def iterate():
             for key, lazy_value in self._arguments.unpack():
