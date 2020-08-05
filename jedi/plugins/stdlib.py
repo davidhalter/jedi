@@ -30,7 +30,7 @@ from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
     LazyKnownValues
-from jedi.inference.names import ValueName, BaseTreeParamName
+from jedi.inference.names import AbstractArbitraryName, ValueName, BaseTreeParamName
 from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
 from jedi.inference.signature import AbstractSignature, SignatureWrapper
@@ -591,11 +591,31 @@ def _random_choice(sequences):
 
 
 def _simple_namespace(value, arguments, callback):
-    pass
+    # TODO copied roughly from dataclass, obviously wrong
+    for c in _follow_param(value.inference_state, arguments, 0):
+        if c.is_class():
+            return ValueSet([SimpleNamespaceWrapper(c)])
+        else:
+            return ValueSet([value])
+    return NO_VALUES
 
 
 class SimpleNamespaceWrapper(ValueWrapper, ClassMixin):
-    pass
+    def get_filters(self, origin_scope=None):
+        def iterate():
+            for key, lazy_value in self._arguments.unpack():
+                if key is not None:
+                    yield key, SimpleNamespaceName(self.inference_state, key, lazy_value)
+        yield DictFilter(dict(iterate()))
+
+
+class SimpleNamespaceName(AbstractArbitraryName):
+    def __init__(self, inference_state, string, lazy_value):
+        super().__init__(inference_state, string)
+        self._lazy_value = lazy_value
+
+    def infer(self):
+        return self._lazy_value.infer()
 
 
 def _dataclass(value, arguments, callback):
