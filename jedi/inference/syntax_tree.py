@@ -753,6 +753,8 @@ def tree_name_to_values(inference_state, context, tree_name):
         types = NO_VALUES
     elif typ == 'del_stmt':
         types = NO_VALUES
+    elif typ == 'namedexpr_test':
+        types = infer_node(context, node)
     else:
         raise ValueError("Should not happen. type: %s" % typ)
     return types

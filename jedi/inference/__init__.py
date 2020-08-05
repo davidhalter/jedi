@@ -170,6 +170,8 @@ class InferenceState:
                 return tree_name_to_values(self, context, name)
             elif type_ == 'param':
                 return context.py__getattribute__(name.value, position=name.end_pos)
+            elif type_ == 'namedexpr_test':
+                return context.infer_node(def_)
         else:
             result = follow_error_node_imports_if_possible(context, name)
             if result is not None:
