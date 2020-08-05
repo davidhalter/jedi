@@ -55,6 +55,12 @@ Jedi can currently be used with the following editors/projects:
 
 and many more!
 
+There are a few language servers that use Jedi:
+
+- `jedi-language-server <https://github.com/pappasam/jedi-language-server>`_
+- `python-language-server <https://github.com/palantir/python-language-server>`_
+- `anakin-language-server <https://github.com/muffinmad/anakin-language-server>`_
+
 Here are some pictures taken from jedi-vim_:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
