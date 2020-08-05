@@ -591,14 +591,12 @@ def _random_choice(sequences):
 
 
 def _simple_namespace(value, arguments, callback):
-    # TODO how do I incorporate SimpleNamespaceWrapper correctly?
-    return ValueSet([SimpleNamespaceWrapper(value, arguments)])
+    return ValueSet([SimpleNamespaceWrapper(value.inference_state, arguments)])
 
 
 class SimpleNamespaceWrapper(Value):
-    def __init__(self, cls, arguments):
-        self.inference_state = cls.inference_state
-        self._cls = cls
+    def __init__(self, inference_state, arguments):
+        self.inference_state = inference_state
         self._arguments = arguments
 
     def get_filters(self, origin_scope=None):
