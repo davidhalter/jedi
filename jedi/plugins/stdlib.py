@@ -23,7 +23,7 @@ from jedi.inference import compiled
 from jedi.inference.value.instance import \
     AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
-    NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
+    NO_VALUES, Value, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.value.function import FunctionMixin
@@ -594,7 +594,8 @@ def _simple_namespace(value, arguments, callback):
     # TODO how do I incorporate SimpleNamespaceWrapper correctly?
     return ValueSet([SimpleNamespaceWrapper(value, arguments)])
 
-class SimpleNamespaceWrapper(ValueWrapper, ClassMixin):
+
+class SimpleNamespaceWrapper(Value):
     def __init__(self, cls, arguments):
         self.inference_state = cls.inference_state
         self._cls = cls
