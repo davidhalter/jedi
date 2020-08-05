@@ -5,7 +5,7 @@
 x = 3
 if NOT_DEFINED:
     x = ''
-#? 6 int() str()
+#? 6 int()
 elif x:
     pass
 else:
