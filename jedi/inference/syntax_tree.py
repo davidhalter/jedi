@@ -287,14 +287,12 @@ def infer_atom(context, atom):
     state = context.inference_state
     if atom.type == 'name':
         # This is the first global lookup.
-        stmt = tree.search_ancestor(
-            atom, 'expr_stmt', 'lambdef', 'if_stmt'
-        ) or atom
-        if stmt.type == 'lambdef':
-            stmt = atom
+        stmt = tree.search_ancestor(atom, 'expr_stmt', 'lambdef', 'if_stmt') or atom
         if stmt.type == 'if_stmt':
             if not any(n.start_pos <= atom.start_pos < n.end_pos for n in stmt.get_test_nodes()):
                 stmt = atom
+        elif stmt.type == 'lambdef':
+            stmt = atom
         position = stmt.start_pos
         if _is_annotation_name(atom):
             # Since Python 3.7 (with from __future__ import annotations),
