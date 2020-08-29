@@ -5,6 +5,7 @@ Tests".
 
 import os
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 import pytest
 
@@ -393,6 +394,124 @@ def test_relative_imports_without_path(Script):
     assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
 
 
+def test_relative_import_using_paths(Script):
+    project_path = get_example_dir('issue1655')
+    project = Project(project_path, sys_path=[], smart_sys_path=False)
+    file_path = project_path / 'subdir' / 'other.py'
+
+    script = Script(
+        "from . ",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == ['file3', 'import']
+
+    script = Script(
+        "from . import ",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == [
+        'file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+    script = Script(
+        "from . import file3\n\nfile3.",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == [
+        'do_nothing_file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+
+def test_relative_import_using_strs(Script):
+    project_path = get_example_dir('issue1655')
+    project = Project(str(project_path), sys_path=[], smart_sys_path=False)
+    file_path = project_path / 'subdir' / 'other.py'
+
+    script = Script(
+        "from . ",
+        project=project,
+        path=str(file_path),
+    )
+    assert [c.name for c in script.complete()] == ['file3', 'import']
+
+    script = Script(
+        "from . import ",
+        project=project,
+        path=str(file_path),
+    )
+    assert [c.name for c in script.complete()] == [
+        'file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+    script = Script(
+        "from . import file3\n\nfile3.",
+        project=project,
+        path=str(file_path),
+    )
+    assert [c.name for c in script.complete()] == [
+        'do_nothing_file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+
+@pytest.mark.skipif("sys.platform!='win32'")
+def test_relative_import_case_insensitive_windows(Script):
+    project_path = get_example_dir('issue1655')
+    project = Project(str(project_path).lower(), sys_path=[], smart_sys_path=False)
+    file_path = project_path / 'subdir' / 'other.py'
+
+    script = Script(
+        "from . ",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == ['file3', 'import']
+
+    script = Script(
+        "from . import ",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == [
+        'file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+    script = Script(
+        "from . import file3\n\nfile3.",
+        project=project,
+        path=file_path,
+    )
+    assert [c.name for c in script.complete()] == [
+        'do_nothing_file3',
+        '__doc__',
+        '__file__',
+        '__name__',
+        '__package__',
+    ]
+
+
 def test_relative_import_out_of_file_system(Script):
     code = "from " + '.' * 100
     assert not Script(code).complete()
@@ -419,8 +538,17 @@ def test_relative_import_out_of_file_system(Script):
         (3, '/a/b', '/a/b/c', (None, '/')),
     ]
 )
-def test_level_to_import_path(level, directory, project_path, result):
-    assert imports._level_to_base_import_path(project_path, directory, level) == result
+def test_level_to_import_path(
+    level: int,
+    directory: str,
+    project_path: str,
+    result: Tuple[Optional[List[str]], Optional[str]],
+) -> None:
+    assert imports._level_to_base_import_path(
+        Path(project_path),
+        Path(directory),
+        level,
+    ) == result
 
 
 def test_import_name_calculation(Script):

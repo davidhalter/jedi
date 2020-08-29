@@ -10,6 +10,7 @@ statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -123,7 +124,11 @@ def _add_error(value, name, message):
         debug.warning('ImportError without origin: ' + message)
 
 
-def _level_to_base_import_path(project_path, directory, level):
+def _level_to_base_import_path(
+    project_path: Path,
+    directory: Path,
+    level: int,
+) -> Tuple[Optional[List[str]], Optional[str]]:
     """
     In case the level is outside of the currently known package (something like
     import .....foo), we can still try our best to help the user for
@@ -131,23 +136,23 @@ def _level_to_base_import_path(project_path, directory, level):
     """
     for i in range(level - 1):
         old = directory
-        directory = os.path.dirname(directory)
+        directory = directory.parent
         if old == directory:
             return None, None
 
     d = directory
-    level_import_paths = []
+    level_import_paths: List[str] = []
     # Now that we are on the level that the user wants to be, calculate the
     # import path for it.
     while True:
         if d == project_path:
-            return level_import_paths, d
+            return level_import_paths, str(d)
         dir_name = os.path.basename(d)
         if dir_name:
             level_import_paths.insert(0, dir_name)
-            d = os.path.dirname(d)
+            d = d.parent
         else:
-            return None, directory
+            return None, str(directory)
 
 
 class Importer:
@@ -202,7 +207,7 @@ class Importer:
                     directory = os.path.dirname(path)
 
                 base_import_path, base_directory = _level_to_base_import_path(
-                    project_path, directory, level,
+                    project_path, Path(directory), level,
                 )
                 if base_directory is None:
                     # Everything is lost, the relative import does point
