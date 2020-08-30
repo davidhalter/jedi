@@ -205,7 +205,7 @@ def _get_buildout_script_paths(search_path: Path):
         except (UnicodeDecodeError, IOError) as e:
             # Probably a binary file; permission error or race cond. because
             # file got deleted. Ignore it.
-            debug.warning(e)
+            debug.warning(str(e))
             continue
 
 
