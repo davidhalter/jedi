@@ -1,5 +1,7 @@
 from abc import abstractmethod
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Optional
 
 from parso.tree import search_ancestor
 from parso.python.tree import Name
@@ -307,8 +309,8 @@ class FunctionContext(TreeContextMixin, ValueContext):
 
 
 class ModuleContext(TreeContextMixin, ValueContext):
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
@@ -355,8 +357,8 @@ class NamespaceContext(TreeContextMixin, ValueContext):
     def string_names(self):
         return self._value.string_names
 
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
 
 class ClassContext(TreeContextMixin, ValueContext):
@@ -405,8 +407,8 @@ class CompiledModuleContext(CompiledContext):
     def string_names(self):
         return self._value.string_names
 
-    def py__file__(self):
-        return self._value.py__file__()
+    def py__file__(self) -> Optional[Path]:
+        return self._value.py__file__()  # type: ignore[no-any-return]
 
 
 def _get_global_filters_for_name(context, name_or_none, position):
