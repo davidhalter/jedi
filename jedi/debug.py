@@ -106,10 +106,7 @@ def dbg(message, *args, color='GREEN'):
         debug_function(color, i + 'dbg: ' + message % tuple(repr(a) for a in args))
 
 
-def warning(message, *args, **kwargs):
-    format = kwargs.pop('format', True)
-    assert not kwargs
-
+def warning(message, *args, format=True):
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
         if format:

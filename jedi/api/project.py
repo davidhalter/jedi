@@ -106,7 +106,16 @@ class Project:
         with open(self._get_json_path(self._path), 'w') as f:
             return json.dump((_SERIALIZER_VERSION, data), f)
 
-    def __init__(self, path, **kwargs):
+    def __init__(
+        self,
+        path,
+        *,
+        environment_path=None,
+        load_unsafe_extensions=False,
+        sys_path=None,
+        added_sys_path=(),
+        smart_sys_path=True,
+    ) -> None:
         """
         :param path: The base path for this project.
         :param environment_path: The Python executable path, typically the path
@@ -125,25 +134,22 @@ class Project:
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, environment_path=None, load_unsafe_extensions=False,
-                     sys_path=None, added_sys_path=(), smart_sys_path=True):
-            if isinstance(path, str):
-                path = Path(path).absolute()
-            self._path = path
 
-            self._environment_path = environment_path
-            if sys_path is not None:
-                # Remap potential pathlib.Path entries
-                sys_path = list(map(str, sys_path))
-            self._sys_path = sys_path
-            self._smart_sys_path = smart_sys_path
-            self._load_unsafe_extensions = load_unsafe_extensions
-            self._django = False
+        if isinstance(path, str):
+            path = Path(path).absolute()
+        self._path = path
+
+        self._environment_path = environment_path
+        if sys_path is not None:
             # Remap potential pathlib.Path entries
-            self.added_sys_path = list(map(str, added_sys_path))
-            """The sys path that is going to be added at the end of the """
-
-        py2_comp(path, **kwargs)
+            sys_path = list(map(str, sys_path))
+        self._sys_path = sys_path
+        self._smart_sys_path = smart_sys_path
+        self._load_unsafe_extensions = load_unsafe_extensions
+        self._django = False
+        # Remap potential pathlib.Path entries
+        self.added_sys_path = list(map(str, added_sys_path))
+        """The sys path that is going to be added at the end of the """
 
     @property
     def path(self):
