@@ -257,7 +257,7 @@ class ReversedObject(AttributeOverwrite):
         super().__init__(reversed_obj)
         self._iter_list = iter_list
 
-    def py__iter__(self, contextualized_node):
+    def py__iter__(self, contextualized_node=None):
         return self._iter_list
 
     @publish_method('__next__')
