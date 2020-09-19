@@ -3,7 +3,6 @@ Used only for REPL Completion.
 """
 
 import inspect
-import os
 from pathlib import Path
 
 from jedi.parser_utils import get_cached_code_lines
