@@ -191,8 +191,15 @@ def _find_syntax_node_name(inference_state, python_object):
         # The type might not be known (e.g. class_with_dict.__weakref__)
         return None
     path = None if path is None else Path(path)
-    if path is None or not path.exists():
-        # The path might not exist or be e.g. <stdin>.
+    try:
+        if path is None or not path.exists():
+            # The path might not exist or be e.g. <stdin>.
+            return None
+    except OSError:
+        # Might raise an OSError on Windows:
+        #
+        #     [WinError 123] The filename, directory name, or volume label
+        #     syntax is incorrect: '<string>'
         return None
 
     file_io = FileIO(path)
