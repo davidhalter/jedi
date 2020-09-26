@@ -97,6 +97,16 @@ and many more!
 
 .. _repl-completion:
 
+xonsh shell
+~~~~~~~~~~~
+
+Jedi is a preinstalled extension in `xonsh shell <https://xon.sh/contents.html>`_. 
+Run the following command to enable:
+
+::
+
+    xontrib load jedi
+
 Tab Completion in the Python Shell
 ----------------------------------
 
