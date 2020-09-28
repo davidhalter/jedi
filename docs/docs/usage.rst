@@ -93,10 +93,6 @@ Web Debugger
 
 - wdb_
 
-and many more!
-
-.. _repl-completion:
-
 xonsh shell
 ~~~~~~~~~~~
 
@@ -106,6 +102,10 @@ Run the following command to enable:
 ::
 
     xontrib load jedi
+
+and many more!
+
+.. _repl-completion:
 
 Tab Completion in the Python Shell
 ----------------------------------
