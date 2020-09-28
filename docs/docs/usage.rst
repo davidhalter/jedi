@@ -93,6 +93,16 @@ Web Debugger
 
 - wdb_
 
+xonsh shell
+~~~~~~~~~~~
+
+Jedi is a preinstalled extension in `xonsh shell <https://xon.sh/contents.html>`_. 
+Run the following command to enable:
+
+::
+
+    xontrib load jedi
+
 and many more!
 
 .. _repl-completion:
