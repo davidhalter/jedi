@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import jedi
 from jedi.file_io import FileIO
 from jedi.inference import compiled
 from jedi.inference import imports
@@ -468,3 +469,23 @@ def test_relative_import_star(Script):
     script = Script(source, path='export.py')
 
     assert script.complete(3, len("furl.c"))
+
+
+@pytest.mark.parametrize('with_init', [False, True])
+def test_relative_imports_without_path_and_setup_py(
+        Script, inference_state, environment, tmpdir, with_init):
+    # Contrary to other tests here we create a temporary folder that is not
+    # part of a folder with a setup py that signifies
+    tmpdir.join('file1.py').write('do_foo = 1')
+    other_path = tmpdir.join('other_files')
+    other_path.join('file2.py').write('def do_nothing():\n pass', ensure=True)
+    if with_init:
+        other_path.join('__init__.py').write('')
+
+    for name, code in [('file2', 'from . import file2'),
+                       ('file1', 'from .. import file1')]:
+        for func in (jedi.Script.goto, jedi.Script.infer):
+            n, = func(Script(code, path=other_path.join('test1.py').strpath))
+            assert n.name == name
+            assert n.type == 'module'
+            assert n.line == 1

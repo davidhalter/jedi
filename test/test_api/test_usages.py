@@ -3,7 +3,7 @@ import pytest
 
 def test_import_references(Script):
     s = Script("from .. import foo", path="foo.py")
-    assert [usage.line for usage in s.get_references(line=1, column=18)] == [1]
+    assert [usage.line for usage in s.get_references()] == [1]
 
 
 def test_exclude_builtin_modules(Script):
