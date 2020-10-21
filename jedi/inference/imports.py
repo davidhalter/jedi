@@ -252,7 +252,7 @@ class Importer:
                 # relative imports the wrong way, we might end up here, where
                 # the `fixed_sys_path == project.path` in that case we kind of
                 # use the project.path.parent directory as our path. This is
-                # usually not a problem, except if imorts in other places are
+                # usually not a problem, except if imports in other places are
                 # using the same names. Example:
                 #
                 # foo/                       < #1
