@@ -475,7 +475,7 @@ def test_relative_import_star(Script):
 def test_relative_imports_without_path_and_setup_py(
         Script, inference_state, environment, tmpdir, with_init):
     # Contrary to other tests here we create a temporary folder that is not
-    # part of a folder with a setup py that signifies
+    # part of a folder with a setup.py that signifies
     tmpdir.join('file1.py').write('do_foo = 1')
     other_path = tmpdir.join('other_files')
     other_path.join('file2.py').write('def do_nothing():\n pass', ensure=True)
