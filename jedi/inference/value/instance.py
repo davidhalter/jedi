@@ -501,6 +501,18 @@ class SelfName(TreeNameDefinition):
     def get_defining_qualified_value(self):
         return self._instance
 
+    def infer(self):
+        stmt = search_ancestor(self.tree_name, 'expr_stmt')
+        if stmt is not None:
+            if stmt.children[1].type == "annassign":
+                from jedi.inference.gradual.annotation import infer_annotation
+                values = infer_annotation(
+                    self.parent_context, stmt.children[1].children[1]
+                ).execute_annotation()
+                if values:
+                    return values
+        return super().infer()
+
 
 class LazyInstanceClassName(NameWrapper):
     def __init__(self, instance, class_member_name):

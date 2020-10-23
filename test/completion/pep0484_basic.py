@@ -179,3 +179,13 @@ def argskwargs(*args: int, **kwargs: float):
     next(iter(kwargs.keys()))
     #? float()
     kwargs['']
+
+
+class NotCalledClass:
+    def __init__(self, x):
+        self.x: int = x
+        self.y: int = ''
+        #? int()
+        self.x
+        #? int()
+        self.y
