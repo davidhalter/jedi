@@ -1,8 +1,10 @@
 import pytest
 
+from ..helpers import test_dir
+
 
 def test_import_references(Script):
-    s = Script("from .. import foo", path="foo.py")
+    s = Script("from .. import foo", path=test_dir.joinpath("foo.py"))
     assert [usage.line for usage in s.get_references()] == [1]
 
 
