@@ -281,6 +281,11 @@ class Script:
             leaf = self._module_node.get_leaf_for_position(pos)
             if leaf is None or leaf.type == 'string':
                 return []
+            if leaf.end_pos == (line, column) and leaf.type == 'operator':
+                next_ = leaf.get_next_leaf()
+                if next_.start_pos == leaf.end_pos \
+                        and next_.type in ('number', 'string', 'keyword'):
+                    leaf = next_
 
         context = self._get_module_context().create_context(leaf)
 
