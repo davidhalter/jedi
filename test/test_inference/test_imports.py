@@ -468,3 +468,9 @@ def test_relative_import_star(Script):
     script = Script(source, path='export.py')
 
     assert script.complete(3, len("furl.c"))
+
+
+def test_import_recursion(Script):
+    path = get_example_dir('import-recursion', "cq_example.py")
+    for c in Script(path=path).complete(3, 3):
+        c.docstring()
