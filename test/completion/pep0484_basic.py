@@ -189,3 +189,12 @@ class NotCalledClass:
         self.x
         #? int()
         self.y
+        #? int()
+        self.y
+        self.z: int
+        self.z = ''
+        #? str() int()
+        self.z
+        self.w: float
+        #? float()
+        self.w
