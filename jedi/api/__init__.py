@@ -160,7 +160,7 @@ class Script:
         self._module_node, code = self._inference_state.parse_and_get_code(
             code=code,
             path=self.path,
-            use_latest_grammar=path and path.suffix == 'pyi',
+            use_latest_grammar=path and path.suffix == '.pyi',
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
