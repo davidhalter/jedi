@@ -544,6 +544,10 @@ def test_level_to_import_path(
     project_path: str,
     result: Tuple[Optional[List[str]], Optional[str]],
 ) -> None:
+    # Convert for path separators being different on Windows
+    subdirs, root = result
+    result = subdirs, None if root is None else str(Path(root))
+
     assert imports._level_to_base_import_path(
         Path(project_path),
         Path(directory),
