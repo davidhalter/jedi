@@ -279,8 +279,8 @@ def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, impo
         return None
     else:
         return create_stub_module(
-            inference_state, python_value_set, stub_module_node, file_io,
-            import_names
+            inference_state, inference_state.latest_grammar, python_value_set,
+            stub_module_node, file_io, import_names
         )
 
 
@@ -294,7 +294,8 @@ def parse_stub_module(inference_state, file_io):
     )
 
 
-def create_stub_module(inference_state, python_value_set, stub_module_node, file_io, import_names):
+def create_stub_module(inference_state, grammar, python_value_set,
+                       stub_module_node, file_io, import_names):
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
@@ -306,7 +307,7 @@ def create_stub_module(inference_state, python_value_set, stub_module_node, file
         string_names=import_names,
         # The code was loaded with latest_grammar, so use
         # that.
-        code_lines=get_cached_code_lines(inference_state.latest_grammar, file_io.path),
+        code_lines=get_cached_code_lines(grammar, file_io.path),
         is_package=file_name == '__init__.pyi',
     )
     return stub_module_value

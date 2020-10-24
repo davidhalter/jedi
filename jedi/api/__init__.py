@@ -196,6 +196,7 @@ class Script:
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._inference_state,
+                self._inference_state.latest_grammar,
                 file_io,
                 names,
                 self._module_node
