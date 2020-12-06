@@ -369,7 +369,7 @@ def _is_potential_project(path):
         try:
             if path.joinpath(name).exists():
                 return True
-        except PermissionError:
+        except OSError:
             continue
     return False
 

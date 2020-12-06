@@ -174,7 +174,7 @@ def _get_parent_dir_with_file(path: Path, filename):
         try:
             if parent.joinpath(filename).is_file():
                 return parent
-        except PermissionError:
+        except OSError:
             continue
     return None
 
