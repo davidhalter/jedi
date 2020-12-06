@@ -108,3 +108,13 @@ def test_transform_path_to_dotted(sys_path_, module_path, expected, is_package):
     module_path = os.path.abspath(module_path)
     assert sys_path.transform_path_to_dotted(sys_path_, Path(module_path)) \
         == (expected, is_package)
+
+
+@pytest.mark.parametrize(
+    'path,filename,expected', [
+        (Path(__file__).parents[1], "setup.py", Path(__file__).parents[2]),
+        (Path(__file__).parents[2], os.path.basename(__file__), None)
+    ]
+)
+def test_get_parent_dir_with_file(path, filename, expected):
+    assert sys_path._get_parent_dir_with_file(path, filename) == expected
