@@ -113,7 +113,7 @@ def _expand_typestr(type_str):
     elif type_str.startswith('{'):
         node = parse(type_str, version='3.7').children[0]
         if node.type == 'atom':
-            for leaf in node.children[1].children:
+            for leaf in getattr(node.children[1], "children", []):
                 if leaf.type == 'number':
                     if '.' in leaf.value:
                         yield 'float'
