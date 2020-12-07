@@ -171,8 +171,11 @@ def _get_paths_from_buildout_script(inference_state, buildout_script_path):
 
 def _get_parent_dir_with_file(path: Path, filename):
     for parent in path.parents:
-        if parent.joinpath(filename).is_file():
-            return parent
+        try:
+            if parent.joinpath(filename).is_file():
+                return parent
+        except OSError:
+            continue
     return None
 
 

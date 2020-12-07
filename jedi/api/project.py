@@ -366,8 +366,11 @@ class Project:
 
 def _is_potential_project(path):
     for name in _CONTAINS_POTENTIAL_PROJECT:
-        if path.joinpath(name).exists():
-            return True
+        try:
+            if path.joinpath(name).exists():
+                return True
+        except OSError:
+            continue
     return False
 
 
