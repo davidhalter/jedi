@@ -513,10 +513,14 @@ def test_added_equals_to_params(Script):
 
     assert run('foo(bar').name_with_symbols == 'bar='
     assert run('foo(bar').complete == '='
+    assert run('foo(bar').get_completion_prefix_length() == 3
     assert run('foo(bar, baz').complete == '='
+    assert run('foo(bar, baz').get_completion_prefix_length() == 3
     assert run('    bar').name_with_symbols == 'bar'
     assert run('    bar').complete == ''
+    assert run('    bar').get_completion_prefix_length() == 3
     x = run('foo(bar=isins').name_with_symbols
+    assert run('foo(bar=isins').get_completion_prefix_length() == 5
     assert x == 'isinstance'
 
 

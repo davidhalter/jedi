@@ -749,6 +749,24 @@ class Completion(BaseName):
 
         return super().type
 
+    def get_completion_prefix_length(self):
+        """
+        Returns the length of the prefix being completed.
+        For example, completing ``isinstance``::
+
+            isinstan# <-- Cursor is here
+
+        would return 8, because len('isinstan') == 8.
+
+        Assuming the following function definition::
+
+            def foo(param=0):
+                pass
+
+        completing ``foo(par`` would return 3.
+        """
+        return self._like_name_length
+
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
