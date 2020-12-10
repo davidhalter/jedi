@@ -267,6 +267,10 @@ class Importer:
                 # `__init__.py` (#2) and not as `foo.py` (#3). This is usually
                 # not an issue, because this case is probably pretty rare, but
                 # might be an issue for some people.
+                #
+                # However for most normal cases where we work with different
+                # file names, this code path hits where we basically change the
+                # project path to an ancestor of project path.
                 from jedi.inference.value.namespace import ImplicitNamespaceValue
                 import_path = (os.path.basename(self._fixed_sys_path[0]),)
                 ns = ImplicitNamespaceValue(
