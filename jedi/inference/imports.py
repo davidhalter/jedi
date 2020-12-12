@@ -32,7 +32,7 @@ from jedi.inference.compiled.subprocess.functions import ImplicitNSInfo
 from jedi.plugins import plugin_manager
 
 
-class ModuleCache(object):
+class ModuleCache:
     def __init__(self):
         self._name_cache = {}
 
@@ -150,7 +150,7 @@ def _level_to_base_import_path(project_path, directory, level):
             return None, directory
 
 
-class Importer(object):
+class Importer:
     def __init__(self, inference_state, import_path, module_context, level=0):
         """
         An implementation similar to ``__import__``. Use `follow`
@@ -498,8 +498,8 @@ def load_module_from_path(inference_state, file_io, import_names=None, is_packag
             values = NO_VALUES
 
         return create_stub_module(
-            inference_state, values, parse_stub_module(inference_state, file_io),
-            file_io, import_names
+            inference_state, inference_state.latest_grammar, values,
+            parse_stub_module(inference_state, file_io), file_io, import_names
         )
     else:
         module = _load_python_module(

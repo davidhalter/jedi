@@ -340,3 +340,20 @@ def test_overload(Script, code):
     x1, x2 = Script(code, path=os.path.join(dir_, 'foo.py')).get_signatures()
     assert x1.to_string() == 'with_overload(x: int, y: int) -> float'
     assert x2.to_string() == 'with_overload(x: str, y: list) -> float'
+
+
+def test_enum(Script):
+    script = Script('''\
+        from enum import Enum
+
+        class Planet(Enum):
+            MERCURY = (3.303e+23, 2.4397e6)
+            VENUS = (4.869e+24, 6.0518e6)
+
+            def __init__(self, mass, radius):
+                self.mass = mass  # in kilograms
+                self.radius = radius  # in meters
+
+        Planet.MERCURY''')
+    completion, = script.complete()
+    assert not completion.get_signatures()

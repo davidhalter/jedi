@@ -1,11 +1,13 @@
 from abc import abstractmethod
 from inspect import Parameter
+from typing import Optional, Tuple
 
 from parso.tree import search_ancestor
 
 from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
 from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
@@ -23,9 +25,9 @@ def _merge_name_docs(names):
     return doc
 
 
-class AbstractNameDefinition(object):
-    start_pos = None
-    string_name = None
+class AbstractNameDefinition:
+    start_pos: Optional[Tuple[int, int]] = None
+    string_name: str
     parent_context = None
     tree_name = None
     is_value_name = True
@@ -223,7 +225,7 @@ class AbstractTreeName(AbstractNameDefinition):
         return self.tree_name.start_pos
 
 
-class ValueNameMixin(object):
+class ValueNameMixin:
     def infer(self):
         return ValueSet([self._value])
 
@@ -330,6 +332,12 @@ class TreeNameDefinition(AbstractTreeName):
             node = node.parent
         return indexes
 
+    @property
+    def inference_state(self):
+        # Used by the cache function below
+        return self.parent_context.inference_state
+
+    @inference_state_method_cache(default='')
     def py__doc__(self):
         api_type = self.api_type
         if api_type in ('function', 'class'):
@@ -346,7 +354,7 @@ class TreeNameDefinition(AbstractTreeName):
         return ''
 
 
-class _ParamMixin(object):
+class _ParamMixin:
     def maybe_positional_argument(self, include_star=True):
         options = [Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD]
         if include_star:
@@ -604,7 +612,7 @@ class SubModuleName(ImportName):
     _level = 1
 
 
-class NameWrapper(object):
+class NameWrapper:
     def __init__(self, wrapped_name):
         self._wrapped_name = wrapped_name
 
@@ -615,7 +623,7 @@ class NameWrapper(object):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
 
 
-class StubNameMixin(object):
+class StubNameMixin:
     def py__doc__(self):
         from jedi.inference.gradual.conversion import convert_names
         # Stubs are not complicated and we can just follow simple statements

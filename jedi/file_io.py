@@ -3,7 +3,7 @@ import os
 from parso import file_io
 
 
-class AbstractFolderIO(object):
+class AbstractFolderIO:
     def __init__(self, path):
         self.path = path
 
@@ -57,7 +57,7 @@ class FolderIO(AbstractFolderIO):
                     del dirs[i]
 
 
-class FileIOFolderMixin(object):
+class FileIOFolderMixin:
     def get_parent_folder(self):
         return FolderIO(os.path.dirname(self.path))
 

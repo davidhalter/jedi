@@ -52,8 +52,15 @@ Jedi can currently be used with the following editors/projects:
 - wdb_ - Web Debugger
 - `Eric IDE`_ (Available as a plugin)
 - `IPython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
+- `xonsh shell <https://xon.sh/contents.html>`_ has `jedi extension <https://xon.sh/xontribs.html#jedi>`_
 
 and many more!
+
+There are a few language servers that use Jedi:
+
+- `jedi-language-server <https://github.com/pappasam/jedi-language-server>`_
+- `python-language-server <https://github.com/palantir/python-language-server>`_
+- `anakin-language-server <https://github.com/muffinmad/anakin-language-server>`_
 
 Here are some pictures taken from jedi-vim_:
 

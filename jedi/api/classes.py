@@ -14,18 +14,18 @@ These classes are the much biggest part of the API, because they contain
 the interesting information about all operations.
 """
 import re
+from pathlib import Path
 from typing import Optional
 
-from parso.python.tree import search_ancestor
+from parso.tree import search_ancestor
 
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
 from jedi.cache import memoize_method
-from jedi.inference import imports
-from jedi.inference.imports import ImportName
 from jedi.inference.compiled.mixed import MixedName
-from jedi.inference.gradual.typeshed import StubModuleValue
+from jedi.inference.names import ImportName, SubModuleName
+from jedi.inference.gradual.stub_value import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
@@ -53,7 +53,7 @@ def _values_to_definitions(values):
     return [Name(c.inference_state, c.name) for c in values]
 
 
-class BaseName(object):
+class BaseName:
     """
     The base class for all definitions, completions and signatures.
     """
@@ -92,17 +92,15 @@ class BaseName(object):
         return self._name.get_root_context()
 
     @property
-    def module_path(self) -> Optional[str]:
+    def module_path(self) -> Optional[Path]:
         """
         Shows the file path of a module. e.g. ``/usr/lib/python3.9/os.py``
-
-        :rtype: str or None
         """
         module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            path = self._get_module_context().py__file__()
+            path: Optional[Path] = self._get_module_context().py__file__()
             if path is not None:
                 return path
 
@@ -185,7 +183,7 @@ class BaseName(object):
                     tree_name.is_definition():
                 resolve = True
 
-        if isinstance(self._name, imports.SubModuleName) or resolve:
+        if isinstance(self._name, SubModuleName) or resolve:
             for value in self._name.infer():
                 return value.api_type
         return self._name.api_type
@@ -719,6 +717,24 @@ class Completion(BaseName):
             )
 
         return super().type
+
+    def get_completion_prefix_length(self):
+        """
+        Returns the length of the prefix being completed.
+        For example, completing ``isinstance``::
+
+            isinstan# <-- Cursor is here
+
+        would return 8, because len('isinstan') == 8.
+
+        Assuming the following function definition::
+
+            def foo(param=0):
+                pass
+
+        completing ``foo(par`` would return 3.
+        """
+        return self._like_name_length
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())

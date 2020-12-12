@@ -287,10 +287,11 @@ def infer_atom(context, atom):
     state = context.inference_state
     if atom.type == 'name':
         # This is the first global lookup.
-        stmt = tree.search_ancestor(
-            atom, 'expr_stmt', 'lambdef'
-        ) or atom
-        if stmt.type == 'lambdef':
+        stmt = tree.search_ancestor(atom, 'expr_stmt', 'lambdef', 'if_stmt') or atom
+        if stmt.type == 'if_stmt':
+            if not any(n.start_pos <= atom.start_pos < n.end_pos for n in stmt.get_test_nodes()):
+                stmt = atom
+        elif stmt.type == 'lambdef':
             stmt = atom
         position = stmt.start_pos
         if _is_annotation_name(atom):
@@ -753,6 +754,8 @@ def tree_name_to_values(inference_state, context, tree_name):
         types = NO_VALUES
     elif typ == 'del_stmt':
         types = NO_VALUES
+    elif typ == 'namedexpr_test':
+        types = infer_node(context, node)
     else:
         raise ValueError("Should not happen. type: %s" % typ)
     return types

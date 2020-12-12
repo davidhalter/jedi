@@ -44,7 +44,7 @@ Options:
   --pudb                Launch pudb when error is raised.
 """
 
-from docopt import docopt
+from docopt import docopt  # type: ignore[import]
 
 import json
 import os

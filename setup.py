@@ -32,7 +32,7 @@ setup(name='jedi',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
       python_requires='>=3.6',
-      install_requires=['parso>=0.7.0,<0.8.0'],
+      install_requires=['parso>=0.8.0,<0.9.0'],
       extras_require={
           'testing': [
               'pytest<6.0.0',
@@ -43,7 +43,8 @@ setup(name='jedi',
               'Django<3.1',  # For now pin this.
           ],
           'qa': [
-              'flake8==3.7.9',
+              'flake8==3.8.3',
+              'mypy==0.782',
           ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',

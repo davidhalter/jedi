@@ -90,7 +90,7 @@ def get_flow_branch_keyword(flow_node, node):
         first_leaf = child.get_first_leaf()
         if first_leaf in _FLOW_KEYWORDS:
             keyword = first_leaf
-    return 0
+    return None
 
 
 def clean_scope_docstring(scope_node):
@@ -239,7 +239,7 @@ def get_parent_scope(node, include_flows=False):
         return None  # It's a module already.
 
     while True:
-        if is_scope(scope) or include_flows and isinstance(scope, tree.Flow):
+        if is_scope(scope):
             if scope.type in ('classdef', 'funcdef', 'lambdef'):
                 index = scope.children.index(':')
                 if scope.children[index].start_pos >= node.start_pos:
@@ -251,6 +251,14 @@ def get_parent_scope(node, include_flows=False):
                         scope = scope.parent
                         continue
             return scope
+        elif include_flows and isinstance(scope, tree.Flow):
+            # The cursor might be on `if foo`, so the parent scope will not be
+            # the if, but the parent of the if.
+            if not (scope.type == 'if_stmt'
+                    and any(n.start_pos <= node.start_pos < n.end_pos
+                            for n in scope.get_test_nodes())):
+                return scope
+
         scope = scope.parent
 
 

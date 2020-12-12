@@ -1,5 +1,6 @@
 import os
 import sys
+from importlib.abc import MetaPathFinder
 from importlib.machinery import PathFinder
 
 # Remove the first entry, because it's simply a directory entry that equals
@@ -16,7 +17,7 @@ def _get_paths():
     return {'jedi': _jedi_path, 'parso': _parso_path}
 
 
-class _ExactImporter(object):
+class _ExactImporter(MetaPathFinder):
     def __init__(self, path_dct):
         self._path_dct = path_dct
 

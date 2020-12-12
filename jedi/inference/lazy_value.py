@@ -2,7 +2,7 @@ from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.common import monkeypatch
 
 
-class AbstractLazyValue(object):
+class AbstractLazyValue:
     def __init__(self, data, min=1, max=1):
         self.data = data
         self.min = min

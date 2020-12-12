@@ -56,7 +56,7 @@ def _remove_duplicates_from_path(path):
         yield p
 
 
-class Project(object):
+class Project:
     """
     Projects are a simple way to manage Python folders and define how Jedi does
     import resolution. It is mostly used as a parameter to :class:`.Script`.
@@ -151,6 +151,29 @@ class Project(object):
         The base path for this project.
         """
         return self._path
+
+    @property
+    def sys_path(self):
+        """
+        The sys path provided to this project. This can be None and in that
+        case will be auto generated.
+        """
+        return self._sys_path
+
+    @property
+    def smart_sys_path(self):
+        """
+        If the sys path is going to be calculated in a smart way, where
+        additional paths are added.
+        """
+        return self._smart_sys_path
+
+    @property
+    def load_unsafe_extensions(self):
+        """
+        Wheter the project loads unsafe extensions.
+        """
+        return self._load_unsafe_extensions
 
     @inference_state_as_method_param_cache()
     def _get_base_sys_path(self, inference_state):
@@ -343,8 +366,11 @@ class Project(object):
 
 def _is_potential_project(path):
     for name in _CONTAINS_POTENTIAL_PROJECT:
-        if path.joinpath(name).exists():
-            return True
+        try:
+            if path.joinpath(name).exists():
+                return True
+        except OSError:
+            continue
     return False
 
 

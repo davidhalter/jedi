@@ -1,6 +1,7 @@
 import os
 import time
 from contextlib import contextmanager
+from typing import Callable, Optional
 
 _inited = False
 
@@ -20,7 +21,7 @@ try:
         raise ImportError
     else:
         # Use colorama for nicer console output.
-        from colorama import Fore, init
+        from colorama import Fore, init  # type: ignore[import]
         from colorama import initialise
 
         def _lazy_colorama_init():  # noqa: F811
@@ -45,7 +46,7 @@ try:
             _inited = True
 
 except ImportError:
-    class Fore(object):
+    class Fore:  # type: ignore[no-redef]
         RED = ''
         GREEN = ''
         YELLOW = ''
@@ -62,7 +63,7 @@ enable_warning = False
 enable_notice = False
 
 # callback, interface: level, str
-debug_function = None
+debug_function: Optional[Callable[[str, str], None]] = None
 _debug_indent = 0
 _start_time = time.time()
 

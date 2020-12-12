@@ -49,7 +49,7 @@ from jedi.inference.utils import to_list
 sys.setrecursionlimit(3000)
 
 
-class Script(object):
+class Script:
     """
     A Script is the base for completions, goto or whatever you want to do with
     Jedi. The counter part of this class is :class:`Interpreter`, which works
@@ -122,7 +122,7 @@ class Script(object):
         self._module_node, code = self._inference_state.parse_and_get_code(
             code=code,
             path=self.path,
-            use_latest_grammar=path and path.suffix == 'pyi',
+            use_latest_grammar=path and path.suffix == '.pyi',
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
@@ -157,6 +157,7 @@ class Script(object):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._inference_state,
+                self._inference_state.latest_grammar,
                 file_io,
                 names,
                 self._module_node
@@ -234,6 +235,11 @@ class Script(object):
             leaf = self._module_node.get_leaf_for_position(pos)
             if leaf is None or leaf.type == 'string':
                 return []
+            if leaf.end_pos == (line, column) and leaf.type == 'operator':
+                next_ = leaf.get_next_leaf()
+                if next_.start_pos == leaf.end_pos \
+                        and next_.type in ('number', 'string', 'keyword'):
+                    leaf = next_
 
         context = self._get_module_context().create_context(leaf)
 

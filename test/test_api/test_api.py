@@ -15,7 +15,7 @@ from test.helpers import test_dir, get_example_dir
 
 
 def test_preload_modules():
-    def check_loaded(*modules):
+    def check_loaded(*module_names):
         for grammar_cache in cache.parser_cache.values():
             if None in grammar_cache:
                 break
@@ -25,9 +25,9 @@ def test_preload_modules():
             if path is not None and str(path).startswith(str(typeshed.TYPESHED_PATH))
         )
         # +1 for None module (currently used)
-        assert len(grammar_cache) - typeshed_cache_count == len(modules) + 1
-        for i in modules:
-            assert [i in k for k in grammar_cache.keys() if k is not None]
+        assert len(grammar_cache) - typeshed_cache_count == len(module_names) + 1
+        for i in module_names:
+            assert [i in str(k) for k in grammar_cache.keys() if k is not None]
 
     old_cache = cache.parser_cache.copy()
     cache.parser_cache.clear()
@@ -370,3 +370,35 @@ def test_multi_goto(Script):
     y, = script.goto(line=4)
     assert x.line == 1
     assert y.line == 2
+
+
+@pytest.mark.parametrize(
+    'code, column, expected', [
+        ('str() ', 3, 'str'),
+        ('str() ', 4, 'str'),
+        ('str() ', 5, 'str'),
+        ('str() ', 6, None),
+        ('str(    ) ', 6, None),
+        ('   1', 1, None),
+        ('str(1) ', 3, 'str'),
+        ('str(1) ', 4, 'int'),
+        ('str(1) ', 5, 'int'),
+        ('str(1) ', 6, 'str'),
+        ('str(1) ', 7, None),
+        ('str( 1) ', 4, 'str'),
+        ('str( 1) ', 5, 'int'),
+        ('str(+1) ', 4, 'str'),
+        ('str(+1) ', 5, 'int'),
+        ('str(1, 1.) ', 3, 'str'),
+        ('str(1, 1.) ', 4, 'int'),
+        ('str(1, 1.) ', 5, 'int'),
+        ('str(1, 1.) ', 6, None),
+        ('str(1, 1.) ', 7, 'float'),
+    ]
+)
+def test_infer_after_parentheses(Script, code, column, expected):
+    completions = Script(code).infer(column=column)
+    if expected is None:
+        assert completions == []
+    else:
+        assert [c.name for c in completions] == [expected]

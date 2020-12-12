@@ -30,7 +30,7 @@ class InvalidPythonEnvironment(Exception):
     """
 
 
-class _BaseEnvironment(object):
+class _BaseEnvironment:
     @memoize_method
     def get_grammar(self):
         version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
@@ -121,7 +121,7 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class _SameEnvironmentMixin(object):
+class _SameEnvironmentMixin:
     def __init__(self):
         self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
@@ -384,7 +384,8 @@ def _get_executable_path(path, safe=True):
 
 
 def _get_executables_from_windows_registry(version):
-    import winreg
+    # https://github.com/python/typeshed/pull/3794 adds winreg
+    import winreg  # type: ignore[import]
 
     # TODO: support Python Anaconda.
     sub_keys = [

@@ -22,7 +22,7 @@ from jedi.inference.signature import BuiltinSignature
 from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
-class CheckAttribute(object):
+class CheckAttribute:
     """Raises :exc:`AttributeError` if the attribute X is not available."""
     def __init__(self, check_name=None):
         # Remove the py in front of e.g. py__call__.
@@ -324,8 +324,7 @@ class CompiledName(AbstractNameDefinition):
         self.string_name = name
 
     def py__doc__(self):
-        value, = self.infer()
-        return value.py__doc__()
+        return self.infer_compiled_value().py__doc__()
 
     def _get_qualified_names(self):
         parent_qualified_names = self.parent_context.get_qualified_names()
@@ -349,16 +348,12 @@ class CompiledName(AbstractNameDefinition):
 
     @property
     def api_type(self):
-        api = self.infer()
-        # If we can't find the type, assume it is an instance variable
-        if not api:
-            return "instance"
-        return next(iter(api)).api_type
+        return self.infer_compiled_value().api_type
 
-    @memoize_method
     def infer(self):
         return ValueSet([self.infer_compiled_value()])
 
+    @memoize_method
     def infer_compiled_value(self):
         return create_from_name(self._inference_state, self._parent_value, self.string_name)
 

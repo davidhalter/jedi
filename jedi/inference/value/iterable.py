@@ -19,7 +19,7 @@ from jedi.inference.context import CompForContext
 from jedi.inference.value.dynamic_arrays import check_array_additions
 
 
-class IterableMixin(object):
+class IterableMixin:
     def py__next__(self, contextualized_node=None):
         return self.py__iter__(contextualized_node)
 
@@ -127,7 +127,7 @@ def comprehension_from_atom(inference_state, value, atom):
     )
 
 
-class ComprehensionMixin(object):
+class ComprehensionMixin:
     @inference_state_method_cache()
     def _get_comp_for_context(self, parent_context, comp_for):
         return CompForContext(parent_context, comp_for)
@@ -175,7 +175,7 @@ class ComprehensionMixin(object):
         return "<%s of %s>" % (type(self).__name__, self._sync_comp_for_node)
 
 
-class _DictMixin(object):
+class _DictMixin:
     def _get_generics(self):
         return tuple(c_set.py__class__() for c_set in self.get_mapping_item_values())
 
@@ -247,7 +247,7 @@ class GeneratorComprehension(_BaseComprehension, GeneratorBase):
     pass
 
 
-class _DictKeyMixin(object):
+class _DictKeyMixin:
     # TODO merge with _DictMixin?
     def get_mapping_item_values(self):
         return self._dict_keys(), self._dict_values()

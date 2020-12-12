@@ -1,10 +1,9 @@
-import os
 from pathlib import Path
 
 from jedi.inference.gradual.typeshed import TYPESHED_PATH, create_stub_module
 
 
-def load_proper_stub_module(inference_state, file_io, import_names, module_node):
+def load_proper_stub_module(inference_state, grammar, file_io, import_names, module_node):
     """
     This function is given a random .pyi file and should return the proper
     module.
@@ -28,7 +27,8 @@ def load_proper_stub_module(inference_state, file_io, import_names, module_node)
         actual_value_set = inference_state.import_module(import_names, prefer_stubs=False)
 
         stub = create_stub_module(
-            inference_state, actual_value_set, module_node, file_io, import_names
+            inference_state, grammar, actual_value_set,
+            module_node, file_io, import_names
         )
         inference_state.stub_module_cache[import_names] = stub
         return stub

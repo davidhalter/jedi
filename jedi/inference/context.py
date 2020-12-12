@@ -13,7 +13,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-class AbstractContext(object):
+class AbstractContext:
     # Must be defined: inference_state and tree_node and parent_context as an attribute/property
 
     def __init__(self, inference_state):
@@ -216,7 +216,7 @@ class ValueContext(AbstractContext):
         return '%s(%s)' % (self.__class__.__name__, self._value)
 
 
-class TreeContextMixin(object):
+class TreeContextMixin:
     def infer_node(self, node):
         from jedi.inference.syntax_tree import infer_node
         return infer_node(self, node)

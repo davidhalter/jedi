@@ -69,8 +69,11 @@ Adds an opening bracket after a function for completions.
 # ----------------
 
 if platform.system().lower() == 'windows':
-    _cache_directory = os.path.join(os.getenv('LOCALAPPDATA') or 
-                                    os.path.expanduser('~'), 'Jedi', 'Jedi')
+    _cache_directory = os.path.join(
+        os.getenv('LOCALAPPDATA') or os.path.expanduser('~'),
+        'Jedi',
+        'Jedi',
+    )
 elif platform.system().lower() == 'darwin':
     _cache_directory = os.path.join('~', 'Library', 'Caches', 'Jedi')
 else:
@@ -98,7 +101,7 @@ parse the parts again that have changed, while reusing the rest of the syntax
 tree.
 """
 
-_cropped_file_size = 10e6  # 1 Megabyte
+_cropped_file_size = int(10e6)  # 1 Megabyte
 """
 Jedi gets extremely slow if the file size exceed a few thousand lines.
 To avoid getting stuck completely Jedi crops the file at some point.

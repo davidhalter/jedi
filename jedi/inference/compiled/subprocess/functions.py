@@ -3,6 +3,7 @@ import os
 import inspect
 import importlib
 import warnings
+from pathlib import Path
 from zipimport import zipimporter
 from importlib.machinery import all_suffixes
 
@@ -211,7 +212,7 @@ def _from_loader(loader, string):
     if code is None:
         return None, is_package
     if isinstance(loader, zipimporter):
-        return ZipFileIO(module_path, code, cast_path(loader.archive)), is_package
+        return ZipFileIO(module_path, code, Path(cast_path(loader.archive))), is_package
 
     return KnownContentFileIO(module_path, code), is_package
 
@@ -229,7 +230,7 @@ def _get_source(loader, fullname):
                           name=fullname)
 
 
-class ImplicitNSInfo(object):
+class ImplicitNSInfo:
     """Stores information returned from an implicit namespace spec"""
     def __init__(self, name, paths):
         self.name = name

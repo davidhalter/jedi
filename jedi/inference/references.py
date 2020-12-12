@@ -5,7 +5,8 @@ from parso import python_bytes_to_unicode
 
 from jedi.debug import dbg
 from jedi.file_io import KnownContentFileIO
-from jedi.inference.imports import SubModuleName, load_module_from_path
+from jedi.inference.names import SubModuleName
+from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.gradual.conversion import convert_names
 
@@ -203,11 +204,11 @@ def recurse_find_python_folders_and_files(folder_io, except_paths=()):
         # Delete folders that we don't want to iterate over.
         for file_io in file_ios:
             path = file_io.path
-            if path.endswith('.py') or path.endswith('.pyi'):
+            if path.suffix in ('.py', '.pyi'):
                 if path not in except_paths:
                     yield None, file_io
 
-            if path.endswith('.gitignore'):
+            if path.name == '.gitignore':
                 ignored_paths, ignored_names = \
                     gitignored_lines(root_folder_io, file_io)
                 except_paths |= ignored_paths

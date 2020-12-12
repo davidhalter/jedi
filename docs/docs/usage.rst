@@ -3,11 +3,21 @@
 Using Jedi
 ==========
 
-|jedi| is can be used with a variety of plugins and software. It is also possible
-to use |jedi| in the :ref:`Python shell or with IPython <repl-completion>`.
+|jedi| is can be used with a variety of :ref:`plugins <editor-plugins>`,
+`language servers <language-servers>` and other software.
+It is also possible to use |jedi| in the :ref:`Python shell or with IPython
+<repl-completion>`.
 
 Below you can also find a list of :ref:`recipes for type hinting <recipes>`.
 
+.. _language-servers:
+
+Language Servers
+--------------
+
+- `jedi-language-server <https://github.com/pappasam/jedi-language-server>`_
+- `python-language-server <https://github.com/palantir/python-language-server>`_
+- `anakin-language-server <https://github.com/muffinmad/anakin-language-server>`_
 
 .. _editor-plugins:
 
@@ -82,6 +92,16 @@ Web Debugger
 ~~~~~~~~~~~~
 
 - wdb_
+
+xonsh shell
+~~~~~~~~~~~
+
+Jedi is a preinstalled extension in `xonsh shell <https://xon.sh/contents.html>`_. 
+Run the following command to enable:
+
+::
+
+    xontrib load jedi
 
 and many more!
 

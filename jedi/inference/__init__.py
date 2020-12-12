@@ -81,7 +81,7 @@ from jedi.inference.imports import follow_error_node_imports_if_possible
 from jedi.plugins import plugin_manager
 
 
-class InferenceState(object):
+class InferenceState:
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
             environment = project.get_environment()
@@ -120,14 +120,15 @@ class InferenceState(object):
         debug.dbg('execute result: %s in %s', value_set, value)
         return value_set
 
-    @property
+    # mypy doesn't suppport decorated propeties (https://github.com/python/mypy/issues/1362)
+    @property  # type: ignore[misc]
     @inference_state_function_cache()
     def builtins_module(self):
         module_name = 'builtins'
         builtins_module, = self.import_module((module_name,), sys_path=())
         return builtins_module
 
-    @property
+    @property  # type: ignore[misc]
     @inference_state_function_cache()
     def typing_module(self):
         typing_module, = self.import_module(('typing',))
@@ -169,6 +170,8 @@ class InferenceState(object):
                 return tree_name_to_values(self, context, name)
             elif type_ == 'param':
                 return context.py__getattribute__(name.value, position=name.end_pos)
+            elif type_ == 'namedexpr_test':
+                return context.infer_node(def_)
         else:
             result = follow_error_node_imports_if_possible(context, name)
             if result is not None:

@@ -206,6 +206,24 @@ def test_numpydoc_parameters_set_of_values():
     assert 'capitalize' in names
     assert 'numerator' in names
 
+@pytest.mark.skipif(numpydoc_unavailable,
+                    reason='numpydoc module is unavailable')
+def test_numpydoc_parameters_set_single_value():
+    """
+    This is found in numpy  masked-array I'm not too sure what this means but should not crash
+    """
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Parameters
+        ----------
+        x : {var}, optional
+        """
+        x.''')
+    names = [c.name for c in jedi.Script(s).complete()]
+    # just don't crash
+    assert names == []
+
 
 @pytest.mark.skipif(numpydoc_unavailable,
                     reason='numpydoc module is unavailable')

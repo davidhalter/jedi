@@ -53,7 +53,7 @@ class FunctionAndClassBase(TreeValue):
             return None
 
 
-class FunctionMixin(object):
+class FunctionMixin:
     api_type = 'function'
 
     def get_filters(self, origin_scope=None):
