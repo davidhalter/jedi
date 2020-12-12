@@ -18,6 +18,7 @@ Unreleased
 - Started using annotations
 - Better support for the walrus operator
 - Project attributes are now read accessible
+- Removed all deprecations
 
 This is likely going to be the last minor release before 1.0.
 
