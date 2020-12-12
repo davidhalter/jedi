@@ -16,6 +16,7 @@ collect_ignore = [
     'jedi/inference/compiled/subprocess/__main__.py',
     'build/',
     'test/examples',
+    'sith.py',
 ]
 
 
