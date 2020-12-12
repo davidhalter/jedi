@@ -176,9 +176,9 @@ class TestCase(object):
     def show_errors(self):
         sys.stderr.write(self.traceback)
         print(("Error with running Script(...).{operation}() with\n"
-              "\tpath:   {path}\n"
-              "\tline:   {line}\n"
-              "\tcolumn: {column}").format(**self.__dict__))
+               "\tpath:   {path}\n"
+               "\tline:   {line}\n"
+               "\tcolumn: {column}").format(**self.__dict__))
 
 
 def main(arguments):
@@ -198,10 +198,10 @@ def main(arguments):
         else:
             t.run(debugger)
     elif arguments['run']:
-            TestCase(
-                arguments['<operation>'], arguments['<path>'],
-                int(arguments['<line>']), int(arguments['<column>'])
-            ).run(debugger, print_result=True)
+        TestCase(
+            arguments['<operation>'], arguments['<path>'],
+            int(arguments['<line>']), int(arguments['<column>'])
+        ).run(debugger, print_result=True)
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
