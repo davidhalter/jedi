@@ -96,6 +96,9 @@ def test_correct_zip_package_behavior(Script, inference_state, environment, code
     if path is not None:
         assert value.py__path__() == [str(pkg_zip_path.joinpath(path))]
 
+    value.string_names = None
+    assert value.py__package__() == []
+
 
 def test_find_module_not_package_zipped(Script, inference_state, environment):
     path = get_example_dir('zipped_imports', 'not_pkg.zip')

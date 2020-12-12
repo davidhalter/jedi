@@ -60,6 +60,7 @@ Code Contributors
 - Max Mäusezahl (@mmaeusezahl) <maxmaeusezahl@googlemail.com>
 - Vladislav Serebrennikov (@endilll)
 - Andrii Kolomoiets (@muffinmad)
+- Leo Ryu (@Leo-Ryu)
 
 And a few more "anonymous" contributors.
 
