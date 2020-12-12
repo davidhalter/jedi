@@ -370,3 +370,35 @@ def test_multi_goto(Script):
     y, = script.goto(line=4)
     assert x.line == 1
     assert y.line == 2
+
+
+@pytest.mark.parametrize(
+    'code, column, expected', [
+        ('str() ', 3, 'str'),
+        ('str() ', 4, 'str'),
+        ('str() ', 5, 'str'),
+        ('str() ', 6, None),
+        ('str(    ) ', 6, None),
+        ('   1', 1, None),
+        ('str(1) ', 3, 'str'),
+        ('str(1) ', 4, 'int'),
+        ('str(1) ', 5, 'int'),
+        ('str(1) ', 6, 'str'),
+        ('str(1) ', 7, None),
+        ('str( 1) ', 4, 'str'),
+        ('str( 1) ', 5, 'int'),
+        ('str(+1) ', 4, 'str'),
+        ('str(+1) ', 5, 'int'),
+        ('str(1, 1.) ', 3, 'str'),
+        ('str(1, 1.) ', 4, 'int'),
+        ('str(1, 1.) ', 5, 'int'),
+        ('str(1, 1.) ', 6, None),
+        ('str(1, 1.) ', 7, 'float'),
+    ]
+)
+def test_infer_after_parentheses(Script, code, column, expected):
+    completions = Script(code).infer(column=column)
+    if expected is None:
+        assert completions == []
+    else:
+        assert [c.name for c in completions] == [expected]

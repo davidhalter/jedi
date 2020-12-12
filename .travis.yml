@@ -8,6 +8,7 @@ python:
 
 env:
   - JEDI_TEST_ENVIRONMENT=38
+  - JEDI_TEST_ENVIRONMENT=39
   - JEDI_TEST_ENVIRONMENT=37
   - JEDI_TEST_ENVIRONMENT=36
   - JEDI_TEST_ENVIRONMENT=interpreter
@@ -47,9 +48,15 @@ script:
           # Only required for JEDI_TEST_ENVIRONMENT=38, because it's not always
           # available.
           download_name=python-$test_env_version
-          wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
-          sudo tar xjf $download_name.tar.bz2 --directory / opt/python
-          ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
+          if [ "$JEDI_TEST_ENVIRONMENT" == "39" ]; then
+            wget https://storage.googleapis.com/travis-ci-language-archives/python/binaries/ubuntu/16.04/x86_64/python-3.9-dev.tar.bz2
+            sudo tar xjf python-3.9-dev.tar.bz2 --directory / opt/python
+            ln -s "/opt/python/3.9-dev/bin/python" /home/travis/bin/python3.9
+          else
+            wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
+            sudo tar xjf $download_name.tar.bz2 --directory / opt/python
+            ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
+          fi
         elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
           # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=36).
           pyenv_bin="$(pyenv whence --path "$python_bin" | head -n1)"

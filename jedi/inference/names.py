@@ -7,6 +7,7 @@ from parso.tree import search_ancestor
 from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
 from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
@@ -331,6 +332,12 @@ class TreeNameDefinition(AbstractTreeName):
             node = node.parent
         return indexes
 
+    @property
+    def inference_state(self):
+        # Used by the cache function below
+        return self.parent_context.inference_state
+
+    @inference_state_method_cache(default='')
     def py__doc__(self):
         api_type = self.api_type
         if api_type in ('function', 'class'):

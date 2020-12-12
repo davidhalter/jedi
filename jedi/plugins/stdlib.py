@@ -819,7 +819,8 @@ def get_metaclass_filters(func):
                     and metaclass.get_root_context().py__name__() == 'enum':
                 filter_ = ParserTreeFilter(parent_context=cls.as_context())
                 return [DictFilter({
-                    name.string_name: EnumInstance(cls, name).name for name in filter_.values()
+                    name.string_name: EnumInstance(cls, name).name
+                    for name in filter_.values()
                 })]
         return func(cls, metaclasses, is_instance)
     return wrapper
@@ -837,6 +838,14 @@ class EnumInstance(LazyValueWrapper):
         return ValueName(self, self._name.tree_name)
 
     def _get_wrapped_value(self):
+        n = self._name.string_name
+        if n.startswith('__') and n.endswith('__') or self._name.api_type == 'function':
+            inferred = self._name.infer()
+            if inferred:
+                return next(iter(inferred))
+            o, = self.inference_state.builtins_module.py__getattribute__('object')
+            return o
+
         value, = self._cls.execute_with_values()
         return value
 

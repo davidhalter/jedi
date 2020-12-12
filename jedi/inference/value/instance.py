@@ -401,21 +401,10 @@ class AnonymousInstance(_BaseTreeInstance):
     _arguments = None
 
 
-class CompiledInstanceName(compiled.CompiledName):
-    def __init__(self, inference_state, instance, klass, name):
-        parent_value = klass.parent_context.get_value()
-        assert parent_value is not None, "How? Please reproduce and report"
-        super().__init__(
-            inference_state,
-            parent_value,
-            name.string_name
-        )
-        self._instance = instance
-        self._class_member_name = name
-
+class CompiledInstanceName(NameWrapper):
     @iterator_to_value_set
     def infer(self):
-        for result_value in self._class_member_name.infer():
+        for result_value in self._wrapped_name.infer():
             if result_value.api_type == 'function':
                 yield CompiledBoundMethod(result_value)
             else:
@@ -434,11 +423,7 @@ class CompiledInstanceClassFilter(AbstractFilter):
         return self._convert(self._class_filter.values())
 
     def _convert(self, names):
-        klass = self._class_filter.compiled_value
-        return [
-            CompiledInstanceName(self._instance.inference_state, self._instance, klass, n)
-            for n in names
-        ]
+        return [CompiledInstanceName(n) for n in names]
 
 
 class BoundMethod(FunctionMixin, ValueWrapper):
@@ -515,6 +500,18 @@ class SelfName(TreeNameDefinition):
 
     def get_defining_qualified_value(self):
         return self._instance
+
+    def infer(self):
+        stmt = search_ancestor(self.tree_name, 'expr_stmt')
+        if stmt is not None:
+            if stmt.children[1].type == "annassign":
+                from jedi.inference.gradual.annotation import infer_annotation
+                values = infer_annotation(
+                    self.parent_context, stmt.children[1].children[1]
+                ).execute_annotation()
+                if values:
+                    return values
+        return super().infer()
 
 
 class LazyInstanceClassName(NameWrapper):

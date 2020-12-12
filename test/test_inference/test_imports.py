@@ -489,3 +489,9 @@ def test_relative_imports_without_path_and_setup_py(
             assert n.name == name
             assert n.type == 'module'
             assert n.line == 1
+
+
+def test_import_recursion(Script):
+    path = get_example_dir('import-recursion', "cq_example.py")
+    for c in Script(path=path).complete(3, 3):
+        c.docstring()

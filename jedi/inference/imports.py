@@ -533,8 +533,8 @@ def load_module_from_path(inference_state, file_io, import_names=None, is_packag
             values = NO_VALUES
 
         return create_stub_module(
-            inference_state, values, parse_stub_module(inference_state, file_io),
-            file_io, import_names
+            inference_state, inference_state.latest_grammar, values,
+            parse_stub_module(inference_state, file_io), file_io, import_names
         )
     else:
         module = _load_python_module(
