@@ -181,7 +181,7 @@ class ModuleValue(ModuleMixin, TreeValue):
     def py__package__(self):
         if self.string_names is None:
             return []
-            
+
         if self._is_package:
             return self.string_names
         return self.string_names[:-1]
