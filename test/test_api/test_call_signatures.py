@@ -253,7 +253,7 @@ def test_complex(Script, environment):
 
 
 def _params(Script, source, line=None, column=None):
-    signatures = Script(source, line, column).get_signatures()
+    signatures = Script(source).get_signatures(line, column)
     assert len(signatures) == 1
     return signatures[0].params
 

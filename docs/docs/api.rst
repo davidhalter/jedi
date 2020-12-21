@@ -169,6 +169,5 @@ Deprecations
 
 The deprecation process is as follows:
 
-1. A deprecation is announced in the next major/minor release.
-2. We wait either at least a year and at least two minor releases until we
-   remove the deprecated functionality.
+1. A deprecation is announced in any release.
+2. The next major release removes the deprecated functionality.

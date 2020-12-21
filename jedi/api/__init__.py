@@ -8,7 +8,6 @@ debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
 """
 import sys
-import warnings
 from pathlib import Path
 
 import parso
@@ -90,23 +89,16 @@ class Script:
 
     :param code: The source code of the current file, separated by newlines.
     :type code: str
-    :param line: Deprecated, please use it directly on e.g. ``.complete``
-    :type line: int
-    :param column: Deprecated, please use it directly on e.g. ``.complete``
-    :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or pathlib.Path or None
-    :param sys_path: Deprecated, use the project parameter.
-    :type sys_path: typing.List[str]
     :param Environment environment: Provide a predefined :ref:`Environment <environments>`
         to work with a specific Python version or virtualenv.
     :param Project project: Provide a :class:`.Project` to make sure finding
         references works well, because the right folder is searched. There are
         also ways to modify the sys path and other things.
     """
-    def __init__(self, code=None, line=None, column=None, path=None,
-                 sys_path=None, environment=None, project=None, source=None):
+    def __init__(self, code=None, *, path=None, environment=None, project=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         if isinstance(path, str):
@@ -114,27 +106,6 @@ class Script:
 
         self.path = path.absolute() if path else None
 
-        if line is not None:
-            warnings.warn(
-                "Providing the line is now done in the functions themselves "
-                "like `Script(...).complete(line, column)`",
-                DeprecationWarning,
-                stacklevel=2
-            )
-        if column is not None:
-            warnings.warn(
-                "Providing the column is now done in the functions themselves "
-                "like `Script(...).complete(line, column)`",
-                DeprecationWarning,
-                stacklevel=2
-            )
-        if source is not None:
-            code = source
-            warnings.warn(
-                "Use the code keyword argument instead.",
-                DeprecationWarning,
-                stacklevel=2
-            )
         if code is None:
             # TODO add a better warning than the traceback!
             with open(path, 'rb') as f:
@@ -143,15 +114,6 @@ class Script:
         if project is None:
             # Load the Python grammar of the current interpreter.
             project = get_default_project(None if self.path is None else self.path.parent)
-        # TODO deprecate and remove sys_path from the Script API.
-        if sys_path is not None:
-            project._sys_path = sys_path
-            warnings.warn(
-                "Deprecated since version 0.17.0. Use the project API instead, "
-                "which means Script(project=Project(dir, sys_path=sys_path)) instead.",
-                DeprecationWarning,
-                stacklevel=2
-            )
 
         self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
@@ -168,7 +130,6 @@ class Script:
         debug.speed('parsed')
         self._code_lines = parso.split_lines(code, keepends=True)
         self._code = code
-        self._pos = line, column
 
         cache.clear_time_caches()
         debug.reset_time()
@@ -251,14 +212,6 @@ class Script:
             )
             return completion.complete()
 
-    def completions(self, fuzzy=False):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).complete instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.complete(*self._pos, fuzzy=fuzzy)
-
     @validate_line_column
     def infer(self, line=None, column=None, *, only_stubs=False, prefer_stubs=False):
         """
@@ -302,25 +255,6 @@ class Script:
         # API sense. In the internals we want to separate more things than in
         # the API.
         return helpers.sorted_definitions(set(defs))
-
-    def goto_definitions(self, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).infer instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.infer(*self._pos, **kwargs)
-
-    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).goto instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.goto(*self._pos,
-                         follow_imports=follow_imports,
-                         follow_builtin_imports=follow_builtin_imports,
-                         **kwargs)
 
     @validate_line_column
     def goto(self, line=None, column=None, *, follow_imports=False, follow_builtin_imports=False,
@@ -452,14 +386,6 @@ class Script:
                 return [classes.Name(self._inference_state, name)]
         return []
 
-    def usages(self, **kwargs):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).get_references instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.get_references(*self._pos, **kwargs)
-
     @validate_line_column
     def get_references(self, line=None, column=None, **kwargs):
         """
@@ -489,14 +415,6 @@ class Script:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
         return _references(**kwargs)
-
-    def call_signatures(self):
-        warnings.warn(
-            "Deprecated since version 0.16.0. Use Script(...).get_signatures instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return self.get_signatures(*self._pos)
 
     @validate_line_column
     def get_signatures(self, line=None, column=None):
@@ -821,21 +739,6 @@ class Interpreter(Script):
             tree_module_value,
             self.namespaces,
         )
-
-
-def names(source=None, path=None, all_scopes=False,
-          definitions=True, references=False, environment=None):
-    warnings.warn(
-        "Deprecated since version 0.16.0. Use Script(...).get_names instead.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-
-    return Script(source, path=path).get_names(
-        all_scopes=all_scopes,
-        definitions=definitions,
-        references=references,
-    )
 
 
 def preload_module(*modules):
