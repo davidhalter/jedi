@@ -245,7 +245,42 @@ class Importer:
         )
 
     def follow(self):
-        if not self.import_path or not self._infer_possible:
+        if not self.import_path:
+            if self._fixed_sys_path:
+                # This is a bit of a special case, that maybe should be
+                # revisited. If the project path is wrong or the user uses
+                # relative imports the wrong way, we might end up here, where
+                # the `fixed_sys_path == project.path` in that case we kind of
+                # use the project.path.parent directory as our path. This is
+                # usually not a problem, except if imports in other places are
+                # using the same names. Example:
+                #
+                # foo/                       < #1
+                #   - setup.py
+                #   - foo/                   < #2
+                #     - __init__.py
+                #     - foo.py               < #3
+                #
+                # If the top foo is our project folder and somebody uses
+                # `from . import foo` in `setup.py`, it will resolve to foo #2,
+                # which means that the import for foo.foo is cached as
+                # `__init__.py` (#2) and not as `foo.py` (#3). This is usually
+                # not an issue, because this case is probably pretty rare, but
+                # might be an issue for some people.
+                #
+                # However for most normal cases where we work with different
+                # file names, this code path hits where we basically change the
+                # project path to an ancestor of project path.
+                from jedi.inference.value.namespace import ImplicitNamespaceValue
+                import_path = (os.path.basename(self._fixed_sys_path[0]),)
+                ns = ImplicitNamespaceValue(
+                    self._inference_state,
+                    string_names=import_path,
+                    paths=self._fixed_sys_path,
+                )
+                return ValueSet({ns})
+            return NO_VALUES
+        if not self._infer_possible:
             return NO_VALUES
 
         # Check caches first

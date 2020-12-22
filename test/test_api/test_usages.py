@@ -1,9 +1,11 @@
 import pytest
 
+from ..helpers import test_dir
+
 
 def test_import_references(Script):
-    s = Script("from .. import foo", path="foo.py")
-    assert [usage.line for usage in s.get_references(line=1, column=18)] == [1]
+    s = Script("from .. import foo", path=test_dir.joinpath("foo.py"))
+    assert [usage.line for usage in s.get_references()] == [1]
 
 
 def test_exclude_builtin_modules(Script):
