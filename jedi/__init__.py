@@ -27,7 +27,7 @@ ad
 load
 """
 
-__version__ = '0.17.2'
+__version__ = '0.18.0'
 
 from jedi.api import Script, Interpreter, set_debug_function, preload_module
 from jedi import settings

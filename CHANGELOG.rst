@@ -6,6 +6,9 @@ Changelog
 Unreleased
 ++++++++++
 
+0.18.0 (2020-12-25)
++++++++++++++++++++
+
 - Dropped Python 2 and Python 3.5
 - Using ``pathlib.Path()`` as an output instead of ``str`` in most places:
   - ``Project.path``
