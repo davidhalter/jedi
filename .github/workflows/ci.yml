@@ -3,9 +3,10 @@ on: push
 jobs:
   tests:
     # Set the type of machine to run on
-    runs-on: [ubuntu-20.04, windows-2019]
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-20.04, windows-2019]
         environment: ['3.8', '3.9', '3.7', '3.6', 'interpreter']
         python-version: [3.6, 3.7, 3.8, 3.9]
     steps:
