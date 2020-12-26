@@ -3,7 +3,7 @@ on: push
 jobs:
   tests:
     # Set the type of machine to run on
-    runs-on: ubuntu-20.04
+    runs-on: [ubuntu-20.04, windows-2019]
     strategy:
       matrix:
         environment: ['3.8', '3.9', '3.7', '3.6', 'interpreter']
