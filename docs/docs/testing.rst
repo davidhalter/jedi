@@ -12,8 +12,8 @@ easy as::
 
     python3.8 -m pytest
 
-Tests are also run automatically on `Travis CI
-<https://travis-ci.org/davidhalter/jedi/>`_.
+Tests are also run automatically on `GitHub Actions
+<https://github.com/davidhalter/jedi/actions>`_.
 
 You want to add a test for |jedi|? Great! We love that. Normally you should
 write your tests as :ref:`Blackbox Tests <blackbox>`. Most tests would
