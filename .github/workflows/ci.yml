@@ -3,7 +3,7 @@ on: push
 jobs:
   tests:
     # Set the type of machine to run on
-    runs-on: [ubuntu-20.04, windows-2019]
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         environment: ['3.8', '3.9', '3.7', '3.6', 'interpreter']
@@ -14,20 +14,20 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies
-        run: 'pip install .[testing]'
-
       - uses: actions/setup-python@v2
         if: ${{ matrix.environment != 'interpreter' }}
         with:
-          python-version: ${{ matrix.interpreter }}
+          python-version: ${{ matrix.environment }}
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install dependencies
+        run: 'pip install .[testing]'
+
       - name: Run tests
-        run: pytest
+        run: python -m pytest
         env:
           JEDI_TEST_ENVIRONMENT: ${{ matrix.environment }}
 
@@ -44,8 +44,8 @@ jobs:
 
       - name: Run tests
         run: |
-          flake8 jedi setup.py
-          mypy jedi sith.py'
+          python -m flake8 jedi setup.py
+          python -m mypy jedi sith.py
 
   coverage:
     runs-on: ubuntu-20.04
@@ -61,13 +61,12 @@ jobs:
 
       - name: Run tests
         run: |
-          coverage run --source jedi -m pytest
-          coverage report
+          python -m coverage run --source jedi -m pytest
+          python -m coverage report
 
       - name: Upload coverage data
         run: |
           pip install --quiet codecov coveralls
-          coverage xml
-          coverage report -m
-          coveralls
+          python -m coverage xml
+          python -m coverage report -m
           bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
