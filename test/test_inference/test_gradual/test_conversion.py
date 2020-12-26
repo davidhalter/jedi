@@ -69,11 +69,12 @@ def test_stub_get_line_code(Script):
     code = 'from abc import ABC; ABC'
     script = Script(code)
     d, = script.goto(only_stubs=True)
-    assert d.get_line_code() == 'class ABC(metaclass=ABCMeta): ...\n'
+    # Replace \r for tests on Windows
+    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta): ...\n'
     del parser_cache[script._inference_state.latest_grammar._hashed][d.module_path]
     d, = Script(path=d.module_path).goto(d.line, d.column, only_stubs=True)
     assert d.is_stub()
-    assert d.get_line_code() == 'class ABC(metaclass=ABCMeta): ...\n'
+    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta): ...\n'
 
 
 def test_os_stat_result(Script):
