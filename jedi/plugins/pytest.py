@@ -5,6 +5,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
+from jedi.inference.helpers import infer_call_of_leaf
 
 _PYTEST_FIXTURE_MODULES = [
     ('_pytest', 'monkeypatch'),
@@ -147,18 +148,35 @@ class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super()._filter(names):
             funcdef = name.parent
+            # Class fixtures are not supported
             if funcdef.type == 'funcdef':
-                # Class fixtures are not supported
                 decorated = funcdef.parent
                 if decorated.type == 'decorated' and self._is_fixture(decorated):
                     yield name
 
     def _is_fixture(self, decorated):
-        for decorator in decorated.children:
+        decorators = decorated.children[0]
+        if decorators.type == 'decorators':
+            decorators = decorators.children
+        else:
+            decorators = [decorators]
+        for decorator in decorators:
             dotted_name = decorator.children[1]
             # A heuristic, this makes it faster.
             if 'fixture' in dotted_name.get_code():
-                for value in self.parent_context.infer_node(dotted_name):
+                if dotted_name.type == 'atom_expr':
+                    # Since Python3.9 a decorator does not have dotted names
+                    # anymore.
+                    last_trailer = dotted_name.children[-1]
+                    last_leaf = last_trailer.get_last_leaf()
+                    if last_leaf == ')':
+                        values = infer_call_of_leaf(
+                            self.parent_context, last_leaf, cut_own_trailer=True)
+                    else:
+                        values = self.parent_context.infer_node(dotted_name)
+                else:
+                    values = self.parent_context.infer_node(dotted_name)
+                for value in values:
                     if value.name.get_qualified_names(include_module_names=True) \
                             == ('_pytest', 'fixtures', 'fixture'):
                         return True

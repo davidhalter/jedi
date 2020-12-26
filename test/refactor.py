@@ -82,9 +82,9 @@ def _collect_file_tests(code, path, lines_to_execute):
 
         yield RefactoringCase(name, first, line_nr, index, path, kwargs, type_, second)
     if match is None:
-        raise Exception("Didn't match any test")
+        raise Exception(f"Didn't match any test for {path}, {code!r}")
     if match.end() != len(code):
-        raise Exception("Didn't match until the end of the file in %s" % path)
+        raise Exception(f"Didn't match until the end of the file in {path}")
 
 
 def collect_dir_tests(base_dir, test_files):

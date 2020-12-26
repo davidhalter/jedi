@@ -100,7 +100,9 @@ def environment(request):
     if request.config.option.interpreter_env or version == 'interpreter':
         return InterpreterEnvironment()
 
-    return get_system_environment(version[0] + '.' + version[1:])
+    if '.' not in version:
+        version = version[0] + '.' + version[1:]
+    return get_system_environment(version)
 
 
 @pytest.fixture(scope='session')

@@ -169,7 +169,8 @@ def test_reference_description(Script):
 
 def test_get_line_code(Script):
     def get_line_code(source, line=None, **kwargs):
-        return Script(source).complete(line=line)[0].get_line_code(**kwargs)
+        # On Windows replace \r
+        return Script(source).complete(line=line)[0].get_line_code(**kwargs).replace('\r', '')
 
     # On builtin
     assert get_line_code('abs') == 'def abs(__n: SupportsAbs[_T]) -> _T: ...\n'
