@@ -215,6 +215,20 @@ f
 g
 
 # -----------------
+# setitem
+# -----------------
+
+class F:
+    setitem_x = [1,2]
+    setitem_x[0] = 3
+
+#? ['setitem_x']
+F().setitem_x
+#? list()
+F().setitem_x
+
+
+# -----------------
 # dicts
 # -----------------
 dic2 = {'asdf': 3, 'b': 'str'}

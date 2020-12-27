@@ -209,6 +209,9 @@ class IntegrationTestCase(BaseTestCase):
         # import cProfile; cProfile.run('...')
 
         comp_str = {c.name for c in completions}
+        for r in completions:
+            # Test if this access raises an error
+            assert isinstance(r.type, str)
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
     def run_inference(self, compare_cb, environment):
@@ -244,6 +247,9 @@ class IntegrationTestCase(BaseTestCase):
         should = definition(self.correct, self.start, script.path)
         result = script.infer(self.line_nr, self.column)
         is_str = set(comparison(r) for r in result)
+        for r in result:
+            # Test if this access raises an error
+            assert isinstance(r.type, str)
         return compare_cb(self, is_str, should)
 
     def run_goto(self, compare_cb, environment):

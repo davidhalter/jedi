@@ -75,17 +75,17 @@ class ClassName(TreeNameDefinition):
 
     @property
     def api_type(self):
-        if self.tree_name is not None:
+        type_ = super().api_type
+        if type_ == 'function':
             definition = self.tree_name.get_definition()
-            if definition.type == 'funcdef':
-                if function_is_property(definition):
-                    # This essentially checks if there is an @property before
-                    # the function. @property could be something different, but
-                    # any programmer that redefines property as something that
-                    # is not really a property anymore, should be shot. (i.e.
-                    # this is a heuristic).
-                    return 'property'
-        return super().api_type
+            if function_is_property(definition):
+                # This essentially checks if there is an @property before
+                # the function. @property could be something different, but
+                # any programmer that redefines property as something that
+                # is not really a property anymore, should be shot. (i.e.
+                # this is a heuristic).
+                return 'property'
+        return type_
 
 
 class ClassFilter(ParserTreeFilter):
