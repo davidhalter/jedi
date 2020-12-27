@@ -102,6 +102,8 @@ class X:
         (partialmethod_code + 'X().d(', None),
         (partialmethod_code + 'X.c(', 'func(a, b)'),
         (partialmethod_code + 'X.d(', None),
+
+        ('import contextlib\n@contextlib.contextmanager\ndef f(x): pass\nf(', 'f(x)'),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):

@@ -19,3 +19,11 @@ class Decoratee(ValueWrapper):
             Decoratee(v, self._original_value)
             for v in self._wrapped_value.py__get__(instance, class_value)
         )
+
+    def get_signatures(self):
+        signatures = self._wrapped_value.get_signatures()
+        if signatures:
+            return signatures
+        # Fallback to signatures of the original function/class if the
+        # decorator has no signature or it is not inferrable.
+        return self._original_value.get_signatures()
