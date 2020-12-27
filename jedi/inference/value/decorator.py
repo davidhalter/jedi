@@ -26,4 +26,9 @@ class Decoratee(ValueWrapper):
             return signatures
         # Fallback to signatures of the original function/class if the
         # decorator has no signature or it is not inferrable.
-        return self._original_value.get_signatures()
+        #
+        # __get__ means that it's a descriptor. In that case we don't return
+        # signatures, because they are usually properties.
+        if not self._wrapped_value.py__getattribute__('__get__'):
+            return self._original_value.get_signatures()
+        return []
