@@ -310,6 +310,13 @@ z = 3
 #< 10 (0,1), (0,10)
 {z:1 for  z in something}
 
+#< 8 (0,6), (0, 40)
+[[x + nested_loopv2 for x in bar()] for nested_loopv2 in baz()]
+
+#< 25 (0,20), (0, 65)
+(("*" if abs(foo(x, nested_loopv1)) else " " for x in bar()) for nested_loopv1 in baz())
+
+
 def whatever_func():
     zzz = 3
     if UNDEFINED:

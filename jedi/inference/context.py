@@ -255,8 +255,7 @@ class TreeContextMixin:
             if scope_node.type in ('funcdef', 'lambdef', 'classdef'):
                 return self.create_value(scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
-                parent_scope = parser_utils.get_parent_scope(scope_node)
-                parent_context = from_scope_node(parent_scope)
+                parent_context = from_scope_node(parent_scope(scope_node.parent))
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext(parent_context, scope_node)

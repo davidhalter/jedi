@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 |jedi| is mostly being tested by what I would call "integration tests". These
 tests are testing type inference with the public API. This makes a
