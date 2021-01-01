@@ -599,6 +599,19 @@ def test_dict_getitem(code, types):
     assert [c.name for c in comps] == types
 
 
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test__getitem__(class_is_findable):
+    class GetitemCls:
+        def __getitem__(self, key) -> int:
+            pass
+
+    if not class_is_findable:
+        GetitemCls.__name__ = 'asdf'
+
+    n, = jedi.Interpreter('GetitemCls()[0]', [locals()]).infer()
+    assert n.name == 'int'
+
+
 def foo():
     raise KeyError
 

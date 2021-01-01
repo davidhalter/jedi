@@ -121,7 +121,13 @@ class AbstractInstanceValue(Value):
         return [s.bind(self) for s in call_funcs.get_signatures()]
 
     def get_function_slot_names(self, name):
-        # Searches for Python functions in classes.
+        # Python classes don't look at the dictionary of the instance when
+        # looking up `__call__`. This is something that has to do with Python's
+        # internal slot system (note: not __slots__, but C slots).
+        for filter in self.get_filters(include_self_names=False):
+            names = filter.get(name)
+            if names:
+                return names
         return []
 
     def execute_function_slots(self, names, *inferred_args):
@@ -132,6 +138,17 @@ class AbstractInstanceValue(Value):
 
     def get_type_hint(self, add_class_info=True):
         return self.py__name__()
+
+    def py__getitem__(self, index_value_set, contextualized_node):
+        names = self.get_function_slot_names('__getitem__')
+        if not names:
+            return super().py__getitem__(
+                index_value_set,
+                contextualized_node,
+            )
+
+        args = ValuesArguments([index_value_set])
+        return ValueSet.from_sets(name.infer().execute(args) for name in names)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.class_value)
@@ -237,17 +254,6 @@ class _BaseTreeInstance(AbstractInstanceValue):
                  or self.get_function_slot_names('__getattribute__'))
         return self.execute_function_slots(names, name)
 
-    def py__getitem__(self, index_value_set, contextualized_node):
-        names = self.get_function_slot_names('__getitem__')
-        if not names:
-            return super().py__getitem__(
-                index_value_set,
-                contextualized_node,
-            )
-
-        args = ValuesArguments([index_value_set])
-        return ValueSet.from_sets(name.infer().execute(args) for name in names)
-
     def py__iter__(self, contextualized_node=None):
         iter_slot_names = self.get_function_slot_names('__iter__')
         if not iter_slot_names:
@@ -294,16 +300,6 @@ class _BaseTreeInstance(AbstractInstanceValue):
             return self.execute_function_slots(names, instance, class_value)
         else:
             return ValueSet([self])
-
-    def get_function_slot_names(self, name):
-        # Python classes don't look at the dictionary of the instance when
-        # looking up `__call__`. This is something that has to do with Python's
-        # internal slot system (note: not __slots__, but C slots).
-        for filter in self.get_filters(include_self_names=False):
-            names = filter.get(name)
-            if names:
-                return names
-        return []
 
 
 class TreeInstance(_BaseTreeInstance):
