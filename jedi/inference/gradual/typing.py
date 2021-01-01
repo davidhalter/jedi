@@ -17,7 +17,7 @@ from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import BaseTypingValue, \
-    BaseTypingClassWithGenerics, BaseTypingInstance
+    BaseTypingClassWithGenerics, BaseTypingInstance, ValueWrapper
 from jedi.inference.gradual.type_var import TypeVarClass
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 
@@ -63,8 +63,8 @@ class TypingModuleName(NameWrapper):
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass.create_cached(
-                inference_state, self.parent_context, self.tree_name)
+            cls, = self._wrapped_name.infer()
+            yield TypeVarClass.create_cached(inference_state, cls)
         elif name == 'Any':
             yield AnyClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
@@ -79,8 +79,8 @@ class TypingModuleName(NameWrapper):
             yield NewTypeFunction.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'cast':
-            yield CastFunction.create_cached(
-                inference_state, self.parent_context, self.tree_name)
+            cast_fn, = self._wrapped_name.infer()
+            yield CastFunction.create_cached(inference_state, cast_fn)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -430,7 +430,7 @@ class NewType(Value):
         return CompiledValueName(self, 'NewType')
 
 
-class CastFunction(BaseTypingValue):
+class CastFunction(ValueWrapper):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()

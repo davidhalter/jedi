@@ -380,6 +380,9 @@ class BaseTypingValue(LazyValueWrapper):
     def _get_wrapped_value(self):
         return _PseudoTreeNameClass(self.parent_context, self._tree_name)
 
+    def get_signatures(self):
+        return self._wrapped_value.get_signatures()
+
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 

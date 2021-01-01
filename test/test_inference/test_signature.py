@@ -104,6 +104,14 @@ class X:
         (partialmethod_code + 'X.d(', None),
 
         ('import contextlib\n@contextlib.contextmanager\ndef f(x): pass\nf(', 'f(x)'),
+
+        ('from typing import cast\ncast(', {
+            'cast(typ: object, val: Any) -> Any',
+            'cast(typ: str, val: Any) -> Any',
+            'cast(typ: Type[_T], val: Any) -> _T'}),
+        ('from typing import TypeVar\nTypeVar(',
+         'TypeVar(name: str, *constraints: Type[Any], bound: Union[None, Type[Any], str]=..., '
+         'covariant: bool=..., contravariant: bool=...)'),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
@@ -114,8 +122,10 @@ def test_tree_signature(Script, environment, code, expected):
     if expected is None:
         assert not Script(code).get_signatures()
     else:
-        sig, = Script(code).get_signatures()
-        assert expected == sig.to_string()
+        actual = {sig.to_string() for sig in Script(code).get_signatures()}
+        if not isinstance(expected, set):
+            expected = {expected}
+        assert expected == actual
 
 
 @pytest.mark.parametrize(

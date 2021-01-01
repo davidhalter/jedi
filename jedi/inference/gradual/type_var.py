@@ -3,7 +3,7 @@ from jedi.inference.base_value import ValueSet, NO_VALUES, ValueWrapper
 from jedi.inference.gradual.base import BaseTypingValue
 
 
-class TypeVarClass(BaseTypingValue):
+class TypeVarClass(ValueWrapper):
     def py__call__(self, arguments):
         unpacked = arguments.unpack()
 
@@ -17,9 +17,9 @@ class TypeVarClass(BaseTypingValue):
         return ValueSet([TypeVar.create_cached(
             self.inference_state,
             self.parent_context,
-            self._tree_name,
-            var_name,
-            unpacked
+            tree_name=self.tree_node.name,
+            var_name=var_name,
+            unpacked_args=unpacked,
         )])
 
     def _find_string_name(self, lazy_value):
