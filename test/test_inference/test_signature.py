@@ -105,6 +105,7 @@ class X:
 
         ('import contextlib\n@contextlib.contextmanager\ndef f(x): pass\nf(', 'f(x)'),
 
+        # typing lib
         ('from typing import cast\ncast(', {
             'cast(typ: object, val: Any) -> Any',
             'cast(typ: str, val: Any) -> Any',
@@ -112,6 +113,7 @@ class X:
         ('from typing import TypeVar\nTypeVar(',
          'TypeVar(name: str, *constraints: Type[Any], bound: Union[None, Type[Any], str]=..., '
          'covariant: bool=..., contravariant: bool=...)'),
+        ('from typing import List\nList(', None),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):

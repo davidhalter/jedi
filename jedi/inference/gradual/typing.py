@@ -275,6 +275,9 @@ class TypeAlias(LazyValueWrapper):
     def gather_annotation_classes(self):
         return ValueSet([self._get_wrapped_value()])
 
+    def get_signatures(self):
+        return []
+
 
 class Callable(BaseTypingInstance):
     def py__call__(self, arguments):
