@@ -117,6 +117,10 @@ class X:
         ('from typing import List\nList[int](', None),
         ('from typing import Tuple\nTuple(', None),
         ('from typing import Tuple\nTuple[int](', None),
+        ('from typing import Optional\nOptional(', None),
+        ('from typing import Optional\nOptional[int](', None),
+        ('from typing import Any\nAny(', None),
+        ('from typing import NewType\nNewType(', 'NewType(name: str, tp: Type[_T]) -> Type[_T]'),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):

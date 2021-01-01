@@ -76,8 +76,8 @@ class TypingModuleName(NameWrapper):
             yield OverloadFunction.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'NewType':
-            yield NewTypeFunction.create_cached(
-                inference_state, self.parent_context, self.tree_name)
+            v, = self._wrapped_name.infer()
+            yield NewTypeFunction.create_cached(inference_state, v)
         elif name == 'cast':
             cast_fn, = self._wrapped_name.infer()
             yield CastFunction.create_cached(inference_state, cast_fn)
@@ -86,11 +86,10 @@ class TypingModuleName(NameWrapper):
             # added soon.
             yield TypedDictClass.create_cached(
                 inference_state, self.parent_context, self.tree_name)
-        elif name in ('no_type_check', 'no_type_check_decorator'):
-            # This is not necessary, as long as we are not doing type checking.
-            yield from self._wrapped_name.infer()
         else:
-            # Everything else shouldn't be relevant for type checking.
+            # Not necessary, as long as we are not doing type checking:
+            # no_type_check & no_type_check_decorator
+            # Everything else shouldn't be relevant...
             yield from self._wrapped_name.infer()
 
 
@@ -398,7 +397,7 @@ class OverloadFunction(BaseTypingValue):
         return func_value_set
 
 
-class NewTypeFunction(BaseTypingValue):
+class NewTypeFunction(ValueWrapper):
     def py__call__(self, arguments):
         ordered_args = arguments.unpack()
         next(ordered_args, (None, None))
