@@ -150,6 +150,16 @@ class AbstractInstanceValue(Value):
         args = ValuesArguments([index_value_set])
         return ValueSet.from_sets(name.infer().execute(args) for name in names)
 
+    def py__iter__(self, contextualized_node=None):
+        iter_slot_names = self.get_function_slot_names('__iter__')
+        if not iter_slot_names:
+            return super().py__iter__(contextualized_node)
+
+        def iterate():
+            for generator in self.execute_function_slots(iter_slot_names):
+                yield from generator.py__next__(contextualized_node)
+        return iterate()
+
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.class_value)
 
@@ -253,16 +263,6 @@ class _BaseTreeInstance(AbstractInstanceValue):
         names = (self.get_function_slot_names('__getattr__')
                  or self.get_function_slot_names('__getattribute__'))
         return self.execute_function_slots(names, name)
-
-    def py__iter__(self, contextualized_node=None):
-        iter_slot_names = self.get_function_slot_names('__iter__')
-        if not iter_slot_names:
-            return super().py__iter__(contextualized_node)
-
-        def iterate():
-            for generator in self.execute_function_slots(iter_slot_names):
-                yield from generator.py__next__(contextualized_node)
-        return iterate()
 
     def py__next__(self, contextualized_node=None):
         name = u'__next__'

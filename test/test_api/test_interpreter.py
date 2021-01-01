@@ -600,16 +600,31 @@ def test_dict_getitem(code, types):
 
 
 @pytest.mark.parametrize('class_is_findable', [False, True])
-def test__getitem__(class_is_findable):
-    class GetitemCls:
+@pytest.mark.parametrize(
+    'code, expected', [
+        ('DunderCls()[0]', 'int'),
+        ('next(DunderCls())', 'float'),
+        ('for x in DunderCls(): x', 'str'),
+    ]
+)
+def test_dunders(class_is_findable, code, expected):
+    from typing import Iterator
+
+    class DunderCls:
         def __getitem__(self, key) -> int:
             pass
 
-    if not class_is_findable:
-        GetitemCls.__name__ = 'asdf'
+        def __iter__(self, key) -> Iterator[str]:
+            pass
 
-    n, = jedi.Interpreter('GetitemCls()[0]', [locals()]).infer()
-    assert n.name == 'int'
+        def __next__(self, key) -> float:
+            pass
+
+    if not class_is_findable:
+        DunderCls.__name__ = 'asdf'
+
+    n, = jedi.Interpreter(code, [locals()]).infer()
+    assert n.name == expected
 
 
 def foo():
