@@ -340,7 +340,7 @@ class TreeNameDefinition(AbstractTreeName):
     @inference_state_method_cache(default='')
     def py__doc__(self):
         api_type = self.api_type
-        if api_type in ('function', 'class'):
+        if api_type in ('function', 'class', 'property'):
             # Make sure the names are not TreeNameDefinitions anymore.
             return clean_scope_docstring(self.tree_name.get_definition())
 

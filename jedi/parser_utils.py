@@ -306,7 +306,7 @@ def expr_is_dotted(node):
     return node.type == 'name'
 
 
-def _function_is_x_method(method_name):
+def _function_is_x_method(*method_names):
     def wrapper(function_node):
         """
         This is a heuristic. It will not hold ALL the times, but it will be
@@ -316,7 +316,7 @@ def _function_is_x_method(method_name):
         """
         for decorator in function_node.get_decorators():
             dotted_name = decorator.children[1]
-            if dotted_name.get_code() == method_name:
+            if dotted_name.get_code() in method_names:
                 return True
         return False
     return wrapper
@@ -324,4 +324,4 @@ def _function_is_x_method(method_name):
 
 function_is_staticmethod = _function_is_x_method('staticmethod')
 function_is_classmethod = _function_is_x_method('classmethod')
-function_is_property = _function_is_x_method('property')
+function_is_property = _function_is_x_method('property', 'cached_property')

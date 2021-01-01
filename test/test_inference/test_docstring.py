@@ -507,3 +507,35 @@ def test_doctest_function_start(Script):
             return
     ''')
     assert Script(code).complete(7, 8)
+
+
+@pytest.mark.parametrize(
+    "name, docstring", [
+        ('prop1', 'Returns prop1.'),
+        ('prop2', 'Returns None or ...'),
+        ('prop3', 'Non-sense property.'),
+        ('prop4', 'Django like property'),
+    ]
+)
+def test_property(name, docstring, goto_or_complete):
+    code = dedent('''
+        from typing import Optional
+        class Test:
+            @property
+            def prop1(self) -> int:
+                """Returns prop1."""
+
+            @property
+            def prop2(self) -> Optional[int]:
+                """Returns None or ..."""
+
+            @property
+            def prop3(self) -> None:
+                """Non-sense property."""
+
+            @cached_property  # Not imported, but Jedi uses a heuristic
+            def prop4(self) -> None:
+                """Django like property"""
+    ''')
+    n, = goto_or_complete(code + 'Test().' + name)
+    assert n.docstring() == docstring

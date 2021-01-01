@@ -140,6 +140,11 @@ def goto_or_help_or_infer(request, Script):
     return do
 
 
+@pytest.fixture(scope='session', params=['goto', 'complete', 'help'])
+def goto_or_complete(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
+
+
 @pytest.fixture(scope='session')
 def has_django(environment):
     script = jedi.Script('import django', environment=environment)
