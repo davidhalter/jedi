@@ -202,6 +202,10 @@ from keyword import not_existing1, not_existing2
 from tokenize import io
 tokenize.generate_tokens
 
+import socket
+#? 14 ['SocketIO']
+socket.SocketIO
+
 # -----------------
 # builtins
 # -----------------

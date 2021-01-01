@@ -4,7 +4,7 @@ import re
 from parso import python_bytes_to_unicode
 
 from jedi.debug import dbg
-from jedi.file_io import KnownContentFileIO
+from jedi.file_io import KnownContentFileIO, FolderIO
 from jedi.inference.names import SubModuleName
 from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
@@ -127,10 +127,10 @@ def find_references(module_context, tree_name, only_in_module=False):
 
     module_contexts = [module_context]
     if not only_in_module:
-        module_contexts.extend(
-            m for m in set(d.get_root_context() for d in found_names)
-            if m != module_context and m.tree_node is not None
-        )
+        for m in set(d.get_root_context() for d in found_names):
+            if m != module_context and m.tree_node is not None \
+                    and inf.project.path in m.py__file__().parents:
+                module_contexts.append(m)
     # For param no search for other modules is necessary.
     if only_in_module or any(n.api_type == 'param' for n in found_names):
         potential_modules = module_contexts
@@ -250,6 +250,11 @@ def _find_python_files_in_sys_path(inference_state, module_contexts):
             folder_io = folder_io.get_parent_folder()
 
 
+def _find_project_modules(inference_state, module_contexts):
+    except_ = [m.py__file__() for m in module_contexts]
+    yield from recurse_find_python_files(FolderIO(inference_state.project.path), except_)
+
+
 def get_module_contexts_containing_name(inference_state, module_contexts, name,
                                         limit_reduction=1):
     """
@@ -269,7 +274,10 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
     if len(name) <= 2:
         return
 
-    file_io_iterator = _find_python_files_in_sys_path(inference_state, module_contexts)
+    # Currently not used, because there's only `scope=project` and `scope=file`
+    # At the moment there is no such thing as `scope=sys.path`.
+    # file_io_iterator = _find_python_files_in_sys_path(inference_state, module_contexts)
+    file_io_iterator = _find_project_modules(inference_state, module_contexts)
     yield from search_in_file_ios(inference_state, file_io_iterator, name,
                                   limit_reduction=limit_reduction)
 

@@ -383,3 +383,12 @@ usage_definition = 1
 if False:
     #< 8 (-3, 0), (0, 4), ('import_tree.references', 1, 21), ('import_tree.references', 5, 4)
     usage_definition()
+
+# -----------------
+# stdlib stuff
+# -----------------
+
+import socket
+#< (1, 21), (0, 7), ('socket', ..., 6), ('stub:socket', ..., 4), ('imports', ..., 7)
+socket.SocketIO
+some_socket = socket.SocketIO()

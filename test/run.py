@@ -107,6 +107,7 @@ import operator
 from ast import literal_eval
 from io import StringIO
 from functools import reduce
+from unittest.mock import ANY
 
 import parso
 from _pytest.outcomes import Skipped
@@ -275,6 +276,8 @@ class IntegrationTestCase(BaseTestCase):
         for pos_tup in positions:
             if type(pos_tup[0]) == str:
                 # this means that there is a module specified
+                if pos_tup[1] == ...:
+                    pos_tup = pos_tup[0], ANY, pos_tup[2]
                 wanted.append(pos_tup)
             else:
                 line = pos_tup[0]
