@@ -114,6 +114,9 @@ class X:
          'TypeVar(name: str, *constraints: Type[Any], bound: Union[None, Type[Any], str]=..., '
          'covariant: bool=..., contravariant: bool=...)'),
         ('from typing import List\nList(', None),
+        ('from typing import List\nList[int](', None),
+        ('from typing import Tuple\nTuple(', None),
+        ('from typing import Tuple\nTuple[int](', None),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
@@ -148,7 +151,7 @@ def test_tree_signature(Script, environment, code, expected):
         ('full_redirect(C)', 'z, *, c'),
         ('full_redirect(C())', 'y'),
         ('full_redirect(G)', 't: T'),
-        ('full_redirect(G[str])', 't: T'),
+        ('full_redirect(G[str])', '*args, **kwargs'),
         ('D', 'D(a, z, /)'),
         ('D()', 'D(x, y)'),
         ('D().foo', 'foo(a, *, bar, z, **kwargs)'),

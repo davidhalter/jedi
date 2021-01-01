@@ -146,6 +146,9 @@ class DefineGenericBaseClass(LazyValueWrapper):
             ) for class_set1, class_set2 in zip(given_params1, given_params2)
         )
 
+    def get_signatures(self):
+        return []
+
     def __repr__(self):
         return '<%s: %s%s>' % (
             self.__class__.__name__,
