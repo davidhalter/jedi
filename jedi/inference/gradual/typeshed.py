@@ -120,7 +120,7 @@ def import_module_decorator(func):
                 )
             inference_state.module_cache.add(import_names, python_value_set)
 
-        if not prefer_stubs:
+        if not prefer_stubs or import_names[0] in settings.auto_import_modules:
             return python_value_set
 
         stub = try_to_load_stub_cached(inference_state, import_names, python_value_set,
