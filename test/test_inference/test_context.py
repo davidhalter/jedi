@@ -15,4 +15,4 @@ def test_module__file__(Script, environment):
 
     def_, = Script('import antigravity; antigravity.__file__').infer()
     value = def_._name._value.get_safe_value()
-    assert value.endswith('.py')
+    assert value.endswith('.pyi')

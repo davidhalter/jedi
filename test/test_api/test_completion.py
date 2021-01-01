@@ -150,19 +150,6 @@ def test_async(Script, environment):
     assert 'hey' in names
 
 
-def test_method_doc_with_signature(Script):
-    code = 'f = open("")\nf.writelin'
-    c, = Script(code).complete()
-    assert c.name == 'writelines'
-    assert c.docstring() == 'writelines(lines: Iterable[AnyStr]) -> None'
-
-
-def test_method_doc_with_signature2(Script):
-    code = 'f = open("")\nf.writelines'
-    d, = Script(code).goto()
-    assert d.docstring() == 'writelines(lines: Iterable[AnyStr]) -> None'
-
-
 def test_with_stmt_error_recovery(Script):
     assert Script('with open('') as foo: foo.\na').complete(line=1)
 

@@ -227,14 +227,22 @@ def test_nested_signatures(Script, environment, combination, expected):
     assert expected == computed
 
 
-def test_pow_signature(Script):
+def test_pow_signature(Script, environment):
     # See github #1357
     sigs = Script('pow(').get_signatures()
     strings = {sig.to_string() for sig in sigs}
-    assert strings == {'pow(x: float, y: float, z: float, /) -> float',
-                       'pow(x: float, y: float, /) -> float',
-                       'pow(x: int, y: int, z: int, /) -> Any',
-                       'pow(x: int, y: int, /) -> Any'}
+    if environment.version_info < (3, 8):
+        assert strings == {'pow(base: _SupportsPow2[_E, _T_co], exp: _E, /) -> _T_co',
+                           'pow(base: _SupportsPow3[_E, _M, _T_co], exp: _E, mod: _M, /) -> _T_co',
+                           'pow(base: float, exp: float, mod: None=..., /) -> float',
+                           'pow(base: int, exp: int, mod: None=..., /) -> Any',
+                           'pow(base: int, exp: int, mod: int, /) -> int'}
+    else:
+        assert strings == {'pow(base: _SupportsPow2[_E, _T_co], exp: _E) -> _T_co',
+                           'pow(base: _SupportsPow3[_E, _M, _T_co], exp: _E, mod: _M) -> _T_co',
+                           'pow(base: float, exp: float, mod: None=...) -> float',
+                           'pow(base: int, exp: int, mod: None=...) -> Any',
+                           'pow(base: int, exp: int, mod: int) -> int'}
 
 
 @pytest.mark.parametrize(

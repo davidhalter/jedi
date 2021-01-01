@@ -95,7 +95,7 @@ def test_builtin_docstring(goto_or_help_or_infer):
     d, = goto_or_help_or_infer('open')
 
     doc = d.docstring()
-    assert doc.startswith('open(file: Union[')
+    assert doc.startswith('open(file: ')
     assert 'Open file' in doc
 
 

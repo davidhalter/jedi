@@ -21,10 +21,10 @@ def test_get_typeshed_directories():
     def transform(set_):
         return {x.replace('/', os.path.sep) for x in set_}
 
-    dirs = get_dirs(PythonVersionInfo(3, 6))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3',
-                              'stdlib/3.6', 'third_party/2and3',
-                              'third_party/3', 'third_party/3.6'})
+    dirs = get_dirs(PythonVersionInfo(3, 7))
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.7',
+                              'third_party/2and3',
+                              'third_party/3', 'third_party/3.7'})
 
 
 def test_get_stub_files():
@@ -92,7 +92,7 @@ def test_sys_exc_info(Script):
     # It's an optional.
     assert def_.name == 'BaseException'
     assert def_.module_path == typeshed.TYPESHED_PATH.joinpath(
-        'stdlib', '2and3', 'builtins.pyi'
+        'stdlib', '3', 'builtins.pyi'
     )
     assert def_.type == 'instance'
     assert none.name == 'NoneType'

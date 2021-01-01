@@ -39,12 +39,11 @@ class TestSignatures(TestCase):
         run = self._run_simple
 
         # simple
-        s1 = "sorted(a, bool("
-        run(s1, 'sorted', 0, 7)
-        run(s1, 'sorted', 1, 9)
-        run(s1, 'sorted', 1, 10)
-        run(s1, 'sorted', None, 11)
-        run(s1, 'bool', 0, 15)
+        s1 = "tuple(a, bool("
+        run(s1, 'tuple', 0, 6)
+        run(s1, 'tuple', None, 8)
+        run(s1, 'tuple', None, 9)
+        run(s1, 'bool', 0, 14)
 
         s2 = "abs(), "
         run(s2, 'abs', 0, 4)
@@ -65,9 +64,9 @@ class TestSignatures(TestCase):
         run(s4, 'abs', 0, 10)
         run(s4, 'abs', None, 11)
 
-        s5 = "sorted(1,\nif 2:\n def a():"
-        run(s5, 'sorted', 0, 7)
-        run(s5, 'sorted', 1, 9)
+        s5 = "tuple(1,\nif 2:\n def a():"
+        run(s5, 'tuple', 0, 6)
+        run(s5, 'tuple', None, 8)
 
         s6 = "bool().__eq__("
         run(s6, '__eq__', 0)
@@ -89,8 +88,8 @@ class TestSignatures(TestCase):
 
     def test_for(self):
         # jedi-vim #11
-        self._run_simple("for sorted(", 'sorted', 0)
-        self._run_simple("for s in sorted(", 'sorted', 0)
+        self._run_simple("for tuple(", 'tuple', 0)
+        self._run_simple("for s in tuple(", 'tuple', 0)
 
 
 def test_with(Script):
@@ -272,7 +271,7 @@ def test_pow_params(Script):
     # See Github #1357.
     for sig in Script('pow(').get_signatures():
         param_names = [p.name for p in sig.params]
-        assert param_names in (['x', 'y'], ['x', 'y', 'z'])
+        assert param_names in (['base', 'exp'], ['base', 'exp', 'mod'])
 
 
 def test_param_name(Script):

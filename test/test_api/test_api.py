@@ -173,7 +173,7 @@ def test_get_line_code(Script):
         return Script(source).complete(line=line)[0].get_line_code(**kwargs).replace('\r', '')
 
     # On builtin
-    assert get_line_code('abs') == 'def abs(__n: SupportsAbs[_T]) -> _T: ...\n'
+    assert get_line_code('abs') == 'def abs(__x: SupportsAbs[_T]) -> _T: ...\n'
 
     # On custom code
     first_line = 'def foo():\n'
