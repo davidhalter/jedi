@@ -108,6 +108,7 @@ from ast import literal_eval
 from io import StringIO
 from functools import reduce
 from unittest.mock import ANY
+from pathlib import Path
 
 import parso
 from _pytest.outcomes import Skipped
@@ -122,6 +123,7 @@ from jedi.api.environment import get_default_environment, get_system_environment
 from jedi.inference.gradual.conversion import convert_values
 from jedi.inference.analysis import Warning
 
+test_dir = Path(__file__).absolute().parent
 
 TEST_COMPLETIONS = 0
 TEST_INFERENCE = 1
@@ -173,6 +175,7 @@ class IntegrationTestCase(BaseTestCase):
         self.start = start
         self.line = line
         self.path = path
+        self._project = jedi.Project(test_dir)
 
     @property
     def module_name(self):
@@ -188,7 +191,12 @@ class IntegrationTestCase(BaseTestCase):
                                    self.line_nr_test, self.line.rstrip())
 
     def script(self, environment):
-        return jedi.Script(self.source, path=self.path, environment=environment)
+        return jedi.Script(
+            self.source,
+            path=self.path,
+            environment=environment,
+            project=self._project
+        )
 
     def run(self, compare_cb, environment=None):
         testers = {
@@ -263,7 +271,7 @@ class IntegrationTestCase(BaseTestCase):
         self.correct = self.correct.strip()
         compare = sorted(
             (('stub:' if r.is_stub() else '')
-             + re.sub(r'^test\.completion\.', '', r.module_name),
+             + re.sub(r'^completion\.', '', r.module_name),
              r.line,
              r.column)
             for r in result
