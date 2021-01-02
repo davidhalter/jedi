@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: 'pip install .[testing]'
 
+      - name: Setup tmate session      
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run tests
         run: python -m pytest
         env:
