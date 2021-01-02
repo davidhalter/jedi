@@ -104,7 +104,10 @@ import os
 import re
 import sys
 import operator
-from ast import literal_eval
+if sys.version_info < (3, 8):
+    literal_eval = eval
+else:
+    from ast import literal_eval
 from io import StringIO
 from functools import reduce
 from unittest.mock import ANY
