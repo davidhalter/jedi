@@ -100,7 +100,6 @@ class Script:
     """
     def __init__(self, code=None, *, path=None, environment=None, project=None):
         self._orig_path = path
-        # An empty path (also empty string) should always result in no path.
         if isinstance(path, str):
             path = Path(path)
 
