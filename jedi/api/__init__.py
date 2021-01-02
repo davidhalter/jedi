@@ -393,7 +393,7 @@ class Script:
         quite hard to do for Jedi, if it is too complicated, Jedi will stop
         searching.
 
-        :param include_builtins: Default ``True``. If ``False``, checks if a reference
+        :param include_builtins: Default ``True``. If ``False``, checks if a definition
             is a builtin (e.g. ``sys``) and in that case does not return it.
         :param scope: Default ``'project'``. If ``'file'``, include references in
             the current module only.

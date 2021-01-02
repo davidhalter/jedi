@@ -10,16 +10,15 @@ def test_import_references(Script):
 
 def test_exclude_builtin_modules(Script):
     def get(include):
-        from jedi.api.project import Project
-        script = Script(source, project=Project('', sys_path=[], smart_sys_path=False))
-        references = script.get_references(column=8, include_builtins=include)
+        references = Script(source).get_references(include_builtins=include)
         return [(d.line, d.column) for d in references]
-    source = '''import sys\nprint(sys.path)'''
+    source = '''import sys\nsys.setprofile'''
     places = get(include=True)
-    assert len(places) > 2  # Includes stubs
+    assert len(places) >= 3  # Includes stubs, the reference itself and the builtin
 
     places = get(include=False)
-    assert places == [(1, 7), (2, 6)]
+    # Just the reference
+    assert places == [(2, 4)]
 
 
 @pytest.mark.parametrize('code, places', [
