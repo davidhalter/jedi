@@ -20,10 +20,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     """
     Provides support for implicit namespace packages
     """
-    # Is a module like every other module, because if you import an empty
-    # folder foobar it will be available as an object:
-    # <module 'foobar' (namespace)>.
-    api_type = 'module'
+    api_type = 'namespace'
     parent_context = None
 
     def __init__(self, inference_state, string_names, paths):

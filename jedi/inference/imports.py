@@ -339,7 +339,7 @@ class Importer:
             values = self.follow()
             for value in values:
                 # Non-modules are not completable.
-                if value.api_type != 'module':  # not a module
+                if value.api_type not in ('module', 'namespace'):  # not a module
                     continue
                 if not value.is_compiled():
                     # sub_modules_dict is not implemented for compiled modules.

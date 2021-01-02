@@ -55,7 +55,7 @@ def test_implicit_nested_namespace_package(Script):
     assert len(result) == 1
 
     implicit_pkg, = Script(code, project=project).infer(column=10)
-    assert implicit_pkg.type == 'module'
+    assert implicit_pkg.type == 'namespace'
     assert implicit_pkg.module_path is None
 
 

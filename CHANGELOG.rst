@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Implict namespaces are now a separate types in ``Name().type``
+
 0.18.0 (2020-12-25)
 +++++++++++++++++++
 

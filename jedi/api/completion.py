@@ -627,7 +627,7 @@ def search_in_module(inference_state, module_context, names, wanted_names,
         new_names = []
         for n in names:
             if s == n.string_name:
-                if n.tree_name is not None and n.api_type == 'module' \
+                if n.tree_name is not None and n.api_type in ('module', 'namespace') \
                         and ignore_imports:
                     continue
                 new_names += complete_trailer(

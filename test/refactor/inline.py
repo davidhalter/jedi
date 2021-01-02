@@ -68,7 +68,7 @@ from import_tree import inline_mod
 #? 11 error
 test(inline_mod)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
-Cannot inline imports or modules
+Cannot inline imports, modules or namespaces
 # -------------------------------------------------- module-works
 from import_tree import inline_mod
 #? 22

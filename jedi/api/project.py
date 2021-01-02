@@ -439,5 +439,5 @@ def get_default_project(path=None):
 def _remove_imports(names):
     return [
         n for n in names
-        if n.tree_name is None or n.api_type != 'module'
+        if n.tree_name is None or n.api_type not in ('module', 'namespace')
     ]

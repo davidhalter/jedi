@@ -156,8 +156,8 @@ def rename(inference_state, definitions, new_name):
 def inline(inference_state, names):
     if not names:
         raise RefactoringError("There is no name under the cursor")
-    if any(n.api_type == 'module' for n in names):
-        raise RefactoringError("Cannot inline imports or modules")
+    if any(n.api_type in ('module', 'namespace') for n in names):
+        raise RefactoringError("Cannot inline imports, modules or namespaces")
     if any(n.tree_name is None for n in names):
         raise RefactoringError("Cannot inline builtins/extensions")
 
