@@ -306,9 +306,9 @@ class DirectObjectAccess:
         except TypeError:
             return False
 
-    def is_allowed_getattr(self, name, unsafe=False):
+    def is_allowed_getattr(self, name, safe=True):
         # TODO this API is ugly.
-        if unsafe:
+        if not safe:
             # Unsafe is mostly used to check for __getattr__/__getattribute__.
             # getattr_static works for properties, but the underscore methods
             # are just ignored (because it's safer and avoids more code

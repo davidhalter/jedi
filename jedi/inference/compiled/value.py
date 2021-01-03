@@ -440,7 +440,7 @@ class CompiledValueFilter(AbstractFilter):
         access_handle = self.compiled_value.access_handle
         return self._get(
             name,
-            lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
+            lambda name, safe: access_handle.is_allowed_getattr(name, safe=safe),
             lambda name: name in access_handle.dir(),
             check_has_attribute=True
         )
@@ -454,7 +454,7 @@ class CompiledValueFilter(AbstractFilter):
 
         has_attribute, is_descriptor = allowed_getattr_callback(
             name,
-            unsafe=self._inference_state.allow_descriptor_getattr
+            safe=not self._inference_state.allow_descriptor_getattr
         )
         if check_has_attribute and not has_attribute:
             return []
@@ -478,7 +478,7 @@ class CompiledValueFilter(AbstractFilter):
         from jedi.inference.compiled import builtin_from_name
         names = []
         needs_type_completions, dir_infos = self.compiled_value.access_handle.get_dir_infos()
-        # We could use `unsafe` here as well, especially as a parameter to
+        # We could use `safe=False` here as well, especially as a parameter to
         # get_dir_infos. But this would lead to a lot of property executions
         # that are probably not wanted. The drawback for this is that we
         # have a different name for `get` and `values`. For `get` we always
@@ -486,7 +486,7 @@ class CompiledValueFilter(AbstractFilter):
         for name in dir_infos:
             names += self._get(
                 name,
-                lambda name, unsafe: dir_infos[name],
+                lambda name, safe: dir_infos[name],
                 lambda name: name in dir_infos,
             )
 
