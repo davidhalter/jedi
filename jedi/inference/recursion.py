@@ -12,7 +12,7 @@ count the function calls.
 Settings
 ~~~~~~~~~~
 
-Recursion settings are important if you don't want extremly
+Recursion settings are important if you don't want extremely
 recursive python code to go absolutely crazy.
 
 The default values are based on experiments while completing the |jedi| library
