@@ -68,6 +68,10 @@ def test_load_save_project(tmpdir):
          dict(all_scopes=True)),
         ('some_search_test_var', ['test_api.test_project.test_search.some_search_test_var'],
          dict(complete=True, all_scopes=True)),
+        # Make sure that the searched name is not part of the file, by
+        # splitting it up.
+        ('some_search_test_v' + 'a', ['test_api.test_project.test_search.some_search_test_var'],
+         dict(complete=True, all_scopes=True)),
 
         ('sample_int', ['helpers.sample_int'], {}),
         ('sample_int', ['helpers.sample_int'], dict(all_scopes=True)),
@@ -146,7 +150,7 @@ def test_search(string, full_names, kwargs):
         defs = project.complete_search(string, **kwargs)
     else:
         defs = project.search(string, **kwargs)
-    assert sorted([('stub:' if d.is_stub() else '') + d.full_name for d in defs]) == full_names
+    assert sorted([('stub:' if d.is_stub() else '') + (d.full_name or d.name) for d in defs]) == full_names
 
 
 @pytest.mark.parametrize(

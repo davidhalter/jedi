@@ -282,12 +282,13 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
                                   limit_reduction=limit_reduction)
 
 
-def search_in_file_ios(inference_state, file_io_iterator, name, limit_reduction=1):
+def search_in_file_ios(inference_state, file_io_iterator, name,
+                       limit_reduction=1, complete=False):
     parse_limit = _PARSED_FILE_LIMIT / limit_reduction
     open_limit = _OPENED_FILE_LIMIT / limit_reduction
     file_io_count = 0
     parsed_file_count = 0
-    regex = re.compile(r'\b' + re.escape(name) + r'\b')
+    regex = re.compile(r'\b' + re.escape(name) + (r'' if complete else r'\b'))
     for file_io in file_io_iterator:
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)

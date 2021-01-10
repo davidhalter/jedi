@@ -328,7 +328,8 @@ class Project:
             )
 
         # 2. Search for identifiers in the project.
-        for module_context in search_in_file_ios(inference_state, file_ios, name):
+        for module_context in search_in_file_ios(inference_state, file_ios,
+                                                 name, complete=complete):
             names = get_module_names(module_context.tree_node, all_scopes=all_scopes)
             names = [module_context.create_name(n) for n in names]
             names = _remove_imports(names)
