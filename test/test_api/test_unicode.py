@@ -64,6 +64,6 @@ def test_wrong_encoding(Script, tmpdir):
     # Use both latin-1 and utf-8 (a really broken file).
     x.write_binary('foobar = 1\nä'.encode('latin-1') + 'ä'.encode('utf-8'))
 
-    project = Project('.', sys_path=[tmpdir.strpath])
+    project = Project(tmpdir.strpath)
     c, = Script('import x; x.foo', project=project).complete()
     assert c.name == 'foobar'
