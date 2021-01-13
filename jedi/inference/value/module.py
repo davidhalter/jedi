@@ -64,7 +64,7 @@ class ModuleMixin(SubModuleDictMixin):
                 parent_context=self.as_context(),
                 origin_scope=origin_scope
             ),
-            GlobalNameFilter(self.as_context(), self.tree_node),
+            GlobalNameFilter(self.as_context()),
         )
         yield DictFilter(self.sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())

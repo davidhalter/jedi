@@ -12,7 +12,7 @@ from parso.python.tree import Name, UsedNamesMapping
 from jedi.inference import flow_analysis
 from jedi.inference.base_value import ValueSet, ValueWrapper, \
     LazyValueWrapper
-from jedi.parser_utils import get_cached_parent_scope
+from jedi.parser_utils import get_cached_parent_scope, get_parso_cache_node
 from jedi.inference.utils import to_list
 from jedi.inference.names import TreeNameDefinition, ParamName, \
     AnonymousParamName, AbstractNameDefinition, NameWrapper
@@ -54,11 +54,11 @@ class FilterWrapper:
         return self.wrap_names(self._wrapped_filter.values())
 
 
-def _get_definition_names(used_names, name_key):
+def _get_definition_names(parso_cache_node, used_names, name_key):
     try:
-        for_module = _definition_name_cache[used_names]
+        for_module = _definition_name_cache[parso_cache_node]
     except KeyError:
-        for_module = _definition_name_cache[used_names] = {}
+        for_module = _definition_name_cache[parso_cache_node] = {}
 
     try:
         return for_module[name_key]
@@ -70,18 +70,35 @@ def _get_definition_names(used_names, name_key):
         return result
 
 
-class AbstractUsedNamesFilter(AbstractFilter):
+class _AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 
-    def __init__(self, parent_context, parser_scope):
-        self._parser_scope = parser_scope
-        self._module_node = self._parser_scope.get_root_node()
-        self._used_names = self._module_node.get_used_names()
+    def __init__(self, parent_context, node_context=None):
+        if node_context is None:
+            node_context = parent_context
+        self._node_context = node_context
+        self._parser_scope = node_context.tree_node
+        module_context = node_context.get_root_context()
+        # It is quite hacky that we have to use that. This is for caching
+        # certain things with a WeakKeyDictionary. However, parso intentionally
+        # uses slots (to save memory) and therefore we end up with having to
+        # have a weak reference to the object that caches the tree.
+        #
+        # Previously we have tried to solve this by using a weak reference onto
+        # used_names. However that also does not work, because it has a
+        # reference from the module, which itself is referenced by any node
+        # through parents.
+        self._parso_cache_node = get_parso_cache_node(
+            module_context.inference_state.latest_grammar
+            if module_context.is_stub() else module_context.inference_state.grammar,
+            module_context.py__file__()
+        )
+        self._used_names = module_context.tree_node.get_used_names()
         self.parent_context = parent_context
 
     def get(self, name):
         return self._convert_names(self._filter(
-            _get_definition_names(self._used_names, name),
+            _get_definition_names(self._parso_cache_node, self._used_names, name),
         ))
 
     def _convert_names(self, names):
@@ -92,7 +109,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
             name
             for name_key in self._used_names
             for name in self._filter(
-                _get_definition_names(self._used_names, name_key),
+                _get_definition_names(self._parso_cache_node, self._used_names, name_key),
             )
         )
 
@@ -100,7 +117,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return '<%s: %s>' % (self.__class__.__name__, self.parent_context)
 
 
-class ParserTreeFilter(AbstractUsedNamesFilter):
+class ParserTreeFilter(_AbstractUsedNamesFilter):
     def __init__(self, parent_context, node_context=None, until_position=None,
                  origin_scope=None):
         """
@@ -109,10 +126,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         value, but for some type inference it's important to have a local
         value of the other classes.
         """
-        if node_context is None:
-            node_context = parent_context
-        super().__init__(parent_context, node_context.tree_node)
-        self._node_context = node_context
+        super().__init__(parent_context, node_context)
         self._origin_scope = origin_scope
         self._until_position = until_position
 
@@ -182,7 +196,7 @@ class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
         return AnonymousParamName(self._function_value, name)
 
 
-class GlobalNameFilter(AbstractUsedNamesFilter):
+class GlobalNameFilter(_AbstractUsedNamesFilter):
     def get(self, name):
         try:
             names = self._used_names[name]

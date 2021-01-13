@@ -325,7 +325,7 @@ class ModuleContext(TreeContextMixin, ValueContext):
         yield from filters
 
     def get_global_filter(self):
-        return GlobalNameFilter(self, self.tree_node)
+        return GlobalNameFilter(self)
 
     @property
     def string_names(self):

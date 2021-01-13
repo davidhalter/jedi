@@ -270,7 +270,11 @@ def get_cached_code_lines(grammar, path):
     Basically access the cached code lines in parso. This is not the nicest way
     to do this, but we avoid splitting all the lines again.
     """
-    return parser_cache[grammar._hashed][path].lines
+    return get_parso_cache_node(grammar, path).lines
+
+
+def get_parso_cache_node(grammar, path):
+    return parser_cache[grammar._hashed][path]
 
 
 def cut_value_at_position(leaf, position):
