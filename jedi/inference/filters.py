@@ -55,6 +55,10 @@ class FilterWrapper:
 
 
 def _get_definition_names(parso_cache_node, used_names, name_key):
+    if parso_cache_node is None:
+        names = used_names.get(name_key, ())
+        return tuple(name for name in names if name.is_definition(include_setitem=True))
+
     try:
         for_module = _definition_name_cache[parso_cache_node]
     except KeyError:
@@ -88,11 +92,16 @@ class _AbstractUsedNamesFilter(AbstractFilter):
         # used_names. However that also does not work, because it has a
         # reference from the module, which itself is referenced by any node
         # through parents.
-        self._parso_cache_node = get_parso_cache_node(
-            module_context.inference_state.latest_grammar
-            if module_context.is_stub() else module_context.inference_state.grammar,
-            module_context.py__file__()
-        )
+        path = module_context.py__file__()
+        if path is None:
+            # If the path is None, there is no guarantee that parso caches it.
+            self._parso_cache_node = None
+        else:
+            self._parso_cache_node = get_parso_cache_node(
+                module_context.inference_state.latest_grammar
+                if module_context.is_stub() else module_context.inference_state.grammar,
+                path
+            )
         self._used_names = module_context.tree_node.get_used_names()
         self.parent_context = parent_context
 

@@ -17,12 +17,10 @@ annotations.
 
 import re
 import warnings
-from textwrap import dedent
 
 from parso import parse, ParserSyntaxError
 
 from jedi import debug
-from jedi.common import indent_block
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import iterator_to_value_set, ValueSet, \
     NO_VALUES
@@ -182,52 +180,40 @@ def _strip_rst_role(type_str):
 
 
 def _infer_for_statement_string(module_context, string):
-    code = dedent("""
-    def pseudo_docstring_stuff():
-        '''
-        Create a pseudo function for docstring statements.
-        Need this docstring so that if the below part is not valid Python this
-        is still a function.
-        '''
-    {}
-    """)
     if string is None:
         return []
 
-    for element in re.findall(r'((?:\w+\.)*\w+)\.', string):
-        # Try to import module part in dotted name.
-        # (e.g., 'threading' in 'threading.Thread').
-        string = 'import %s\n' % element + string
+    potential_imports = re.findall(r'((?:\w+\.)*\w+)\.', string)
+    # Try to import module part in dotted name.
+    # (e.g., 'threading' in 'threading.Thread').
+    imports = "\n".join(f"import {p}" for p in potential_imports)
+    string = f'{imports}\n{string}'
 
     debug.dbg('Parse docstring code %s', string, color='BLUE')
     grammar = module_context.inference_state.grammar
     try:
-        module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
+        module = grammar.parse(string, error_recovery=False)
     except ParserSyntaxError:
         return []
     try:
-        funcdef = next(module.iter_funcdefs())
-        # First pick suite, then simple_stmt and then the node,
-        # which is also not the last item, because there's a newline.
-        stmt = funcdef.children[-1].children[-1].children[-2]
+        # It's not the last item, because that's an end marker.
+        stmt = module.children[-2]
     except (AttributeError, IndexError):
         return []
 
     if stmt.type not in ('name', 'atom', 'atom_expr'):
         return []
 
-    from jedi.inference.value import FunctionValue
-    function_value = FunctionValue(
-        module_context.inference_state,
-        module_context,
-        funcdef
+    # Here we basically use a fake module that also uses the filters in
+    # the actual module.
+    from jedi.inference.docstring_utils import DocstringModule
+    m = DocstringModule(
+        in_module_context=module_context,
+        inference_state=module_context.inference_state,
+        module_node=module,
+        code_lines=[],
     )
-    func_execution_context = function_value.as_context()
-    # Use the module of the param.
-    # TODO this module is not the module of the param in case of a function
-    # call. In that case it's the module of the function call.
-    # stuffed with content from a function call.
-    return list(_execute_types_in_stmt(func_execution_context, stmt))
+    return list(_execute_types_in_stmt(m.as_context(), stmt))
 
 
 def _execute_types_in_stmt(module_context, stmt):
