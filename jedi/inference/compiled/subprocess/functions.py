@@ -7,7 +7,6 @@ from pathlib import Path
 from zipimport import zipimporter
 from importlib.machinery import all_suffixes
 
-from jedi._compatibility import cast_path
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
@@ -15,7 +14,7 @@ from jedi.file_io import KnownContentFileIO, ZipFileIO
 
 
 def get_sys_path():
-    return list(map(cast_path, sys.path))
+    return sys.path
 
 
 def load_module(inference_state, **kwargs):
@@ -190,7 +189,7 @@ def _from_loader(loader, string):
     except AttributeError:
         return None, is_package
     else:
-        module_path = cast_path(get_filename(string))
+        module_path = get_filename(string)
 
     # To avoid unicode and read bytes, "overwrite" loader.get_source if
     # possible.
@@ -212,7 +211,7 @@ def _from_loader(loader, string):
     if code is None:
         return None, is_package
     if isinstance(loader, zipimporter):
-        return ZipFileIO(module_path, code, Path(cast_path(loader.archive))), is_package
+        return ZipFileIO(module_path, code, Path(loader.archive)), is_package
 
     return KnownContentFileIO(module_path, code), is_package
 

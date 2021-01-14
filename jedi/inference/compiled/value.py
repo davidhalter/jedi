@@ -8,7 +8,6 @@ from pathlib import Path
 
 from jedi import debug
 from jedi.inference.utils import to_list
-from jedi._compatibility import cast_path
 from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
@@ -293,10 +292,7 @@ class CompiledModule(CompiledValue):
         return CompiledModuleContext(self)
 
     def py__path__(self):
-        paths = self.access_handle.py__path__()
-        if paths is None:
-            return None
-        return map(cast_path, paths)
+        return self.access_handle.py__path__()
 
     def is_package(self):
         return self.py__path__() is not None
@@ -310,7 +306,7 @@ class CompiledModule(CompiledValue):
         return tuple(name.split('.'))
 
     def py__file__(self):
-        path = cast_path(self.access_handle.py__file__())
+        path = self.access_handle.py__file__()
         if path is None:
             return None
         return Path(path)

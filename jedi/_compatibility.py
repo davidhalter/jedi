@@ -7,22 +7,6 @@ import sys
 import pickle
 
 
-def cast_path(string):
-    """
-    Take a bytes or str path and cast it to unicode.
-
-    Apparently it is perfectly fine to pass both byte and unicode objects into
-    the sys.path. This probably means that byte paths are normal at other
-    places as well.
-
-    Since this just really complicates everything and Python 2.7 will be EOL
-    soon anyway, just go with always strings.
-    """
-    if isinstance(string, bytes):
-        return str(string, encoding='UTF-8', errors='replace')
-    return str(string)
-
-
 def pickle_load(file):
     try:
         return pickle.load(file)

@@ -7,7 +7,6 @@ from pathlib import Path
 
 from jedi import settings
 from jedi.file_io import FileIO
-from jedi._compatibility import cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
@@ -44,7 +43,6 @@ def _create_stub_map(directory_path_info):
             return
 
         for entry in listed:
-            entry = cast_path(entry)
             path = os.path.join(directory_path_info.path, entry)
             if os.path.isdir(path):
                 init = os.path.join(path, '__init__.pyi')
@@ -169,7 +167,6 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     if len(import_names) == 1:
         # foo-stubs
         for p in sys_path:
-            p = cast_path(p)
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
                 inference_state,
