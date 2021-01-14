@@ -216,11 +216,14 @@ def is_scope(node):
 def _get_parent_scope_cache(func):
     cache = WeakKeyDictionary()
 
-    def wrapper(used_names, node, include_flows=False):
+    def wrapper(parso_cache_node, node, include_flows=False):
+        if parso_cache_node is None:
+            return func(node, include_flows)
+
         try:
-            for_module = cache[used_names]
+            for_module = cache[parso_cache_node]
         except KeyError:
-            for_module = cache[used_names] = {}
+            for_module = cache[parso_cache_node] = {}
 
         try:
             return for_module[node]
@@ -274,6 +277,13 @@ def get_cached_code_lines(grammar, path):
 
 
 def get_parso_cache_node(grammar, path):
+    """
+    This is of course not public. But as long as I control parso, this
+    shouldn't be a problem. ~ Dave
+
+    The reason for this is mostly caching. This is obviously also a sign of a
+    broken caching architecture.
+    """
     return parser_cache[grammar._hashed][path]
 
 

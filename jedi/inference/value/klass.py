@@ -114,7 +114,7 @@ class ClassFilter(ParserTreeFilter):
         while node is not None:
             if node == self._parser_scope or node == self.parent_context:
                 return True
-            node = get_cached_parent_scope(self._used_names, node)
+            node = get_cached_parent_scope(self._parso_cache_node, node)
         return False
 
     def _access_possible(self, name):

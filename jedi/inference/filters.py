@@ -149,7 +149,7 @@ class ParserTreeFilter(_AbstractUsedNamesFilter):
         if parent.type == 'trailer':
             return False
         base_node = parent if parent.type in ('classdef', 'funcdef') else name
-        return get_cached_parent_scope(self._used_names, base_node) == self._parser_scope
+        return get_cached_parent_scope(self._parso_cache_node, base_node) == self._parser_scope
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):

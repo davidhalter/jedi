@@ -84,8 +84,5 @@ def test_parser_cache_clear(Script):
     del parser_cache[script._inference_state.grammar._hashed][script.path]
     del script
 
-    import jedi
-    jedi.parser_utils.get_cached_parent_scope.__closure__[0].cell_contents.clear()
-
     gc.collect()
     assert module_id not in [id(m) for m in gc.get_referrers(tree.Module)]
