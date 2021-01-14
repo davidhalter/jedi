@@ -148,7 +148,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         if file_io is None:
             self._path: Optional[Path] = None
         else:
-            self._path = Path(file_io.path)
+            self._path = file_io.path
         self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
         self._is_package = is_package

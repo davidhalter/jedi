@@ -412,7 +412,7 @@ def module_injector():
     def module_injector(inference_state, names, code):
         assert isinstance(names, tuple)
         file_io = KnownContentFileIO(
-            Path('/foo/bar/module-injector-%s.py' % next(counter)),
+            Path('foo/bar/module-injector-%s.py' % next(counter)).absolute(),
             code
         )
         v = _load_python_module(inference_state, file_io, names)
