@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 from itertools import count
+from pathlib import Path
 
 import pytest
 
@@ -169,7 +170,7 @@ def module_injector():
 
     def module_injector(inference_state, names, code):
         assert isinstance(names, tuple)
-        file_io = KnownContentFileIO('/foo/bar/module-injector-%s.py' % next(counter), code)
+        file_io = KnownContentFileIO(Path('/foo/bar/module-injector-%s.py') % next(counter), code)
         v = _load_python_module(inference_state, file_io, names)
         inference_state.module_cache.add(names, ValueSet([v]))
 

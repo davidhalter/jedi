@@ -181,8 +181,6 @@ class InferenceState:
 
     def parse_and_get_code(self, code=None, path=None,
                            use_latest_grammar=False, file_io=None, **kwargs):
-        if path is not None:
-            path = str(path)
         if code is None:
             if file_io is None:
                 file_io = FileIO(path)
