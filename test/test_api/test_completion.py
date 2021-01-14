@@ -1,11 +1,16 @@
 from os.path import join, sep as s, dirname, expanduser
 import os
 from textwrap import dedent
+from itertools import count
+from pathlib import Path
 
 import pytest
 
 from ..helpers import root_dir
 from jedi.api.helpers import _start_match, _fuzzy_match
+from jedi.inference.imports import _load_python_module
+from jedi.file_io import KnownContentFileIO
+from jedi.inference.base_value import ValueSet
 
 
 def test_in_whitespace(Script):
@@ -398,6 +403,22 @@ def test_fuzzy_match():
 
 def test_ellipsis_completion(Script):
     assert Script('...').complete() == []
+
+
+@pytest.fixture
+def module_injector():
+    counter = count()
+
+    def module_injector(inference_state, names, code):
+        assert isinstance(names, tuple)
+        file_io = KnownContentFileIO(
+            Path('/foo/bar/module-injector-%s.py' % next(counter)),
+            code
+        )
+        v = _load_python_module(inference_state, file_io, names)
+        inference_state.module_cache.add(names, ValueSet([v]))
+
+    return module_injector
 
 
 def test_completion_cache(Script, module_injector):

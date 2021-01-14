@@ -1,8 +1,6 @@
 import os
 import sys
 import subprocess
-from itertools import count
-from pathlib import Path
 
 import pytest
 
@@ -11,9 +9,6 @@ from . import run
 from . import refactor
 from jedi import InterpreterEnvironment, get_system_environment
 from jedi.inference.compiled.value import create_from_access_path
-from jedi.inference.imports import _load_python_module
-from jedi.file_io import KnownContentFileIO
-from jedi.inference.base_value import ValueSet
 from jedi.api.interpreter import MixedModuleContext
 
 # For interpreter tests sometimes the path of this directory is in the sys
@@ -162,19 +157,6 @@ def create_compiled_object(inference_state):
         inference_state,
         inference_state.compiled_subprocess.create_simple_object(obj)
     )
-
-
-@pytest.fixture
-def module_injector():
-    counter = count()
-
-    def module_injector(inference_state, names, code):
-        assert isinstance(names, tuple)
-        file_io = KnownContentFileIO(Path('/foo/bar/module-injector-%s.py') % next(counter), code)
-        v = _load_python_module(inference_state, file_io, names)
-        inference_state.module_cache.add(names, ValueSet([v]))
-
-    return module_injector
 
 
 @pytest.fixture(params=[False, True])
