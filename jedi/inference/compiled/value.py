@@ -166,7 +166,7 @@ class CompiledValue(Value):
             except AttributeError:
                 return super().py__simple_getitem__(index)
         if access is None:
-            return NO_VALUES
+            return super().py__simple_getitem__(index)
 
         return ValueSet([create_from_access_path(self.inference_state, access)])
 

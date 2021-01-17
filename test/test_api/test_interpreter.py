@@ -603,8 +603,11 @@ def test_dict_getitem(code, types):
 @pytest.mark.parametrize(
     'code, expected', [
         ('DunderCls()[0]', 'int'),
+        ('dunder[0]', 'int'),
         ('next(DunderCls())', 'float'),
+        ('next(dunder)', 'float'),
         ('for x in DunderCls(): x', 'str'),
+        #('for x in dunder: x', 'str'),
     ]
 )
 def test_dunders(class_is_findable, code, expected):
@@ -622,6 +625,8 @@ def test_dunders(class_is_findable, code, expected):
 
     if not class_is_findable:
         DunderCls.__name__ = 'asdf'
+
+    dunder = DunderCls()
 
     n, = jedi.Interpreter(code, [locals()]).infer()
     assert n.name == expected
