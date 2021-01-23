@@ -719,12 +719,12 @@ class Interpreter(Script):
         else:
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
-        
+
         if project is None:
             project = Project(Path.cwd())
 
         super().__init__(code, environment=environment, project=project, **kwds)
-            
+
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
