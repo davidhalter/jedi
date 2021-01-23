@@ -707,7 +707,7 @@ class Interpreter(Script):
     """
     _allow_descriptor_getattr_default = True
 
-    def __init__(self, code, namespaces, **kwds):
+    def __init__(self, code, namespaces, *, project=None, **kwds):
         try:
             namespaces = [dict(n) for n in namespaces]
         except Exception:
@@ -719,12 +719,11 @@ class Interpreter(Script):
         else:
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
+        
+        if project is None:
+            project = Project(Path.cwd())
 
-        if "project" in kwds:
-            super().__init__(code, environment=environment, **kwds)
-        else:
-            super().__init__(code, environment=environment,
-                             project=Project(Path.cwd()), **kwds)
+        super().__init__(code, environment=environment, project=project, **kwds)
             
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
