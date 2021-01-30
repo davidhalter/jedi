@@ -129,6 +129,10 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
     if file_io is not None:
         folder = file_io.get_parent_folder()
         sys_path = module_context.inference_state.get_sys_path()
+
+        # prevent an infinite loop when reaching the root of the current drive
+        last_folder = None
+
         while any(folder.path.startswith(p) for p in sys_path):
             file_io = folder.get_file_io('conftest.py')
             if Path(file_io.path) != module_context.py__file__():
@@ -138,6 +142,11 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
                 except FileNotFoundError:
                     pass
             folder = folder.get_parent_folder()
+
+            # prevent an infinite for loop if the same parent folder is return twice
+            if last_folder is not None and folder.path == last_folder.path:
+                break
+            last_folder = folder  # keep track of the last found parent name
 
     for names in _PYTEST_FIXTURE_MODULES:
         for module_value in module_context.inference_state.import_module(names):
