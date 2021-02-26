@@ -382,7 +382,7 @@ class DirectObjectAccess:
         except AttributeError:
             pass
         else:
-            if module is not None:
+            if module is not None and isinstance(module, str):
                 try:
                     __import__(module)
                     # For some modules like _sqlite3, the __module__ for classes is
