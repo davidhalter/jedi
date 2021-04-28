@@ -101,6 +101,16 @@ def test_correct_zip_package_behavior(Script, inference_state, environment, code
     assert value.py__package__() == []
 
 
+@pytest.mark.parametrize("code,names", [
+    ("from pkg.", {"module", "nested", "namespace"}),
+    ("from pkg.nested.", {"nested_module"})
+])
+def test_zip_package_import_complete(Script, environment, code, names):
+    sys_path = environment.get_sys_path() + [str(pkg_zip_path)]
+    completions = Script(code, project=Project('.', sys_path=sys_path)).complete()
+    assert names == {c.name for c in completions}
+
+
 def test_find_module_not_package_zipped(Script, inference_state, environment):
     path = get_example_dir('zipped_imports', 'not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
