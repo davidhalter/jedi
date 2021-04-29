@@ -61,6 +61,7 @@ Code Contributors
 - Vladislav Serebrennikov (@endilll)
 - Andrii Kolomoiets (@muffinmad)
 - Leo Ryu (@Leo-Ryu)
+- Joseph Birkner (@josephbirkner)
 
 And a few more "anonymous" contributors.
 

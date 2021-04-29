@@ -4,7 +4,8 @@ import inspect
 import importlib
 import warnings
 from pathlib import Path
-from zipimport import zipimporter
+from zipfile import ZipFile
+from zipimport import zipimporter, ZipImportError
 from importlib.machinery import all_suffixes
 
 from jedi.inference.compiled import access
@@ -92,15 +93,22 @@ def _iter_module_names(inference_state, paths):
     # Python modules/packages
     for path in paths:
         try:
-            dirs = os.scandir(path)
+            dir_entries = ((entry.name, entry.is_dir()) for entry in os.scandir(path))
         except OSError:
-            # The file might not exist or reading it might lead to an error.
-            debug.warning("Not possible to list directory: %s", path)
-            continue
-        for dir_entry in dirs:
-            name = dir_entry.name
+            try:
+                zip_import_info = zipimporter(path)
+                # Unfortunately, there is no public way to access zipimporter's
+                # private _files member. We therefore have to use a
+                # custom function to iterate over the files.
+                dir_entries = _zip_list_subdirectory(
+                    zip_import_info.archive, zip_import_info.prefix)
+            except ZipImportError:
+                # The file might not exist or reading it might lead to an error.
+                debug.warning("Not possible to list directory: %s", path)
+                continue
+        for name, is_dir in dir_entries:
             # First Namespaces then modules/stubs
-            if dir_entry.is_dir():
+            if is_dir:
                 # pycache is obviously not an interesting namespace. Also the
                 # name must be a valid identifier.
                 if name != '__pycache__' and name.isidentifier():
@@ -227,6 +235,17 @@ def _get_source(loader, fullname):
     except OSError:
         raise ImportError('source not available through get_data()',
                           name=fullname)
+
+
+def _zip_list_subdirectory(zip_path, zip_subdir_path):
+    zip_file = ZipFile(zip_path)
+    zip_subdir_path = Path(zip_subdir_path)
+    zip_content_file_paths = zip_file.namelist()
+    for raw_file_name in zip_content_file_paths:
+        file_path = Path(raw_file_name)
+        if file_path.parent == zip_subdir_path:
+            file_path = file_path.relative_to(zip_subdir_path)
+            yield file_path.name, raw_file_name.endswith("/")
 
 
 class ImplicitNSInfo:
