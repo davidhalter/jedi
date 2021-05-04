@@ -57,7 +57,7 @@ Supported Python Features
 Limitations
 -----------
 
-In general Jedi's limit are quite high, but for very big projects or very
+In general Jedi's limit is quite high, but for very big projects or very
 complex code, sometimes Jedi intentionally stops type inference, to avoid
 hanging for a long time.
 
