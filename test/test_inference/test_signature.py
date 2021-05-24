@@ -315,6 +315,15 @@ def test_wraps_signature(Script, code, signature):
              z = 5
          @dataclass
          class X(Y):'''), ['y']],
+        [dedent('''
+         from typing import Generic, TypeVar
+         T = TypeVar("T")
+         @dataclass
+         class Y(Generic[T]):
+             y: T
+             z = 5
+         @dataclass
+         class X(Y[int]):'''), ['y']],
     ]
 )
 def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
