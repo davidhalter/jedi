@@ -604,8 +604,18 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
     def get_signatures(self):
         param_names = []
         for cls in reversed(list(self.py__mro__())):
-            if "DataclassWrapper" in str(cls):
-            # if isinstance(cls, DataclassWrapper):
+
+            # Handle cases where DataclassWrapper objects are nested inside of
+            # Decoratee, GenericClass, etc -- these are all subclasses of ValueWrapper
+            # or LazyValueWrapper.
+            is_dataclass = False
+            while isinstance(cls, (ValueWrapper, LazyValueWrapper)):
+                if isinstance(cls, DataclassWrapper):
+                    is_dataclass = True
+                    break
+                cls = cls._wrapped_value
+
+            if is_dataclass:
                 filter_ = cls.as_context().get_global_filter()
                 # .values ordering is not guaranteed, at least not in
                 # Python < 3.6, when dicts where not ordered, which is an
