@@ -124,7 +124,7 @@ def _iter_module_names(inference_state, paths):
                         yield modname
 
 
-def _find_module(string, path=None, full_name=None, is_global_search=True):
+def _find_module(string, paths=None, full_name=None, is_global_search=True):
     """
     Provides information about a module.
 
@@ -134,14 +134,17 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
     or the name of the module if it is a builtin one and a boolean indicating
     if the module is contained in a package.
     """
+    if paths is None:
+        paths_iter = [None]
+    else:
+        paths_iter = paths
+        
     spec = None
     loader = None
 
     for finder in sys.meta_path:
-        if is_global_search and finder != importlib.machinery.PathFinder:
-            p = None
-        else:
-            p = path
+        implicit_ns_paths = []
+
         try:
             find_spec = finder.find_spec
         except AttributeError:
@@ -149,17 +152,29 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
             # ignore those.
             continue
 
-        spec = find_spec(string, p)
+        spec = None
+        for path in paths_iter:
+            if is_global_search and finder != importlib.machinery.PathFinder:
+                p = None
+            else:
+                p = None if path is None else [path]
+
+            spec = find_spec(string, p)
+            if spec is not None:
+                loader = spec.loader
+                if loader is None and not spec.has_location:
+                    implicit_ns_paths.extend(spec.submodule_search_locations._path)
+
         if spec is not None:
-            loader = spec.loader
             if loader is None and not spec.has_location:
                 # This is a namespace package.
-                full_name = string if not path else full_name
-                implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
+                full_name = string if not paths else full_name
+                implicit_ns_info = ImplicitNSInfo(full_name, implicit_ns_paths)
                 return implicit_ns_info, True
+
             break
 
-    return _find_module_py33(string, path, loader)
+    return _find_module_py33(string, paths, loader)
 
 
 def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
