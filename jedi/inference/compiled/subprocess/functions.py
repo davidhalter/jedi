@@ -9,6 +9,7 @@ from zipimport import zipimporter, ZipImportError
 from importlib.machinery import all_suffixes
 from typing import Any, List, Optional, Sequence, cast
 
+from jedi.inference import InferenceState
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
@@ -32,14 +33,29 @@ def create_simple_object(inference_state, obj):
     return access.create_access_path(inference_state, obj)
 
 
-def get_module_info(inference_state, sys_path=None, full_name=None, **kwargs):
+def get_module_info(
+    inference_state: InferenceState,
+    *,
+    string: str,
+    sys_path: List[str] = None,
+    full_name: str = None,
+    paths: Sequence[str] = None,
+    is_global_search: bool = True,
+):
     """
     Returns Tuple[Union[NamespaceInfo, FileIO, None], Optional[bool]]
     """
+    del inference_state
+
     if sys_path is not None:
         sys.path, temp = sys_path, sys.path
     try:
-        return _find_module(full_name=full_name, **kwargs)
+        return _find_module(
+            string=string,
+            full_name=full_name,
+            paths=paths,
+            is_global_search=is_global_search,
+        )
     except ImportError:
         return None, None
     finally:
@@ -144,7 +160,7 @@ def _find_module(
         paths_iter: List[Optional[str]] = [None]
     else:
         paths_iter = list(paths)
-        
+
     spec = None
     loader = None
 
