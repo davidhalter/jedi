@@ -32,7 +32,7 @@ def test_implicit_namespace_package(Script):
     # completion
     completions = script_with_path('from pkg import ').complete()
     names = [c.name for c in completions]
-    compare = ['ns1_file', 'ns2_file']
+    compare = ['ns1_file', 'ns2_file', 'subpkg']
     # must at least contain these items, other items are not important
     assert set(compare) == set(names)
 
