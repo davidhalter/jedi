@@ -102,18 +102,6 @@ def _test_print(inference_state, stderr=None, stdout=None):
         sys.stdout.flush()
 
 
-def _get_init_path(directory_path):
-    """
-    The __init__ file can be searched in a directory. If found return it, else
-    None.
-    """
-    for suffix in all_suffixes():
-        path = os.path.join(directory_path, '__init__' + suffix)
-        if os.path.exists(path):
-            return path
-    return None
-
-
 def safe_literal_eval(inference_state, value):
     return parser_utils.safe_literal_eval(value)
 
