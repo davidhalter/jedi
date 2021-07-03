@@ -188,6 +188,7 @@ def _find_module(
             if spec is not None:
                 loader = spec.loader
                 if loader is None and not spec.has_location:
+                    # This is a namespace package.
                     spec_locations = cast(Any, spec.submodule_search_locations)
                     spec_path = cast(str, spec_locations._path)
                     implicit_ns_paths.extend(spec_path)
