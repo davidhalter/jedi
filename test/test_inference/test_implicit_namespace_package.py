@@ -1,4 +1,8 @@
-from test.helpers import get_example_dir, example_dir
+from test.helpers import example_dir, get_example_dir
+from typing import Any, Iterable
+
+import pytest
+
 from jedi import Project
 
 
@@ -68,19 +72,40 @@ def test_implicit_namespace_package_import_autocomplete(Script):
     assert [c.name for c in compl] == ['implicit_namespace_package']
 
 
-def test_namespace_package_in_multiple_directories_autocompletion(Script):
-    code = 'from pkg.'
+@pytest.mark.parametrize(
+    'code,expected',
+    [
+        ('from pkg.', ['ns1_file', 'ns2_file', 'subpkg']),
+        ('from pkg.subpkg.', ['ns3_file', 'ns4_file']),
+    ]
+)
+def test_namespace_package_in_multiple_directories_autocompletion(
+    code: str,
+    expected: Iterable[str],
+    Script: Any,
+) -> None:
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
 
     project = Project('.', sys_path=sys_path)
     script = Script(code, project=project)
     compl = script.complete()
-    assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
+    assert sorted(c.name for c in compl) == sorted(expected)
 
 
-def test_namespace_package_in_multiple_directories_goto_definition(Script):
-    code = 'from pkg import ns1_file'
+@pytest.mark.parametrize(
+    'code',
+    [
+        'from pkg import ns1_file',
+        'from pkg import ns2_file',
+        'from pkg.subpkg import ns3_file',
+        'from pkg.subpkg import ns4_file',
+    ]
+)
+def test_namespace_package_in_multiple_directories_goto_definition(
+    code: str,
+    Script: Any,
+) -> None:
     sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
                 get_example_dir('implicit_namespace_package', 'ns2')]
     project = Project('.', sys_path=sys_path)
