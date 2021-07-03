@@ -90,7 +90,7 @@ def test_namespace_package_in_multiple_directories_autocompletion(
     project = Project('.', sys_path=sys_path)
     script = Script(code, project=project)
     compl = script.complete()
-    assert sorted(c.name for c in compl) == sorted(expected)
+    assert set(c.name for c in compl) == set(expected)
 
 
 @pytest.mark.parametrize(
