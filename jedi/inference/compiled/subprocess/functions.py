@@ -7,6 +7,7 @@ from pathlib import Path
 from zipfile import ZipFile
 from zipimport import zipimporter, ZipImportError
 from importlib.machinery import all_suffixes
+from typing import Any, List, Optional, Sequence, cast
 
 from jedi.inference.compiled import access
 from jedi import debug
@@ -124,7 +125,12 @@ def _iter_module_names(inference_state, paths):
                         yield modname
 
 
-def _find_module(string, paths=None, full_name=None, is_global_search=True):
+def _find_module(
+    string: str,
+    paths: Sequence[str] = None,
+    full_name: str = None,
+    is_global_search: bool = True,
+) -> Any:
     """
     Provides information about a module.
 
@@ -135,15 +141,15 @@ def _find_module(string, paths=None, full_name=None, is_global_search=True):
     if the module is contained in a package.
     """
     if paths is None:
-        paths_iter = [None]
+        paths_iter: List[Optional[str]] = [None]
     else:
-        paths_iter = paths
+        paths_iter = list(paths)
         
     spec = None
     loader = None
 
     for finder in sys.meta_path:
-        implicit_ns_paths = []
+        implicit_ns_paths: List[str] = []
 
         try:
             find_spec = finder.find_spec
@@ -154,7 +160,7 @@ def _find_module(string, paths=None, full_name=None, is_global_search=True):
 
         spec = None
         for path in paths_iter:
-            if is_global_search and finder != importlib.machinery.PathFinder:
+            if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
                 p = None
             else:
                 p = None if path is None else [path]
@@ -163,7 +169,9 @@ def _find_module(string, paths=None, full_name=None, is_global_search=True):
             if spec is not None:
                 loader = spec.loader
                 if loader is None and not spec.has_location:
-                    implicit_ns_paths.extend(spec.submodule_search_locations._path)
+                    spec_locations = cast(Any, spec.submodule_search_locations)
+                    spec_path = cast(str, spec_locations._path)
+                    implicit_ns_paths.extend(spec_path)
 
         if spec is not None:
             if loader is None and not spec.has_location:
