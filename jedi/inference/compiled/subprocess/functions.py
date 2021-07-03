@@ -7,7 +7,17 @@ from pathlib import Path
 from zipfile import ZipFile
 from zipimport import zipimporter, ZipImportError
 from importlib.machinery import all_suffixes
-from typing import Any, List, Optional, Sequence, TYPE_CHECKING, cast
+from io import FileIO
+from typing import (
+    Any,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
 
 from jedi.inference.compiled import access
 from jedi import debug
@@ -17,6 +27,9 @@ from jedi.file_io import KnownContentFileIO, ZipFileIO
 
 if TYPE_CHECKING:
     from jedi.inference import InferenceState
+
+
+ModuleInfoResult = Tuple[Union[Any, FileIO, None], Optional[bool]]
 
 
 def get_sys_path():
@@ -44,7 +57,7 @@ def get_module_info(
     full_name: str = None,
     paths: Sequence[str] = None,
     is_global_search: bool = True,
-):
+) -> ModuleInfoResult:
     """
     Returns Tuple[Union[NamespaceInfo, FileIO, None], Optional[bool]]
     """
@@ -149,7 +162,7 @@ def _find_module(
     paths: Sequence[str] = None,
     full_name: str = None,
     is_global_search: bool = True,
-) -> Any:
+) -> ModuleInfoResult:
     """
     Provides information about a module.
 
