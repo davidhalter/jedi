@@ -7,13 +7,16 @@ from pathlib import Path
 from zipfile import ZipFile
 from zipimport import zipimporter, ZipImportError
 from importlib.machinery import all_suffixes
-from typing import Any, List, Optional, Sequence, cast
+from typing import Any, List, Optional, Sequence, TYPE_CHECKING, cast
 
-from jedi.inference import InferenceState
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
 from jedi.file_io import KnownContentFileIO, ZipFileIO
+
+
+if TYPE_CHECKING:
+    from jedi.inference import InferenceState
 
 
 def get_sys_path():
@@ -34,7 +37,7 @@ def create_simple_object(inference_state, obj):
 
 
 def get_module_info(
-    inference_state: InferenceState,
+    inference_state: "InferenceState",
     *,
     string: str,
     sys_path: List[str] = None,

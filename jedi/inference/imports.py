@@ -10,6 +10,7 @@ statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
 from pathlib import Path
+from typing import Any, List, Sequence, TYPE_CHECKING
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -22,6 +23,7 @@ from jedi.inference import sys_path
 from jedi.inference import helpers
 from jedi.inference import compiled
 from jedi.inference import analysis
+from jedi.inference.context import ModuleContext
 from jedi.inference.utils import unite
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
@@ -30,6 +32,10 @@ from jedi.inference.gradual.typeshed import import_module_decorator, \
     create_stub_module, parse_stub_module
 from jedi.inference.compiled.subprocess.functions import ImplicitNSInfo
 from jedi.plugins import plugin_manager
+
+
+if TYPE_CHECKING:
+    from jedi.inference import InferenceState
 
 
 class ModuleCache:
@@ -362,8 +368,13 @@ class Importer:
         return names
 
 
-def import_module_by_names(inference_state, import_names, sys_path=None,
-                           module_context=None, prefer_stubs=True):
+def import_module_by_names(
+    inference_state: "InferenceState",
+    import_names: Sequence[str],
+    sys_path: List[str] = None,
+    module_context: ModuleContext = None,
+    prefer_stubs: bool = True,
+):
     if sys_path is None:
         sys_path = inference_state.get_sys_path()
 
@@ -394,7 +405,12 @@ def import_module_by_names(inference_state, import_names, sys_path=None,
 
 @plugin_manager.decorate()
 @import_module_decorator
-def import_module(inference_state, import_names, parent_module_value, sys_path):
+def import_module(
+    inference_state: "InferenceState",
+    import_names: Sequence[str],
+    parent_module_value: Any,
+    sys_path: List[str],
+):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
