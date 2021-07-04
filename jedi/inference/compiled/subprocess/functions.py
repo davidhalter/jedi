@@ -190,7 +190,11 @@ def _find_module(
     return _find_module_py33(string, path, loader)
 
 
-def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
+def _find_module_py33(
+    string: str,
+    path: Sequence[str] = None,
+    loader: Any = None,
+) -> ModuleInfoResult:
     loader = loader or importlib.machinery.PathFinder.find_module(string, path)
 
     if loader is None and path is None:  # Fallback to find builtins
@@ -213,7 +217,7 @@ def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_
     return _from_loader(loader, string)
 
 
-def _from_loader(loader, string):
+def _from_loader(loader: Any, string: str) -> ModuleInfoResult:
     try:
         is_package_method = loader.is_package
     except AttributeError:
