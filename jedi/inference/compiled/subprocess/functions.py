@@ -164,18 +164,17 @@ def _find_module(
     loader = None
 
     for finder in sys.meta_path:
+        if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
+            p = None
+        else:
+            p = paths
+
         try:
             find_spec = finder.find_spec
         except AttributeError:
             # These are old-school clases that still have a different API, just
             # ignore those.
             continue
-
-        spec = None
-        if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
-            p = None
-        else:
-            p = paths
 
         spec = find_spec(string, p)
         if spec is not None:
