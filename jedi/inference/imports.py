@@ -10,7 +10,7 @@ statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
 from pathlib import Path
-from typing import Any, List, Sequence, TYPE_CHECKING
+from typing import Any, Sequence, TYPE_CHECKING
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -403,7 +403,7 @@ def import_module(
     inference_state: "InferenceState",
     import_names: Sequence[str],
     parent_module_value: Any,
-    sys_path: List[str],
+    sys_path: Sequence[str],
 ) -> ValueSet:
     """
     This method is very similar to importlib's `_gcd_import`.

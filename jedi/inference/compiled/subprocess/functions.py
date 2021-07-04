@@ -53,7 +53,7 @@ def get_module_info(
     inference_state: "InferenceState",
     *,
     string: str,
-    sys_path: List[str] = None,
+    sys_path: Sequence[str] = None,
     full_name: str = None,
     paths: Sequence[str] = None,
     is_global_search: bool = True,
@@ -64,7 +64,7 @@ def get_module_info(
     del inference_state
 
     if sys_path is not None:
-        sys.path, temp = sys_path, sys.path
+        sys.path, temp = list(sys_path), sys.path
     try:
         return _find_module(
             string=string,
