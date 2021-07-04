@@ -160,17 +160,10 @@ def _find_module(
     or the name of the module if it is a builtin one and a boolean indicating
     if the module is contained in a package.
     """
-    if paths is None:
-        paths_iter: List[Optional[str]] = [None]
-    else:
-        paths_iter = list(paths)
-
     spec = None
     loader = None
 
     for finder in sys.meta_path:
-        implicit_ns_paths: List[str] = []
-
         try:
             find_spec = finder.find_spec
         except AttributeError:
@@ -179,26 +172,20 @@ def _find_module(
             continue
 
         spec = None
-        for path in paths_iter:
-            if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
-                p = None
-            else:
-                p = None if path is None else [path]
+        if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
+            p = None
+        else:
+            p = paths
 
-            spec = find_spec(string, p)
-            if spec is not None:
-                loader = spec.loader
-                if loader is None and not spec.has_location:
-                    # This is a namespace package.
-                    spec_locations = cast(Any, spec.submodule_search_locations)
-                    spec_path = cast(str, spec_locations._path)
-                    implicit_ns_paths.extend(spec_path)
-
+        spec = find_spec(string, p)
         if spec is not None:
+            loader = spec.loader
             if loader is None and not spec.has_location:
                 # This is a namespace package.
+                spec_locations = cast(Any, spec.submodule_search_locations)
+                spec_path = cast(str, spec_locations._path)
                 full_name = string if not paths else full_name
-                implicit_ns_info = ImplicitNSInfo(full_name, implicit_ns_paths)
+                implicit_ns_info = ImplicitNSInfo(full_name, spec_path)
                 return implicit_ns_info, True
 
             break
