@@ -23,7 +23,6 @@ from jedi.inference import sys_path
 from jedi.inference import helpers
 from jedi.inference import compiled
 from jedi.inference import analysis
-from jedi.inference.context import ModuleContext
 from jedi.inference.utils import unite
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
@@ -368,13 +367,8 @@ class Importer:
         return names
 
 
-def import_module_by_names(
-    inference_state: "InferenceState",
-    import_names: Sequence[str],
-    sys_path: List[str] = None,
-    module_context: ModuleContext = None,
-    prefer_stubs: bool = True,
-):
+def import_module_by_names(inference_state, import_names, sys_path=None,
+                           module_context=None, prefer_stubs=True):
     if sys_path is None:
         sys_path = inference_state.get_sys_path()
 
@@ -410,7 +404,7 @@ def import_module(
     import_names: Sequence[str],
     parent_module_value: Any,
     sys_path: List[str],
-):
+) -> ValueSet:
     """
     This method is very similar to importlib's `_gcd_import`.
     """
