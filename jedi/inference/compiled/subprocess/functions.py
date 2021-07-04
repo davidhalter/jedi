@@ -6,17 +6,14 @@ import warnings
 from pathlib import Path
 from zipfile import ZipFile
 from zipimport import zipimporter, ZipImportError
-from importlib.machinery import all_suffixes
 from io import FileIO
 from typing import (
     Any,
-    List,
     Optional,
     Sequence,
     Tuple,
     TYPE_CHECKING,
     Union,
-    cast,
 )
 
 from jedi.inference.compiled import access
