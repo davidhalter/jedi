@@ -7,6 +7,7 @@ Unreleased
 ++++++++++
 
 - Implict namespaces are now a separate types in ``Name().type``
+- Fix bug finding implicit namespace packages (`PR:#1784 <https://github.com/davidhalter/jedi/pull/1784>`_, `Issue:#1759 <https://github.com/davidhalter/jedi/issues/1759>`_)
 
 0.18.0 (2020-12-25)
 +++++++++++++++++++
