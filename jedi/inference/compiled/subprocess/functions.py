@@ -190,10 +190,10 @@ def _find_module(
     return _find_module_py33(string, paths, loader)
 
 
-def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
-    loader = loader or importlib.machinery.PathFinder.find_module(string, path)
+def _find_module_py33(string, paths=None, loader=None, full_name=None, is_global_search=True):
+    loader = loader or importlib.machinery.PathFinder.find_module(string, paths)
 
-    if loader is None and path is None:  # Fallback to find builtins
+    if loader is None and paths is None:  # Fallback to find builtins
         try:
             with warnings.catch_warnings(record=True):
                 # Mute "DeprecationWarning: Use importlib.util.find_spec()
