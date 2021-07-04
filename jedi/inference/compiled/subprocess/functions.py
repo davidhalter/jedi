@@ -52,7 +52,7 @@ def get_module_info(
     string: str,
     sys_path: Sequence[str] = None,
     full_name: str = None,
-    paths: Sequence[str] = None,
+    path: Sequence[str] = None,
     is_global_search: bool = True,
 ) -> ModuleInfoResult:
     """

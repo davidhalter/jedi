@@ -434,7 +434,7 @@ def import_module(
 
         file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
             string=import_names[-1],
-            path=path,
+            path=paths,
             full_name=module_name,
             is_global_search=False,
         )
