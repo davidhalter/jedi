@@ -66,7 +66,7 @@ def get_module_info(
         return _find_module(
             string=string,
             full_name=full_name,
-            paths=paths,
+            path=path,
             is_global_search=is_global_search,
         )
     except ImportError:
@@ -144,7 +144,7 @@ def _iter_module_names(inference_state, paths):
 
 def _find_module(
     string: str,
-    paths: Sequence[str] = None,
+    path: Sequence[str] = None,
     full_name: str = None,
     is_global_search: bool = True,
 ) -> ModuleInfoResult:
@@ -164,7 +164,7 @@ def _find_module(
         if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
             p = None
         else:
-            p = paths
+            p = path
 
         try:
             find_spec = finder.find_spec
@@ -178,7 +178,7 @@ def _find_module(
             loader = spec.loader
             if loader is None and not spec.has_location:
                 # This is a namespace package.
-                full_name = string if not paths else full_name
+                full_name = string if not path else full_name
                 implicit_ns_info = ImplicitNSInfo(
                     full_name,
                     spec.submodule_search_locations._path,  # type: ignore
@@ -187,13 +187,13 @@ def _find_module(
 
             break
 
-    return _find_module_py33(string, paths, loader)
+    return _find_module_py33(string, path, loader)
 
 
-def _find_module_py33(string, paths=None, loader=None, full_name=None, is_global_search=True):
-    loader = loader or importlib.machinery.PathFinder.find_module(string, paths)
+def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
+    loader = loader or importlib.machinery.PathFinder.find_module(string, path)
 
-    if loader is None and paths is None:  # Fallback to find builtins
+    if loader is None and path is None:  # Fallback to find builtins
         try:
             with warnings.catch_warnings(record=True):
                 # Mute "DeprecationWarning: Use importlib.util.find_spec()
