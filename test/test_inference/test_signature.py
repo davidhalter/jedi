@@ -267,6 +267,7 @@ def test_pow_signature(Script, environment):
 @pytest.mark.parametrize(
     'code, signature', [
         [dedent('''
+            # identifier:A
             import functools
             def f(x):
                 pass
@@ -278,6 +279,7 @@ def test_pow_signature(Script, environment):
 
             x(f)('''), 'f(x, /)'],
         [dedent('''
+            # identifier:B
             import functools
             def f(x):
                 pass
