@@ -292,6 +292,26 @@ def test_pow_signature(Script, environment):
                 return wrapper
 
             x(f)('''), 'f()'],
+        [dedent('''
+            # identifier:C
+            import functools
+            def f(x: int, y: float):
+                pass
+
+            @functools.wraps(f)
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            wrapper('''), 'f(x: int, y: float)'],
+        [dedent('''
+            # identifier:D
+            def f(x: int, y: float):
+                pass
+
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            wrapper('''), 'wrapper(x: int, y: float)'],
     ]
 )
 def test_wraps_signature(Script, code, signature):

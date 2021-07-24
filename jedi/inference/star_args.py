@@ -22,7 +22,15 @@ def _iter_nodes_for_param(param_name):
     from jedi.inference.arguments import TreeArguments
 
     execution_context = param_name.parent_context
-    function_node = execution_context.tree_node
+    # Walk up the parso tree to get the FunctionNode we want. We use the parso
+    # tree rather than going via the execution context so that we're agnostic of
+    # the specific scope we're evaluating within (i.e: module or function,
+    # etc.).
+    # - .tree_name is a Name
+    # - .parent is a Param
+    # - .parent is a PythonNode(parameters)
+    # - .parent is the FunctionNode we want.
+    function_node = param_name.tree_name.parent.parent.parent
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
     end = function_node.children[-1].end_pos
