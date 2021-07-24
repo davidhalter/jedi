@@ -273,8 +273,6 @@ def test_pow_signature(Script, environment):
             def x(f):
                 @functools.wraps(f)
                 def wrapper(*args):
-                    # Have no arguments here, but because of wraps, the signature
-                    # should still be f's.
                     return f(*args)
                 return wrapper
 
