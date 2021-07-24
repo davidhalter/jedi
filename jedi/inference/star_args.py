@@ -12,6 +12,8 @@ The signature here for bar should be `bar(b, c)` instead of bar(*args).
 """
 from inspect import Parameter
 
+from parso import tree
+
 from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
 from jedi.inference.helpers import is_big_annoying_library
@@ -26,11 +28,7 @@ def _iter_nodes_for_param(param_name):
     # tree rather than going via the execution context so that we're agnostic of
     # the specific scope we're evaluating within (i.e: module or function,
     # etc.).
-    # - .tree_name is a Name
-    # - .parent is a Param
-    # - .parent is a PythonNode(parameters)
-    # - .parent is the FunctionNode we want.
-    function_node = param_name.tree_name.parent.parent.parent
+    function_node = tree.search_ancestor(param_name.tree_name, 'funcdef', 'lambdef')
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
     end = function_node.children[-1].end_pos
