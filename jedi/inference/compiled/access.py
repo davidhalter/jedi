@@ -8,6 +8,8 @@ import warnings
 import re
 import builtins
 import typing
+from pathlib import Path
+from typing import Optional
 
 from jedi.inference.compiled.getattr_static import getattr_static
 
@@ -179,9 +181,9 @@ class DirectObjectAccess:
     def py__bool__(self):
         return bool(self._obj)
 
-    def py__file__(self):
+    def py__file__(self) -> Optional[Path]:
         try:
-            return self._obj.__file__
+            return Path(self._obj.__file__)
         except AttributeError:
             return None
 

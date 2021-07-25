@@ -7,6 +7,7 @@ goals:
 2. Make it possible to handle different Python versions as well as virtualenvs.
 """
 
+import collections
 import os
 import sys
 import queue
@@ -168,7 +169,7 @@ class CompiledSubprocess:
     def __init__(self, executable, env_vars=None):
         self._executable = executable
         self._env_vars = env_vars
-        self._inference_state_deletion_queue = queue.deque()
+        self._inference_state_deletion_queue = collections.deque()
         self._cleanup_callable = lambda: None
 
     def __repr__(self):

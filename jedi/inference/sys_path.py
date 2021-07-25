@@ -186,7 +186,6 @@ def _get_buildout_script_paths(search_path: Path):
     directory that look like python files.
 
     :param search_path: absolute path to the module.
-    :type search_path: str
     """
     project_root = _get_parent_dir_with_file(search_path, 'buildout.cfg')
     if not project_root:
@@ -205,7 +204,7 @@ def _get_buildout_script_paths(search_path: Path):
         except (UnicodeDecodeError, IOError) as e:
             # Probably a binary file; permission error or race cond. because
             # file got deleted. Ignore it.
-            debug.warning(e)
+            debug.warning(str(e))
             continue
 
 

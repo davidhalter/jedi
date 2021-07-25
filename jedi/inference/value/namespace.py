@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Optional
+
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.filters import DictFilter
 from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
@@ -41,7 +44,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
         string_name = self.py__package__()[-1]
         return ImplicitNSName(self, string_name)
 
-    def py__file__(self):
+    def py__file__(self) -> Optional[Path]:
         return None
 
     def py__package__(self):
