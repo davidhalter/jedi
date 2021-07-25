@@ -61,8 +61,12 @@ def typed_bound_generic_passthrough(x: TList) -> TList:
 # Forward references are more likely with custom types, however this aims to
 # test just the handling of the quoted type rather than any other part of the
 # machinery.
-def typed_quoted_generic_passthrough(x: T) -> 'List[T]':
+def typed_quoted_return_generic_passthrough(x: T) -> 'List[T]':
     return [x]
+
+def typed_quoted_input_generic_passthrough(x: 'Tuple[T]') -> T:
+    x
+    return x[0]
 
 
 for a in untyped_passthrough(untyped_list_str):
@@ -152,13 +156,20 @@ for q in typed_bound_generic_passthrough(typed_list_str):
     q
 
 
-for r in typed_quoted_generic_passthrough("something"):
+for r in typed_quoted_return_generic_passthrough("something"):
     #? str()
     r
 
-for s in typed_quoted_generic_passthrough(42):
+for s in typed_quoted_return_generic_passthrough(42):
     #? int()
     s
+
+
+#? str()
+typed_quoted_input_generic_passthrough(("something",))
+
+#? int()
+typed_quoted_input_generic_passthrough((42,))
 
 
 

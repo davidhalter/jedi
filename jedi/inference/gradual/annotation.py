@@ -196,6 +196,32 @@ def py__annotations__(funcdef):
     return dct
 
 
+def resolve_forward_references(context, all_annotations):
+    def resolve(node):
+        if node is None or node.type != 'string':
+            return node
+
+        node = _get_forward_reference_node(
+            context,
+            context.inference_state.compiled_subprocess.safe_literal_eval(
+                node.value,
+            ),
+        )
+
+        if node is None:
+            # There was a string, but it's not a valid annotation
+            return None
+
+        # The forward reference tree has an additional root node ('eval_input')
+        # that we don't want. Extract the node we do want, that is equivalent to
+        # the nodes returned by `py__annotations__` for a non-quoted node.
+        node = node.children[0]
+
+        return node
+
+    return {name: resolve(node) for name, node in all_annotations.items()}
+
+
 @inference_state_method_cache()
 def infer_return_types(function, arguments):
     """
@@ -203,7 +229,10 @@ def infer_return_types(function, arguments):
     according to type annotations.
     """
     context = function.get_default_param_context()
-    all_annotations = py__annotations__(function.tree_node)
+    all_annotations = resolve_forward_references(
+        context,
+        py__annotations__(function.tree_node),
+    )
     annotation = all_annotations.get("return", None)
     if annotation is None:
         # If there is no Python 3-type annotation, look for an annotation
@@ -221,18 +250,6 @@ def infer_return_types(function, arguments):
             context,
             match.group(1).strip()
         ).execute_annotation()
-
-    elif annotation.type == 'string':
-        annotation = _get_forward_reference_node(
-            context,
-            context.inference_state.compiled_subprocess.safe_literal_eval(
-                annotation.value,
-            ),
-        )
-        # The forward reference tree has an additional root node ('eval_input')
-        # that we don't want. Extract the node we do want, that is equivalent to
-        # the nodes returned by `py__annotations__` for a non-quoted annotation.
-        annotation = annotation.children[0]
 
     unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
