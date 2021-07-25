@@ -202,6 +202,7 @@ def infer_return_types(function, arguments):
     Infers the type of a function's return value,
     according to type annotations.
     """
+    context = function.get_default_param_context()
     all_annotations = py__annotations__(function.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
@@ -217,11 +218,10 @@ def infer_return_types(function, arguments):
             return NO_VALUES
 
         return _infer_annotation_string(
-            function.get_default_param_context(),
+            context,
             match.group(1).strip()
         ).execute_annotation()
 
-    context = function.get_default_param_context()
     unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
