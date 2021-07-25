@@ -222,6 +222,18 @@ def infer_return_types(function, arguments):
             match.group(1).strip()
         ).execute_annotation()
 
+    elif annotation.type == 'string':
+        annotation = _get_forward_reference_node(
+            context,
+            context.inference_state.compiled_subprocess.safe_literal_eval(
+                annotation.value,
+            ),
+        )
+        # The forward reference tree has an additional root node ('eval_input')
+        # that we don't want. Extract the node we do want, that is equivalent to
+        # the nodes returned by `py__annotations__` for a non-quoted annotation.
+        annotation = annotation.children[0]
+
     unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
