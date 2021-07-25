@@ -267,19 +267,19 @@ def test_pow_signature(Script, environment):
 @pytest.mark.parametrize(
     'code, signature', [
         [dedent('''
+            # identifier:A
             import functools
             def f(x):
                 pass
             def x(f):
                 @functools.wraps(f)
                 def wrapper(*args):
-                    # Have no arguments here, but because of wraps, the signature
-                    # should still be f's.
                     return f(*args)
                 return wrapper
 
             x(f)('''), 'f(x, /)'],
         [dedent('''
+            # identifier:B
             import functools
             def f(x):
                 pass
@@ -292,6 +292,26 @@ def test_pow_signature(Script, environment):
                 return wrapper
 
             x(f)('''), 'f()'],
+        [dedent('''
+            # identifier:C
+            import functools
+            def f(x: int, y: float):
+                pass
+
+            @functools.wraps(f)
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            wrapper('''), 'f(x: int, y: float)'],
+        [dedent('''
+            # identifier:D
+            def f(x: int, y: float):
+                pass
+
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            wrapper('''), 'wrapper(x: int, y: float)'],
     ]
 )
 def test_wraps_signature(Script, code, signature):
