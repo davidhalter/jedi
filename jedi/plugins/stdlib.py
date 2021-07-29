@@ -24,7 +24,6 @@ from jedi.inference.value.instance import \
     AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
-from jedi.inference.gradual.base import GenericClass
 from jedi.inference.value import ClassValue, ModuleValue
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.value.function import FunctionMixin
