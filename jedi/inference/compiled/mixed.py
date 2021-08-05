@@ -187,7 +187,7 @@ def _find_syntax_node_name(inference_state, python_object):
     try:
         python_object = _get_object_to_check(python_object)
         path = inspect.getsourcefile(python_object)
-    except TypeError:
+    except (OSError, TypeError):
         # The type might not be known (e.g. class_with_dict.__weakref__)
         return None
     path = None if path is None else Path(path)
