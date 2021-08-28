@@ -309,3 +309,8 @@ def annotation2() -> Iterator[float]:
 next(annotation1())
 #? float()
 next(annotation2())
+
+
+# annotations should override generator inference
+#? float()
+annotation1()
