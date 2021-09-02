@@ -711,3 +711,24 @@ def test_negate():
     assert x.name == 'int'
     value, = x._name.infer()
     assert value.get_safe_value() == -3
+
+
+def test_complete_not_findable_class_source():
+    class TestClass():
+        ta=1
+        ta1=2
+
+    # Simulate the environment where the class is defined in
+    # an interactive session and therefore inspect module
+    # cannot find its source code and raises OSError (Py 3.10+) or TypeError.
+    TestClass.__module__ = "__main__"
+    # There is a pytest __main__ module we have to remove temporarily.
+    module = sys.modules.pop("__main__")
+    try:
+        interpreter = jedi.Interpreter("TestClass.", [locals()])
+        completions = interpreter.complete(column=10, line=1)
+    finally:
+        sys.modules["__main__"] = module
+
+    assert "ta" in [c.name for c in completions]
+    assert "ta1" in [c.name for c in completions]
