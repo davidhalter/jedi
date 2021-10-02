@@ -422,11 +422,9 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             # The module might not be a package.
             return NO_VALUES
 
-        for path in paths:
-            # At the moment we are only using one path. So this is
-            # not important to be correct.
+        for i, path in enumerate(paths):
             if not isinstance(path, list):
-                path = [path]
+                path = paths[i:]
             file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
                 string=import_names[-1],
                 path=path,
