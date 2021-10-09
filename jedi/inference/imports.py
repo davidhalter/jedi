@@ -422,20 +422,13 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             # The module might not be a package.
             return NO_VALUES
 
-        for path in paths:
-            # At the moment we are only using one path. So this is
-            # not important to be correct.
-            if not isinstance(path, list):
-                path = [path]
-            file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
-                string=import_names[-1],
-                path=path,
-                full_name=module_name,
-                is_global_search=False,
-            )
-            if is_pkg is not None:
-                break
-        else:
+        file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
+            string=import_names[-1],
+            path=paths,
+            full_name=module_name,
+            is_global_search=False,
+        )
+        if is_pkg is None:
             return NO_VALUES
 
     if isinstance(file_io_or_ns, ImplicitNSInfo):
