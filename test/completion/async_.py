@@ -105,3 +105,22 @@ async def f():
     f = await C().async_for_classmethod()
     #? C()
     f
+
+
+class AsyncCtxMgr:
+    def some_method():
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+async def asyncctxmgr():
+    async with AsyncCtxMgr() as acm:
+        #? AsyncCtxMgr()
+        acm
+        #? ['some_method']
+        acm.som
