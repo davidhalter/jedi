@@ -457,3 +457,7 @@ def test_module_completions(Script, module):
         # Just make sure that there are no errors
         c.type
         c.docstring()
+
+
+def test_whitespace_at_end_after_dot(Script):
+    assert 'strip' in [c.name for c in Script('str. ').complete()]
