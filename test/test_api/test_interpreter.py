@@ -732,3 +732,10 @@ def test_complete_not_findable_class_source():
 
     assert "ta" in [c.name for c in completions]
     assert "ta1" in [c.name for c in completions]
+
+
+def test_param_infer_default():
+    abs_sig, = jedi.Interpreter('abs(', [{'abs': abs}]).get_signatures()
+    param, = abs_sig.params
+    assert param.name == 'x'
+    assert param.infer_default() == []

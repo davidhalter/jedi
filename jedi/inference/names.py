@@ -414,6 +414,9 @@ class ParamNameInterface(_ParamMixin):
             return 2
         return 0
 
+    def infer_default(self):
+        return NO_VALUES
+
 
 class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
     annotation_node = None
