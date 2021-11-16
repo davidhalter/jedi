@@ -31,7 +31,15 @@ def execute(callback):
 def infer_anonymous_param(func):
     def get_returns(value):
         if value.tree_node.annotation is not None:
-            return value.execute_with_values()
+            result = value.execute_with_values()
+            if any(v.name.get_qualified_names(include_module_names=True)
+                   == ('typing', 'Generator')
+                   for v in result):
+                return ValueSet.from_sets(
+                    v.py__getattribute__('__next__').execute_annotation()
+                    for v in result
+                )
+            return result
 
         # In pytest we need to differentiate between generators and normal
         # returns.

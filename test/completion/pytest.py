@@ -1,3 +1,5 @@
+from typing import Generator
+
 import pytest
 from pytest import fixture
 
@@ -169,3 +171,15 @@ def test_inheritance_fixture(inheritance_fixture, caplog):
 @pytest.fixture
 def caplog(caplog):
     yield caplog
+
+# -----------------
+# Generator with annotation
+# -----------------
+
+@pytest.fixture
+def with_annot() -> Generator[float, None, None]:
+    pass
+
+def test_with_annot(inheritance_fixture, with_annot):
+    #? float()
+    with_annot
