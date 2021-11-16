@@ -62,6 +62,7 @@ Code Contributors
 - Andrii Kolomoiets (@muffinmad)
 - Leo Ryu (@Leo-Ryu)
 - Joseph Birkner (@josephbirkner)
+- Bryan Bugyi (@bbugyi200) <bryanbugyi34@gmail.com>
 
 And a few more "anonymous" contributors.
 

@@ -118,7 +118,7 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
     assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
-        sys_path=map(str, sys_path),
+        sys_path=list(map(str, sys_path)),
         string='not_pkg',
         full_name='not_pkg'
     )

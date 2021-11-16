@@ -6,12 +6,27 @@ import warnings
 from pathlib import Path
 from zipfile import ZipFile
 from zipimport import zipimporter, ZipImportError
-from importlib.machinery import all_suffixes
+from io import FileIO
+from typing import (
+    Any,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 from jedi.inference.compiled import access
 from jedi import debug
 from jedi import parser_utils
 from jedi.file_io import KnownContentFileIO, ZipFileIO
+
+
+if TYPE_CHECKING:
+    from jedi.inference import InferenceState
+
+
+ModuleInfoResult = Tuple[Union[Any, FileIO, None], Optional[bool]]
 
 
 def get_sys_path():
@@ -31,14 +46,29 @@ def create_simple_object(inference_state, obj):
     return access.create_access_path(inference_state, obj)
 
 
-def get_module_info(inference_state, sys_path=None, full_name=None, **kwargs):
+def get_module_info(
+    inference_state: "InferenceState",
+    *,
+    string: str,
+    sys_path: Sequence[str] = None,
+    full_name: str = None,
+    path: Sequence[str] = None,
+    is_global_search: bool = True,
+) -> ModuleInfoResult:
     """
     Returns Tuple[Union[NamespaceInfo, FileIO, None], Optional[bool]]
     """
+    del inference_state
+
     if sys_path is not None:
-        sys.path, temp = sys_path, sys.path
+        sys.path, temp = list(sys_path), sys.path
     try:
-        return _find_module(full_name=full_name, **kwargs)
+        return _find_module(
+            string=string,
+            full_name=full_name,
+            path=path,
+            is_global_search=is_global_search,
+        )
     except ImportError:
         return None, None
     finally:
@@ -67,18 +97,6 @@ def _test_print(inference_state, stderr=None, stdout=None):
     if stdout is not None:
         print(stdout)
         sys.stdout.flush()
-
-
-def _get_init_path(directory_path):
-    """
-    The __init__ file can be searched in a directory. If found return it, else
-    None.
-    """
-    for suffix in all_suffixes():
-        path = os.path.join(directory_path, '__init__' + suffix)
-        if os.path.exists(path):
-            return path
-    return None
 
 
 def safe_literal_eval(inference_state, value):
@@ -124,7 +142,12 @@ def _iter_module_names(inference_state, paths):
                         yield modname
 
 
-def _find_module(string, path=None, full_name=None, is_global_search=True):
+def _find_module(
+    string: str,
+    path: Sequence[str] = None,
+    full_name: str = None,
+    is_global_search: bool = True,
+) -> ModuleInfoResult:
     """
     Provides information about a module.
 
@@ -138,10 +161,11 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
     loader = None
 
     for finder in sys.meta_path:
-        if is_global_search and finder != importlib.machinery.PathFinder:
+        if is_global_search and finder != importlib.machinery.PathFinder:  # type: ignore
             p = None
         else:
             p = path
+
         try:
             find_spec = finder.find_spec
         except AttributeError:
@@ -155,14 +179,22 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
             if loader is None and not spec.has_location:
                 # This is a namespace package.
                 full_name = string if not path else full_name
-                implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
+                implicit_ns_info = ImplicitNSInfo(
+                    full_name,
+                    spec.submodule_search_locations._path,  # type: ignore
+                )
                 return implicit_ns_info, True
+
             break
 
     return _find_module_py33(string, path, loader)
 
 
-def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
+def _find_module_py33(
+    string: str,
+    path: Sequence[str] = None,
+    loader: Any = None,
+) -> ModuleInfoResult:
     loader = loader or importlib.machinery.PathFinder.find_module(string, path)
 
     if loader is None and path is None:  # Fallback to find builtins
@@ -185,7 +217,7 @@ def _find_module_py33(string, path=None, loader=None, full_name=None, is_global_
     return _from_loader(loader, string)
 
 
-def _from_loader(loader, string):
+def _from_loader(loader: Any, string: str) -> ModuleInfoResult:
     try:
         is_package_method = loader.is_package
     except AttributeError:
