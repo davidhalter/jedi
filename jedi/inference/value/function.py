@@ -344,7 +344,8 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                     GenericClass(c, TupleGenericManager(generics)) for c in async_classes
                 ).execute_annotation()
         else:
-            if self.is_generator():
+            # If there are annotations, prefer them over anything else.
+            if self.is_generator() and not self.infer_annotations():
                 return ValueSet([iterable.Generator(inference_state, self)])
             else:
                 return self.get_return_values()

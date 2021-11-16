@@ -43,6 +43,9 @@ def infer_anonymous_param(func):
             return function_context.get_return_values()
 
     def wrapper(param_name):
+        # parameters with an annotation do not need special handling
+        if param_name.annotation_node:
+            return func(param_name)
         is_pytest_param, param_name_is_function_name = \
             _is_a_pytest_param_and_inherited(param_name)
         if is_pytest_param:
