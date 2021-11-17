@@ -581,7 +581,7 @@ class Script:
     @validate_line_column
     def extract_variable(self, line, column, *, new_name, until_line=None, until_column=None):
         """
-        Moves an expression to a new statemenet.
+        Moves an expression to a new statement.
 
         For example if you have the cursor on ``foo`` and provide a
         ``new_name`` called ``bar``::
