@@ -189,3 +189,9 @@ def test_no_error(get_names):
 def test_is_side_effect(get_names, code, index, is_side_effect):
     names = get_names(code, references=True, all_scopes=True)
     assert names[index].is_side_effect() == is_side_effect
+
+
+def test_no_defined_names(get_names):
+    definition, = get_names("x = (1, 2)")
+
+    assert not definition.defined_names()

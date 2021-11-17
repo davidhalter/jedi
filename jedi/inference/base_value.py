@@ -22,6 +22,10 @@ from jedi.cache import memoize_method
 sentinel = object()
 
 
+class HasNoContext(Exception):
+    pass
+
+
 class HelperValueMixin:
     def get_root_context(self):
         value = self
@@ -261,7 +265,7 @@ class Value(HelperValueMixin):
         return self.parent_context.is_stub()
 
     def _as_context(self):
-        raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
+        raise HasNoContext
 
     @property
     def name(self):

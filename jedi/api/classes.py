@@ -27,7 +27,7 @@ from jedi.inference.compiled.mixed import MixedName
 from jedi.inference.names import ImportName, SubModuleName
 from jedi.inference.gradual.stub_value import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
-from jedi.inference.base_value import ValueSet
+from jedi.inference.base_value import ValueSet, HasNoContext
 from jedi.api.keywords import KeywordName
 from jedi.api import completion_cache
 from jedi.api.helpers import filter_follow_imports
@@ -37,13 +37,17 @@ def _sort_names_by_start_pos(names):
     return sorted(names, key=lambda s: s.start_pos or (0, 0))
 
 
-def defined_names(inference_state, context):
+def defined_names(inference_state, value):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Name
     """
+    try:
+        context = value.as_context()
+    except HasNoContext:
+        return []
     filter = next(context.get_filters())
     names = [name for name in filter.values()]
     return [Name(inference_state, n) for n in _sort_names_by_start_pos(names)]
@@ -759,7 +763,7 @@ class Name(BaseName):
         """
         defs = self._name.infer()
         return sorted(
-            unite(defined_names(self._inference_state, d.as_context()) for d in defs),
+            unite(defined_names(self._inference_state, d) for d in defs),
             key=lambda s: s._name.start_pos or (0, 0)
         )
 
