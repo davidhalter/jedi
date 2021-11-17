@@ -26,11 +26,6 @@ async def y():
     x().__await__().__next
     return 2
 
-async def x2():
-    async with open('asdf') as f:
-        #? ['readlines']
-        f.readlines
-
 class A():
     @staticmethod
     async def b(c=1, d=2):
