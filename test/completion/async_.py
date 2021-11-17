@@ -26,11 +26,6 @@ async def y():
     x().__await__().__next
     return 2
 
-async def x2():
-    async with open('asdf') as f:
-        #? ['readlines']
-        f.readlines
-
 class A():
     @staticmethod
     async def b(c=1, d=2):
@@ -105,3 +100,22 @@ async def f():
     f = await C().async_for_classmethod()
     #? C()
     f
+
+
+class AsyncCtxMgr:
+    def some_method():
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+async def asyncctxmgr():
+    async with AsyncCtxMgr() as acm:
+        #? AsyncCtxMgr()
+        acm
+        #? ['some_method']
+        acm.som
