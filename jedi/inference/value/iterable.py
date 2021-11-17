@@ -342,6 +342,8 @@ class SequenceLiteralValue(Sequence):
         else:
             with reraise_getitem_errors(TypeError, KeyError, IndexError):
                 node = self.get_tree_entries()[index]
+            if node == ':' or node.type == 'subscript':
+                return NO_VALUES
             return self._defining_context.infer_node(node)
 
     def py__iter__(self, contextualized_node=None):
@@ -407,16 +409,6 @@ class SequenceLiteralValue(Sequence):
             else:
                 return [array_node]
 
-    def exact_key_items(self):
-        """
-        Returns a generator of tuples like dict.items(), where the key is
-        resolved (as a string) and the values are still lazy values.
-        """
-        for key_node, value in self.get_tree_entries():
-            for key in self._defining_context.infer_node(key_node):
-                if is_string(key):
-                    yield key.get_safe_value(), LazyTreeValue(self._defining_context, value)
-
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
@@ -471,6 +463,16 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
         ]
 
         return ValueSet([FakeList(self.inference_state, lazy_values)])
+
+    def exact_key_items(self):
+        """
+        Returns a generator of tuples like dict.items(), where the key is
+        resolved (as a string) and the values are still lazy values.
+        """
+        for key_node, value in self.get_tree_entries():
+            for key in self._defining_context.infer_node(key_node):
+                if is_string(key):
+                    yield key.get_safe_value(), LazyTreeValue(self._defining_context, value)
 
     def _dict_values(self):
         return ValueSet.from_sets(

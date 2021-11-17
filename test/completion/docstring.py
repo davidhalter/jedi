@@ -284,6 +284,13 @@ def doctest_with_space():
         import_issu
     """
 
+def doctest_issue_github_1748():
+    """From GitHub #1748
+    #? 10 []
+    This. Al
+    """
+    pass
+
 
 def docstring_rst_identifiers():
     """

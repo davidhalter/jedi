@@ -85,7 +85,7 @@ class TestSetupReadline(unittest.TestCase):
         }
         # There are quite a few differences, because both Windows and Linux
         # (posix and nt) librariesare included.
-        assert len(difference) < 15
+        assert len(difference) < 30
 
     def test_local_import(self):
         s = 'import test.test_utils'

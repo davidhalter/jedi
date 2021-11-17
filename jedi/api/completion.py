@@ -195,7 +195,6 @@ class Completion:
         - In args: */**: no completion
         - In params (also lambda): no completion before =
         """
-
         grammar = self._inference_state.grammar
         self.stack = stack = None
         self._position = (
@@ -278,6 +277,10 @@ class Completion:
                 )
             elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
+                if dot.type == "endmarker":
+                    # This is a bit of a weird edge case, maybe we can somehow
+                    # generalize this.
+                    dot = leaf.get_previous_leaf()
                 cached_name, n = self._complete_trailer(dot.get_previous_leaf())
                 completion_names += n
             elif self._is_parameter_completion():
