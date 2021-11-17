@@ -6,5 +6,6 @@ python:
       path: .
       extra_requirements:
         - docs
-  submodules:
-    include: all
+
+submodules:
+  include: all
