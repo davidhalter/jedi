@@ -1,8 +1,10 @@
 version: 2
 
 python:
-   install:
-     - method: pip
-       path: .
-       extra_requirements:
-         - docs
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+  submodules:
+    include: all
