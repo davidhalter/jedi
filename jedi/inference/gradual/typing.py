@@ -294,6 +294,9 @@ class Callable(BaseTypingInstance):
             from jedi.inference.gradual.annotation import infer_return_for_callable
             return infer_return_for_callable(arguments, param_values, result_values)
 
+    def py__get__(self, instance, class_value):
+        return ValueSet([self])
+
 
 class Tuple(BaseTypingInstance):
     def _is_homogenous(self):
