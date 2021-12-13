@@ -110,4 +110,4 @@ class Test(object):
 # nocond lambdas make no sense at all.
 
 #? int()
-[a for a in [1,2] if lambda: 3][0]
+[a for a in [1,2] if (lambda: 3)][0]
