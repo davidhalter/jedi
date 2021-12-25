@@ -4,7 +4,7 @@ from typing import List, Dict, overload, Tuple, TypeVar
 lst: list
 list_alias: List
 list_str: List[str]
-list_str: List[int]
+list_int: List[int]
 
 # -------------------------
 # With base classes
