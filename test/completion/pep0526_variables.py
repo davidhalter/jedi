@@ -1,9 +1,6 @@
 """
-PEP 526 introduced a new way of using type annotations on variables. It was
-introduced in Python 3.6.
+PEP 526 introduced a way of using type annotations on variables.
 """
-# python >= 3.6
-
 import typing
 
 asdf = ''

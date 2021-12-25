@@ -1,5 +1,3 @@
-# python >= 3.6
-
 class Foo:
     bar = 1
 

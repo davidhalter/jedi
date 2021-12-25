@@ -1,4 +1,3 @@
-# python >= 3.6
 from typing import List, Dict, overload, Tuple, TypeVar
 
 lst: list

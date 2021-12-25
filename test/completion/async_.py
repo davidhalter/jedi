@@ -47,8 +47,6 @@ async def awaitable_test():
     #? str()
     foo
 
-# python >= 3.6
-
 async def asgen():
     yield 1
     await asyncio.sleep(0)
