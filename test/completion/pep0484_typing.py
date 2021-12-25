@@ -2,18 +2,14 @@
 Test the typing library, with docstrings and annotations
 """
 import typing
+from typing import Sequence, MutableSequence, List, Iterable, Iterator, \
+    AbstractSet, Tuple, Mapping, Dict, Union, Optional
+
 class B:
     pass
 
-def we_can_has_sequence(p, q, r, s, t, u):
-    """
-    :type p: typing.Sequence[int]
-    :type q: typing.Sequence[B]
-    :type r: typing.Sequence[int]
-    :type s: typing.Sequence["int"]
-    :type t: typing.MutableSequence[dict]
-    :type u: typing.List[float]
-    """
+def we_can_has_sequence(p: Sequence[int], q: Sequence[B], r: Sequence[int],
+                        s: Sequence["int"], t: MutableSequence[dict], u: List[float]):
     #? ["count"]
     p.c
     #? int()
@@ -43,13 +39,8 @@ def we_can_has_sequence(p, q, r, s, t, u):
     #? float()
     u[1]
 
-def iterators(ps, qs, rs, ts):
-    """
-    :type ps: typing.Iterable[int]
-    :type qs: typing.Iterator[str]
-    :type rs: typing.Sequence["ForwardReference"]
-    :type ts: typing.AbstractSet["float"]
-    """
+def iterators(ps: Iterable[int], qs: Iterator[str], rs:
+              Sequence["ForwardReference"], ts: AbstractSet["float"]):
     for p in ps:
         #? int()
         p
@@ -79,22 +70,13 @@ def iterators(ps, qs, rs, ts):
         #? float()
         t
 
-def sets(p, q):
-    """
-    :type p: typing.AbstractSet[int]
-    :type q: typing.MutableSet[float]
-    """
+def sets(p: AbstractSet[int], q: typing.MutableSet[float]):
     #? []
     p.a
     #? ["add"]
     q.a
 
-def tuple(p, q, r):
-    """
-    :type p: typing.Tuple[int]
-    :type q: typing.Tuple[int, str, float]
-    :type r: typing.Tuple[B, ...]
-    """
+def tuple(p: Tuple[int], q: Tuple[int, str, float], r: Tuple[B, ...]):
     #? int()
     p[0]
     #? ['index']
@@ -127,16 +109,14 @@ class Key:
 class Value:
     pass
 
-def mapping(p, q, d, dd, r, s, t):
-    """
-    :type p: typing.Mapping[Key, Value]
-    :type q: typing.MutableMapping[Key, Value]
-    :type d: typing.Dict[Key, Value]
-    :type dd: typing.DefaultDict[Key, Value]
-    :type r: typing.KeysView[Key]
-    :type s: typing.ValuesView[Value]
-    :type t: typing.ItemsView[Key, Value]
-    """
+def mapping(
+        p: Mapping[Key, Value],
+        q: typing.MutableMapping[Key, Value],
+        d: Dict[Key, Value],
+        dd: typing.DefaultDict[Key, Value],
+        r: typing.KeysView[Key],
+        s: typing.ValuesView[Value],
+        t: typing.ItemsView[Key, Value]):
     #? []
     p.setd
     #? ["setdefault"]
@@ -198,14 +178,12 @@ def mapping(p, q, d, dd, r, s, t):
         #? Value()
         value
 
-def union(p, q, r, s, t):
-    """
-    :type p: typing.Union[int]
-    :type q: typing.Union[int, int]
-    :type r: typing.Union[int, str, "int"]
-    :type s: typing.Union[int, typing.Union[str, "typing.Union['float', 'dict']"]]
-    :type t: typing.Union[int, None]
-    """
+def union(
+    p: Union[int],
+    q: Union[int, int],
+    r: Union[int, str, "int"],
+    s: Union[int, typing.Union[str, "typing.Union['float', 'dict']"]],
+    t: Union[int, None]):
     #? int()
     p
     #? int()
@@ -217,9 +195,8 @@ def union(p, q, r, s, t):
     #? int() None
     t
 
-def optional(p):
+def optional(p: Optional[int]):
     """
-    :type p: typing.Optional[int]
     Optional does not do anything special. However it should be recognised
     as being of that type. Jedi doesn't do anything with the extra into that
     it can be None as well
@@ -234,10 +211,7 @@ class TestDict(typing.Dict[str, int]):
     def setdud(self):
         pass
 
-def testdict(x):
-    """
-    :type x: TestDict
-    """
+def testdict(x: TestDict):
     #? ["setdud", "setdefault"]
     x.setd
     for key in x.keys():
@@ -262,10 +236,7 @@ y = WrappingType(0) # Per https://github.com/davidhalter/jedi/issues/1015#issuec
 #? str()
 y
 
-def testnewtype(y):
-    """
-    :type y: WrappingType
-    """
+def testnewtype(y: WrappingType):
     #? str()
     y
     #? ["upper"]
@@ -273,10 +244,7 @@ def testnewtype(y):
 
 WrappingType2 = typing.NewType()
 
-def testnewtype2(y):
-    """
-    :type y: WrappingType2
-    """
+def testnewtype2(y: WrappingType2):
     #?
     y
     #? []
@@ -297,10 +265,7 @@ class TestDefaultDict(typing.DefaultDict[str, int]):
     def setdud(self):
         pass
 
-def testdict(x):
-    """
-    :type x: TestDefaultDict
-    """
+def testdict(x: TestDefaultDict):
     #? ["setdud", "setdefault"]
     x.setd
     for key in x.keys():
