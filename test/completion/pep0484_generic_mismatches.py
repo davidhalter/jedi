@@ -27,13 +27,13 @@ class PlainClass(object):
 
 
 tpl = ("1", 2)
-tpl_typed = ("2", 3)  # type: Tuple[str, int]
+tpl_typed: Tuple[str, int] = ("2", 3)
 
 collection = {"a": 1}
-collection_typed = {"a": 1}  # type: Dict[str, int]
+collection_typed: Dict[str, int] = {"a": 1}
 
-list_of_ints = [42]  # type: List[int]
-list_of_funcs = [foo]  # type: List[Callable[[T], T]]
+list_of_ints: List[int] = [42]
+list_of_funcs: List[Callable[[T], T]] = [foo]
 
 custom_generic = CustomGeneric(123.45)
 

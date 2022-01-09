@@ -19,12 +19,12 @@ T_co = TypeVar('T_co', covariant=True)
 V = TypeVar('V')
 
 
-just_float = 42.  # type: float
-optional_float = 42.  # type: Optional[float]
-list_of_ints = [42]  # type: List[int]
-list_of_floats = [42.]  # type: List[float]
-list_of_optional_floats = [x or None for x in list_of_floats]  # type: List[Optional[float]]
-list_of_ints_and_strs = [42, 'abc']  # type: List[Union[int, str]]
+just_float: float = 42.
+optional_float: Optional[float] = 42.
+list_of_ints: List[int] = [42]
+list_of_floats: List[float] = [42.]
+list_of_optional_floats: List[Optional[float]] = [x or None for x in list_of_floats]
+list_of_ints_and_strs: List[Union[int, str]] = [42, 'abc']
 
 # Test that simple parameters are handled
 def list_t_to_list_t(the_list: List[T]) -> List[T]:
@@ -48,7 +48,7 @@ for z in list_t_to_list_t(list_of_ints_and_strs):
     z
 
 
-list_of_int_type = [int]  # type: List[Type[int]]
+list_of_int_type: List[Type[int]] = [int]
 
 # Test that nested parameters are handled
 def list_optional_t_to_list_t(the_list: List[Optional[T]]) -> List[T]:
@@ -85,7 +85,7 @@ def optional_list_t_to_list_t(x: Optional[List[T]]) -> List[T]:
     return x if x is not None else []
 
 
-optional_list_float = None  # type: Optional[List[float]]
+optional_list_float: Optional[List[float]] = None
 for xc in optional_list_t_to_list_t(optional_list_float):
     #? float()
     xc
@@ -134,7 +134,7 @@ def list_tuple_t_to_tuple_list_t(the_list: List[Tuple[T]]) -> Tuple[List[T], ...
     return tuple(list(x) for x in the_list)
 
 
-list_of_int_tuples = [(x,) for x in list_of_ints]  # type: List[Tuple[int]]
+list_of_int_tuples: List[Tuple[int]] = [(x,) for x in list_of_ints]
 
 for b in list_tuple_t_to_tuple_list_t(list_of_int_tuples):
     #? int()
@@ -145,7 +145,7 @@ def list_tuple_t_elipsis_to_tuple_list_t(the_list: List[Tuple[T, ...]]) -> Tuple
     return tuple(list(x) for x in the_list)
 
 
-list_of_int_tuple_elipsis = [tuple(list_of_ints)]  # type: List[Tuple[int, ...]]
+list_of_int_tuple_elipsis: List[Tuple[int, ...]] = [tuple(list_of_ints)]
 
 for b in list_tuple_t_elipsis_to_tuple_list_t(list_of_int_tuple_elipsis):
     #? int()
@@ -157,7 +157,7 @@ def foo(x: int) -> int:
     return x
 
 
-list_of_funcs = [foo]  # type: List[Callable[[int], int]]
+list_of_funcs: List[Callable[[int], int]] = [foo]
 
 def list_func_t_to_list_func_type_t(the_list: List[Callable[[T], T]]) -> List[Callable[[Type[T]], T]]:
     def adapt(func: Callable[[T], T]) -> Callable[[Type[T]], T]:
@@ -176,7 +176,7 @@ def bar(*a, **k) -> int:
     return len(a) + len(k)
 
 
-list_of_funcs_2 = [bar]  # type: List[Callable[..., int]]
+list_of_funcs_2: List[Callable[..., int]] = [bar]
 
 def list_func_t_passthrough(the_list: List[Callable[..., T]]) -> List[Callable[..., T]]:
     return the_list
@@ -187,7 +187,7 @@ for b in list_func_t_passthrough(list_of_funcs_2):
     b(None, x="x")
 
 
-mapping_int_str = {42: 'a'}  # type: Dict[int, str]
+mapping_int_str: Dict[int, str] = {42: 'a'}
 
 # Test that mappings (that have more than one parameter) are handled
 def invert_mapping(mapping: Mapping[K, V]) -> Mapping[V, K]:
@@ -210,11 +210,11 @@ first(mapping_int_str)
 #? str()
 first("abc")
 
-some_str = NotImplemented  # type: str
+some_str: str = NotImplemented
 #? str()
 first(some_str)
 
-annotated = [len]  # type: List[ Callable[[Sequence[float]], int] ]
+annotated: List[ Callable[[Sequence[float]], int] ] = [len]
 #? int()
 first(annotated)()
 
@@ -237,7 +237,7 @@ for b in values(mapping_int_str):
 #
 # Tests that user-defined generic types are handled
 #
-list_ints = [42]  # type: List[int]
+list_ints: List[int] = [42]
 
 class CustomGeneric(Generic[T_co]):
     def __init__(self, val: T_co) -> None:
@@ -248,7 +248,7 @@ class CustomGeneric(Generic[T_co]):
 def custom(x: CustomGeneric[T]) -> T:
     return x.val
 
-custom_instance = CustomGeneric(42)  # type: CustomGeneric[int]
+custom_instance: CustomGeneric[int] = CustomGeneric(42)
 
 #? int()
 custom(custom_instance)
@@ -275,7 +275,7 @@ for x5 in wrap_custom(list_ints):
 
 
 # Test extraction of type from a nested custom generic type
-list_custom_instances = [CustomGeneric(42)]  # type: List[CustomGeneric[int]]
+list_custom_instances: List[CustomGeneric[int]] = [CustomGeneric(42)]
 
 def unwrap_custom(iterable: Iterable[CustomGeneric[T]]) -> List[T]:
     return [x.val for x in iterable]
@@ -303,7 +303,7 @@ for xg in unwrap_custom(CustomGeneric(s) for s in 'abc'):
 
 
 # Test extraction of type from type parameer nested within a custom generic type
-custom_instance_list_int = CustomGeneric([42])  # type: CustomGeneric[List[int]]
+custom_instance_list_int: CustomGeneric[List[int]] = CustomGeneric([42])
 
 def unwrap_custom2(instance: CustomGeneric[Iterable[T]]) -> List[T]:
     return list(instance.val)
@@ -326,7 +326,7 @@ class Specialised(Mapping[int, str]):
     pass
 
 
-specialised_instance = NotImplemented  # type: Specialised
+specialised_instance: Specialised = NotImplemented
 
 #? int()
 first(specialised_instance)
@@ -341,7 +341,7 @@ class ChildOfSpecialised(Specialised):
     pass
 
 
-child_of_specialised_instance = NotImplemented  # type: ChildOfSpecialised
+child_of_specialised_instance: ChildOfSpecialised = NotImplemented
 
 #? int()
 first(child_of_specialised_instance)
@@ -355,13 +355,13 @@ class CustomPartialGeneric1(Mapping[str, T]):
     pass
 
 
-custom_partial1_instance = NotImplemented  # type: CustomPartialGeneric1[int]
+custom_partial1_instance: CustomPartialGeneric1[int] = NotImplemented
 
 #? str()
 first(custom_partial1_instance)
 
 
-custom_partial1_unbound_instance = NotImplemented  # type: CustomPartialGeneric1
+custom_partial1_unbound_instance: CustomPartialGeneric1 = NotImplemented
 
 #? str()
 first(custom_partial1_unbound_instance)
@@ -371,7 +371,7 @@ class CustomPartialGeneric2(Mapping[T, str]):
     pass
 
 
-custom_partial2_instance = NotImplemented  # type: CustomPartialGeneric2[int]
+custom_partial2_instance: CustomPartialGeneric2[int] = NotImplemented
 
 #? int()
 first(custom_partial2_instance)
@@ -380,7 +380,7 @@ first(custom_partial2_instance)
 values(custom_partial2_instance)[0]
 
 
-custom_partial2_unbound_instance = NotImplemented  # type: CustomPartialGeneric2
+custom_partial2_unbound_instance: CustomPartialGeneric2 = NotImplemented
 
 #? []
 first(custom_partial2_unbound_instance)
