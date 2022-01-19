@@ -28,6 +28,8 @@ def _iter_nodes_for_param(param_name):
     # tree rather than going via the execution context so that we're agnostic of
     # the specific scope we're evaluating within (i.e: module or function,
     # etc.).
+    if param_name.tree_name is None:
+        return
     function_node = tree.search_ancestor(param_name.tree_name, 'funcdef', 'lambdef')
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
