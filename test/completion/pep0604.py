@@ -30,14 +30,14 @@ def func_returns_byteslike() -> bytes | bytearray:
 func_returns_byteslike()
 
 
-pep604_opetional_1: int | str | None
-pep604_opetional_2: None | bytes
+pep604_optional_1: int | str | None
+pep604_optional_2: None | bytes
 
 #? int() str() None
-pep604_opetional_1
+pep604_optional_1
 
 #? None bytes()
-pep604_opetional_2
+pep604_optional_2
 
 
 pep604_in_str: "int | bytes"
