@@ -123,7 +123,7 @@ def complete_param_names(context, function_name, decorator_nodes):
 
 class Completion:
     def __init__(self, inference_state, module_context, code_lines, position,
-                 signatures_callback, fuzzy=False):
+                 signatures_callback, fuzzy=False, params_first=False):
         self._inference_state = inference_state
         self._module_context = module_context
         self._module_node = module_context.tree_node
@@ -137,6 +137,7 @@ class Completion:
         self._signatures_callback = signatures_callback
 
         self._fuzzy = fuzzy
+        self._params_first = params_first
 
     def complete(self):
         leaf = self._module_node.get_leaf_for_position(
@@ -173,13 +174,30 @@ class Completion:
                                         self.stack, self._like_name,
                                         self._fuzzy, cached_name=cached_name))
 
-        return (
-            # Removing duplicates mostly to remove False/True/None duplicates.
-            _remove_duplicates(prefixed_completions, completions)
-            + sorted(completions, key=lambda x: (x.name.startswith('__'),
-                                                 x.name.startswith('_'),
-                                                 x.name.lower()))
-        )
+        if self._params_first:
+            param_completions = []
+            non_param_completions = []
+            for completion in completions:
+                if completion.name.endswith('='):
+                    param_completions.append(completion)
+                else:
+                    non_param_completions.append(completion)
+            return (
+                # Removing duplicates mostly to remove False/True/None duplicates.
+                _remove_duplicates(prefixed_completions, completions)
+                + param_completions
+                + sorted(non_param_completions, key=lambda x: (x.name.startswith('__'),
+                                                               x.name.startswith('_'),
+                                                               x.name.lower()))
+            )
+        else:
+            return (
+                # Removing duplicates mostly to remove False/True/None duplicates.
+                _remove_duplicates(prefixed_completions, completions)
+                + sorted(completions, key=lambda x: (x.name.startswith('__'),
+                                                     x.name.startswith('_'),
+                                                     x.name.lower()))
+            )
 
     def _complete_python(self, leaf):
         """
