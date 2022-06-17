@@ -32,8 +32,8 @@ def filter_name(filters, name_or_str):
     """
     string_name = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
     names = []
-    for filter in filters:
-        names = filter.get(string_name)
+    for filter_ in filters:
+        names = filter_.get(string_name)
         if names:
             break
 

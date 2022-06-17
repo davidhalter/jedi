@@ -41,6 +41,26 @@ def test_in_empty_space(Script):
     assert def_.name == 'X'
 
 
+def test_classvar_completion(Script):
+    code = dedent('''\
+    from typing import ClassVar   # 1
+    class Foo: # 2
+        var_class = None # 3
+        def __init__(self, var_class=None): # 4
+            self.var_class = var_class  # 5
+    class Bar(Foo):  # 6
+        var_class: ClassVar[int] # 7
+
+        def __init__(self):  # 9
+            self.var_class.
+            int().
+        ''')
+    expected_value = set(completion.name for completion in Script(code).complete(11, 14))
+    for completion in Script(code).complete(10, 23):
+        expected_value.remove(completion.name)
+    assert len(expected_value) == 0
+
+
 def test_indent_value(Script):
     """
     If an INDENT is the next supposed token, we should still be able to

@@ -1,6 +1,7 @@
 from abc import abstractproperty
 
 from parso.tree import search_ancestor
+from parso.python.tree import Name
 
 from jedi import debug
 from jedi import settings
@@ -231,6 +232,8 @@ class _BaseTreeInstance(AbstractInstanceValue):
             func_node = new
             new = search_ancestor(new, 'funcdef', 'classdef')
             if class_context.tree_node is new:
+                if isinstance(func_node, Name):
+                    func_node = new
                 func = FunctionValue.from_context(class_context, func_node)
                 bound_method = BoundMethod(self, class_context, func)
                 if func_node.name.value == '__init__':
@@ -492,7 +495,9 @@ class SelfName(TreeNameDefinition):
 
     @property
     def parent_context(self):
-        return self._instance.create_instance_context(self.class_context, self.tree_name)
+        _instance = self._instance
+        _context = _instance.create_instance_context(self.class_context, self.tree_name)
+        return _context
 
     def get_defining_qualified_value(self):
         return self._instance
@@ -502,9 +507,9 @@ class SelfName(TreeNameDefinition):
         if stmt is not None:
             if stmt.children[1].type == "annassign":
                 from jedi.inference.gradual.annotation import infer_annotation
-                values = infer_annotation(
-                    self.parent_context, stmt.children[1].children[1]
-                ).execute_annotation()
+                _parent_context = self.parent_context
+                _infer = infer_annotation(_parent_context, stmt.children[1].children[1])
+                values = _infer.execute_annotation()
                 if values:
                     return values
         return super().infer()
@@ -581,6 +586,11 @@ class SelfAttributeFilter(ClassFilter):
                     # TODO filter non-self assignments instead of this bad
                     #      filter.
                     if self._is_in_right_scope(trailer.parent.children[0], name):
+                        yield name
+            elif trailer.type == "expr_stmt" \
+                and len(trailer.parent.children) == 2:
+                if name.is_definition() and self._access_possible(name):
+                    if trailer.children[1].type == "annassign":
                         yield name
 
     def _is_in_right_scope(self, self_name, name):
