@@ -495,9 +495,7 @@ class SelfName(TreeNameDefinition):
 
     @property
     def parent_context(self):
-        _instance = self._instance
-        _context = _instance.create_instance_context(self.class_context, self.tree_name)
-        return _context
+        return self._instance.create_instance_context(self.class_context, self.tree_name)
 
     def get_defining_qualified_value(self):
         return self._instance
@@ -507,9 +505,9 @@ class SelfName(TreeNameDefinition):
         if stmt is not None:
             if stmt.children[1].type == "annassign":
                 from jedi.inference.gradual.annotation import infer_annotation
-                _parent_context = self.parent_context
-                _infer = infer_annotation(_parent_context, stmt.children[1].children[1])
-                values = _infer.execute_annotation()
+                values = infer_annotation(
+                    self.parent_context, stmt.children[1].children[1]
+                ).execute_annotation()
                 if values:
                     return values
         return super().infer()
