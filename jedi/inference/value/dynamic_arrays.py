@@ -16,7 +16,7 @@ settings will stop this process.
 
 It is important to note that:
 
-1. Array modfications work only in the current module.
+1. Array modifications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
 from jedi import debug

@@ -297,7 +297,7 @@ class Value(HelperValueMixin):
             just the `_T` generic parameter.
 
         `value_set`: represents the actual argument passed to the parameter
-            we're inferrined for, or (for recursive calls) their types. In the
+            we're inferred for, or (for recursive calls) their types. In the
             above example this would first be the representation of the list
             `[1]` and then, when recursing, just of `1`.
         """
