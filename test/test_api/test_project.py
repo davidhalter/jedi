@@ -178,7 +178,7 @@ def test_is_potential_project(path, expected):
 
     if expected is None:
         try:
-            expected = _CONTAINS_POTENTIAL_PROJECT in os.listdir(path)
+            expected = bool(set(_CONTAINS_POTENTIAL_PROJECT) & set(os.listdir(path)))
         except OSError:
             expected = False
 
