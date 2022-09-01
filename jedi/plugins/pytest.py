@@ -1,8 +1,9 @@
+import importlib.metadata
 from pathlib import Path
 
 from parso.tree import search_ancestor
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.imports import load_module_from_path
+from jedi.inference.imports import goto_import, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
 from jedi.inference.helpers import infer_call_of_leaf
@@ -131,6 +132,21 @@ def _is_pytest_func(func_name, decorator_nodes):
         or any('fixture' in n.get_code() for n in decorator_nodes)
 
 
+def _find_pytest_plugin_modules():
+    """
+    Finds pytest plugin modules hooked by setuptools entry points
+
+    See https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
+    """
+    entry_points = (
+        ep
+        for dist in importlib.metadata.distributions()
+        for ep in dist.entry_points
+        if ep.group == "pytest11"
+    )
+    return [ep.value.split(".") for ep in entry_points]
+
+
 @inference_state_method_cache()
 def _iter_pytest_modules(module_context, skip_own_module=False):
     if not skip_own_module:
@@ -159,7 +175,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
                 break
             last_folder = folder  # keep track of the last found parent name
 
-    for names in _PYTEST_FIXTURE_MODULES:
+    for names in _PYTEST_FIXTURE_MODULES + _find_pytest_plugin_modules():
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
 
@@ -167,7 +183,19 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super()._filter(names):
-            funcdef = name.parent
+
+            # resolve possible import before checking for a fixture
+            if name.parent.type == "import_from":
+                imported_names = goto_import(self.parent_context, name)
+                if not imported_names:
+                    continue
+                # asssume the import leads to only one name
+                [imported_name] = imported_names
+                target_name = imported_name.tree_name
+            else:
+                target_name = name
+
+            funcdef = target_name.parent
             # Class fixtures are not supported
             if funcdef.type == 'funcdef':
                 decorated = funcdef.parent
