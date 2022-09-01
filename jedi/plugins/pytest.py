@@ -183,26 +183,25 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super()._filter(names):
-
-            # resolve possible import before checking for a fixture
+            # resolve possible imports before checking for a fixture
             if name.parent.type == "import_from":
                 imported_names = goto_import(self.parent_context, name)
-                if not imported_names:
-                    continue
-                # asssume the import leads to only one name
-                [imported_name] = imported_names
-                target_name = imported_name.tree_name
-            else:
-                target_name = name
-
-            funcdef = target_name.parent
-            # Class fixtures are not supported
-            if funcdef.type == 'funcdef':
-                decorated = funcdef.parent
-                if decorated.type == 'decorated' and self._is_fixture(decorated):
+                if any(
+                    self._is_fixture(imported_name.tree_name)
+                    for imported_name in imported_names
+                ):
                     yield name
+            elif self._is_fixture(name):
+                yield name
 
-    def _is_fixture(self, decorated):
+    def _is_fixture(self, name):
+        funcdef = name.parent
+        # Class fixtures are not supported
+        if funcdef.type != "funcdef":
+            return False
+        decorated = funcdef.parent
+        if decorated.type != "decorated":
+            return False
         decorators = decorated.children[0]
         if decorators.type == 'decorators':
             decorators = decorators.children
