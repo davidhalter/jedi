@@ -209,7 +209,7 @@ class IntegrationTestCase(BaseTestCase):
             TEST_REFERENCES: self.run_get_references,
         }
         if (self.path.endswith('pytest.py') or self.path.endswith('conftest.py')) \
-                and environment.executable != os.path.realpath(sys.executable):
+                and os.path.realpath(environment.executable) != os.path.realpath(sys.executable):
             # It's not guarantueed that pytest is installed in test
             # environments, if we're not running in the same environment that
             # we're already in, so just skip that case.
