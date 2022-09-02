@@ -186,9 +186,12 @@ class FixtureFilter(ParserTreeFilter):
             # resolve possible imports before checking for a fixture
             if name.parent.type == "import_from":
                 imported_names = goto_import(self.parent_context, name)
+                # discard imports of whole modules, that have no tree_name
+                imported_tree_names = (
+                    iname.tree_name for iname in imported_names if iname.tree_name
+                )
                 if any(
-                    self._is_fixture(imported_name.tree_name)
-                    for imported_name in imported_names
+                    self._is_fixture(tree_name) for tree_name in imported_tree_names
                 ):
                     yield name
             elif self._is_fixture(name):
