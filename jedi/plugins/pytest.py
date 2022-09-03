@@ -1,4 +1,4 @@
-import importlib.metadata
+from importlib.metadata import entry_points
 from pathlib import Path
 
 from parso.tree import search_ancestor
@@ -138,13 +138,7 @@ def _find_pytest_plugin_modules():
 
     See https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
     """
-    entry_points = (
-        ep
-        for dist in importlib.metadata.distributions()
-        for ep in dist.entry_points
-        if ep.group == "pytest11"
-    )
-    return [ep.value.split(".") for ep in entry_points]
+    return [ep.value.split(".") for ep in entry_points(group="pytest11")]
 
 
 @inference_state_method_cache()
