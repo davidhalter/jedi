@@ -237,6 +237,7 @@ def recurse_find_python_folders_and_files(folder_io, except_paths=()):
         for folder_io in folder_ios:
             yield folder_io, None
 
+
 def recurse_find_python_files(folder_io, except_paths=()):
     for folder_io, file_io in recurse_find_python_folders_and_files(folder_io, except_paths):
         if file_io is not None:
