@@ -177,21 +177,21 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super()._filter(names):
-            # resolve possible imports before checking for a fixture
+            # look for fixture definitions of imported names
             if name.parent.type == "import_from":
                 imported_names = goto_import(self.parent_context, name)
-                # discard imports of whole modules, that have no tree_name
-                imported_tree_names = (
-                    iname.tree_name for iname in imported_names if iname.tree_name
-                )
                 if any(
-                    self._is_fixture(tree_name) for tree_name in imported_tree_names
+                    self._is_fixture(iname.parent_context, iname.tree_name)
+                    for iname in imported_names
+                    # discard imports of whole modules, that have no tree_name
+                    if iname.tree_name
                 ):
                     yield name
-            elif self._is_fixture(name):
+
+            elif self._is_fixture(self.parent_context, name):
                 yield name
 
-    def _is_fixture(self, name):
+    def _is_fixture(self, context, name):
         funcdef = name.parent
         # Class fixtures are not supported
         if funcdef.type != "funcdef":
@@ -215,11 +215,12 @@ class FixtureFilter(ParserTreeFilter):
                     last_leaf = last_trailer.get_last_leaf()
                     if last_leaf == ')':
                         values = infer_call_of_leaf(
-                            self.parent_context, last_leaf, cut_own_trailer=True)
+                            context, last_leaf, cut_own_trailer=True
+                        )
                     else:
-                        values = self.parent_context.infer_node(dotted_name)
+                        values = context.infer_node(dotted_name)
                 else:
-                    values = self.parent_context.infer_node(dotted_name)
+                    values = context.infer_node(dotted_name)
                 for value in values:
                     if value.name.get_qualified_names(include_module_names=True) \
                             == ('_pytest', 'fixtures', 'fixture'):

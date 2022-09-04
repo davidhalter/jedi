@@ -1,8 +1,11 @@
 import pytest
-from pytest import fixture
+
+from .fixtures import admin_user  # noqa
 
 
-from pytest_plugin.fixtures import admin_user  # noqa
+@pytest.fixture()
+def admin_client():
+    return Client()
 
 
 class Client:
@@ -11,8 +14,3 @@ class Client:
 
     def logout(self):
         ...
-
-
-@pytest.fixture()
-def admin_client():
-    return Client()
