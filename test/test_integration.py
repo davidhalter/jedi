@@ -52,12 +52,12 @@ def test_completion(case, monkeypatch, environment, has_django):
 
         # ... and mock setuptools entry points to include it
         # see https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
-        def mock_entry_points(group):
+        def mock_iter_entry_points(group):
             assert group == "pytest11"
-            EntryPoint = namedtuple("EntryPoint", ["value"])
-            return [EntryPoint(value="pytest_plugin.plugin")]
+            EntryPoint = namedtuple("EntryPoint", ["module_name"])
+            return [EntryPoint("pytest_plugin.plugin")]
 
-        monkeypatch.setattr("jedi.plugins.pytest.entry_points", mock_entry_points)
+        monkeypatch.setattr("pkg_resources.iter_entry_points", mock_iter_entry_points)
 
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
