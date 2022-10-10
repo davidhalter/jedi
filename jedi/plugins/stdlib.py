@@ -803,6 +803,15 @@ _implemented = {
         # For now this works at least better than Jedi trying to understand it.
         'dataclass': _dataclass
     },
+    # attrs exposes declaration interface roughly compatible with dataclasses
+    # via attrs.define, attrs.frozen and attrs.mutable
+    # https://www.attrs.org/en/stable/names.html
+    'attr': {
+        'define': _dataclass,
+    },
+    'attrs': {
+        'define': _dataclass,
+    },
     'os.path': {
         'dirname': _create_string_input_function(os.path.dirname),
         'abspath': _create_string_input_function(os.path.abspath),
