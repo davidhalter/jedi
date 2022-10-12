@@ -359,7 +359,6 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     'start, start_params', [
         ['@define\nclass X:', []],
         ['@frozen\nclass X:', []],
-        ['@mutable\nclass X:', []],
         ['@define(eq=True)\nclass X:', []],
         [dedent('''
          class Y():
