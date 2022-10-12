@@ -375,6 +375,10 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     ]
 )
 def test_attrs_signature(Script, skip_pre_python37, start, start_params):
+    has_attrs = bool(Script('import attrs').infer())
+    if not has_attrs:
+        raise pytest.skip("attrs needed in target environment to run this test")
+
     code = dedent('''
             name: str
             foo = 3
