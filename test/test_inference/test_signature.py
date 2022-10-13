@@ -355,6 +355,48 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     price, = sig.params[-2].infer()
     assert price.name == 'float'
 
+@pytest.mark.parametrize(
+    'start, start_params', [
+        ['@define\nclass X:', []],
+        ['@frozen\nclass X:', []],
+        ['@define(eq=True)\nclass X:', []],
+        [dedent('''
+         class Y():
+             y: int
+         @define
+         class X(Y):'''), []],
+        [dedent('''
+         @define
+         class Y():
+             y: int
+             z = 5
+         @define
+         class X(Y):'''), ['y']],
+    ]
+)
+def test_attrs_signature(Script, skip_pre_python37, start, start_params):
+    has_attrs = bool(Script('import attrs').infer())
+    if not has_attrs:
+        raise pytest.skip("attrs needed in target environment to run this test")
+
+    code = dedent('''
+            name: str
+            foo = 3
+            price: float
+            quantity: int = 0.0
+
+        X(''')
+
+    # attrs exposes two namespaces
+    code = 'from attrs import define, frozen\n' + start + code
+
+    sig, = Script(code).get_signatures()
+    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
+    quantity, = sig.params[-1].infer()
+    assert quantity.name == 'int'
+    price, = sig.params[-2].infer()
+    assert price.name == 'float'
+
 
 @pytest.mark.parametrize(
     'stmt, expected', [

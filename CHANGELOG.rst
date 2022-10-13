@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Added dataclass-equivalent for attrs.define
+
 0.18.1 (2021-11-17)
 +++++++++++++++++++
 

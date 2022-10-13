@@ -41,6 +41,7 @@ setup(name='jedi',
               # coloroma for colored debug output
               'colorama',
               'Django<3.1',  # For now pin this.
+              'attrs',
           ],
           'qa': [
               'flake8==3.8.3',
