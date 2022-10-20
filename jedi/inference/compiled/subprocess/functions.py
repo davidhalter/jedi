@@ -151,7 +151,11 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
 
         spec = find_spec(string, p)
         if spec is not None:
+            if spec.origin == "frozen":
+                continue
+
             loader = spec.loader
+
             if loader is None and not spec.has_location:
                 # This is a namespace package.
                 full_name = string if not path else full_name
