@@ -49,6 +49,7 @@ setup(name='jedi',
           ],
           'docs': [
               'sphinx<2',
+              'jinja2<3',
               'docutils<0.18',
           ],
       },
