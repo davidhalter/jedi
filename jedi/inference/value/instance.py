@@ -1,6 +1,7 @@
 from abc import abstractproperty
 
 from parso.tree import search_ancestor
+from parso.python.tree import Name
 
 from jedi import debug
 from jedi import settings
@@ -231,6 +232,8 @@ class _BaseTreeInstance(AbstractInstanceValue):
             func_node = new
             new = search_ancestor(new, 'funcdef', 'classdef')
             if class_context.tree_node is new:
+                if isinstance(func_node, Name):
+                    func_node = new
                 func = FunctionValue.from_context(class_context, func_node)
                 bound_method = BoundMethod(self, class_context, func)
                 if func_node.name.value == '__init__':
@@ -581,6 +584,11 @@ class SelfAttributeFilter(ClassFilter):
                     # TODO filter non-self assignments instead of this bad
                     #      filter.
                     if self._is_in_right_scope(trailer.parent.children[0], name):
+                        yield name
+            elif trailer.type == "expr_stmt" \
+                and len(trailer.parent.children) == 2:
+                if name.is_definition() and self._access_possible(name):
+                    if trailer.children[1].type == "annassign":
                         yield name
 
     def _is_in_right_scope(self, self_name, name):
