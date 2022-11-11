@@ -7,6 +7,8 @@ Unreleased
 ++++++++++
 
 - Added dataclass-equivalent for attrs.define
+- Find fixtures from Pytest entrypoints; Examples of pytest plugins installed
+  like this are pytest-django, pytest-sugar and Faker.
 
 0.18.1 (2021-11-17)
 +++++++++++++++++++
