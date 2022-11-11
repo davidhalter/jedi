@@ -78,6 +78,8 @@ class ClassName(TreeNameDefinition):
         type_ = super().api_type
         if type_ == 'function':
             definition = self.tree_name.get_definition()
+            if definition is None:
+                return type_
             if function_is_property(definition):
                 # This essentially checks if there is an @property before
                 # the function. @property could be something different, but
