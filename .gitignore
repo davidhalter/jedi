@@ -15,5 +15,3 @@ record.json
 /.mypy_cache
 /venv/
 .nvimrc
-poetry.lock
-pyproject.toml
