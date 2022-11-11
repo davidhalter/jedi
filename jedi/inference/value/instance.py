@@ -586,7 +586,7 @@ class SelfAttributeFilter(ClassFilter):
                     if self._is_in_right_scope(trailer.parent.children[0], name):
                         yield name
             elif trailer.type == "expr_stmt" \
-                and len(trailer.parent.children) == 2:
+                    and len(trailer.parent.children) == 2:
                 if name.is_definition() and self._access_possible(name):
                     if trailer.children[1].type == "annassign":
                         yield name
