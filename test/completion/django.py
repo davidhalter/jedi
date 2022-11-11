@@ -166,7 +166,7 @@ model_instance.method
 
 #? ['objects']
 model_instance.object
-#?
+#? {'django.db.models.manager.BaseManager()'}
 model_instance.objects
 #?
 model_instance.objects.filter
