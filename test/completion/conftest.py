@@ -23,7 +23,7 @@ def inheritance_fixture():
 
 
 @pytest.fixture
-def testdir(testdir):
-    #? ['chdir']
-    testdir.chdir
-    return testdir
+def capsysbinary(capsysbinary):
+    #? ['close']
+    capsysbinary.clos
+    return capsysbinary
