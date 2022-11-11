@@ -2,7 +2,7 @@ from pathlib import Path
 
 from parso.tree import search_ancestor
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.imports import load_module_from_path
+from jedi.inference.imports import goto_import, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
 from jedi.inference.helpers import infer_call_of_leaf
@@ -131,6 +131,17 @@ def _is_pytest_func(func_name, decorator_nodes):
         or any('fixture' in n.get_code() for n in decorator_nodes)
 
 
+def _find_pytest_plugin_modules():
+    """
+    Finds pytest plugin modules hooked by setuptools entry points
+
+    See https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
+    """
+    from pkg_resources import iter_entry_points
+
+    return [ep.module_name.split(".") for ep in iter_entry_points(group="pytest11")]
+
+
 @inference_state_method_cache()
 def _iter_pytest_modules(module_context, skip_own_module=False):
     if not skip_own_module:
@@ -159,7 +170,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
                 break
             last_folder = folder  # keep track of the last found parent name
 
-    for names in _PYTEST_FIXTURE_MODULES:
+    for names in _PYTEST_FIXTURE_MODULES + _find_pytest_plugin_modules():
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
 
@@ -167,14 +178,28 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super()._filter(names):
-            funcdef = name.parent
-            # Class fixtures are not supported
-            if funcdef.type == 'funcdef':
-                decorated = funcdef.parent
-                if decorated.type == 'decorated' and self._is_fixture(decorated):
+            # look for fixture definitions of imported names
+            if name.parent.type == "import_from":
+                imported_names = goto_import(self.parent_context, name)
+                if any(
+                    self._is_fixture(iname.parent_context, iname.tree_name)
+                    for iname in imported_names
+                    # discard imports of whole modules, that have no tree_name
+                    if iname.tree_name
+                ):
                     yield name
 
-    def _is_fixture(self, decorated):
+            elif self._is_fixture(self.parent_context, name):
+                yield name
+
+    def _is_fixture(self, context, name):
+        funcdef = name.parent
+        # Class fixtures are not supported
+        if funcdef.type != "funcdef":
+            return False
+        decorated = funcdef.parent
+        if decorated.type != "decorated":
+            return False
         decorators = decorated.children[0]
         if decorators.type == 'decorators':
             decorators = decorators.children
@@ -191,11 +216,12 @@ class FixtureFilter(ParserTreeFilter):
                     last_leaf = last_trailer.get_last_leaf()
                     if last_leaf == ')':
                         values = infer_call_of_leaf(
-                            self.parent_context, last_leaf, cut_own_trailer=True)
+                            context, last_leaf, cut_own_trailer=True
+                        )
                     else:
-                        values = self.parent_context.infer_node(dotted_name)
+                        values = context.infer_node(dotted_name)
                 else:
-                    values = self.parent_context.infer_node(dotted_name)
+                    values = context.infer_node(dotted_name)
                 for value in values:
                     if value.name.get_qualified_names(include_module_names=True) \
                             == ('_pytest', 'fixtures', 'fixture'):

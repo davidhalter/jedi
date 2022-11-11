@@ -183,3 +183,28 @@ def with_annot() -> Generator[float, None, None]:
 def test_with_annot(inheritance_fixture, with_annot):
     #? float()
     with_annot
+
+# -----------------
+# pytest external plugins
+# -----------------
+
+#? ['admin_user', 'admin_client']
+def test_z(admin
+
+#! 15 ['def admin_client']
+def test_p(admin_client):
+    #? ['login', 'logout']
+    admin_client.log
+
+@pytest.fixture
+@some_decorator
+#? ['admin_user']
+def bla(admin_u
+    return
+
+@pytest.fixture
+@some_decorator
+#! 12 ['def admin_user']
+def bla(admin_user):
+    pass
+

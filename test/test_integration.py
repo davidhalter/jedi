@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 
 import pytest
 
@@ -42,6 +43,22 @@ def test_completion(case, monkeypatch, environment, has_django):
 
     if (not has_django) and case.path.endswith('django.py'):
         pytest.skip('Needs django to be installed to run this test.')
+
+    if case.path.endswith("pytest.py"):
+        # to test finding pytest fixtures from external plugins
+        # add a stub pytest plugin to the project sys_path...
+        pytest_plugin_dir = str(helpers.get_example_dir("pytest_plugin_package"))
+        case._project.added_sys_path = [pytest_plugin_dir]
+
+        # ... and mock setuptools entry points to include it
+        # see https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
+        def mock_iter_entry_points(group):
+            assert group == "pytest11"
+            EntryPoint = namedtuple("EntryPoint", ["module_name"])
+            return [EntryPoint("pytest_plugin.plugin")]
+
+        monkeypatch.setattr("pkg_resources.iter_entry_points", mock_iter_entry_points)
+
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
     case.run(assert_case_equal, environment)
