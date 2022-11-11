@@ -139,9 +139,6 @@ def test_p(monkeypatch):
 #? ['capsysbinary']
 def test_p(capsysbin
 
-#? ['tmpdir', 'tmpdir_factory']
-def test_p(tmpdi
-
 
 def close_parens():
     pass
