@@ -5,6 +5,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.query_utils import DeferredAttribute
+from django.db.models.manager import BaseManager
 
 
 class TagManager(models.Manager):
@@ -166,7 +167,7 @@ model_instance.method
 
 #? ['objects']
 model_instance.object
-#? {'django.db.models.manager.BaseManager()'}
+#? BaseManager()
 model_instance.objects
 #?
 model_instance.objects.filter
