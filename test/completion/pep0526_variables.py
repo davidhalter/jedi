@@ -44,7 +44,7 @@ class Foo():
     baz: typing.ClassVar[str]
 
 
-#?
+#? int()
 Foo.bar
 #? int()
 Foo().bar
@@ -81,11 +81,11 @@ class VarClass2(VarClass):
         #? int()
         self.var_class3
 
-#? ['var_class1', 'var_class2', 'var_instance1', 'var_class3']
+#? ['var_class1', 'var_class2', 'var_instance1', 'var_class3', 'var_instance2']
 VarClass.var_
 #? int()
 VarClass.var_instance1
-#?
+#? float()
 VarClass.var_instance2
 #? str()
 VarClass.var_class1

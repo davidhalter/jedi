@@ -120,21 +120,6 @@ class ClassFilter(ParserTreeFilter):
         return False
 
     def _access_possible(self, name):
-        # Filter for ClassVar variables
-        # TODO this is not properly done, yet. It just checks for the string
-        # ClassVar in the annotation, which can be quite imprecise. If we
-        # wanted to do this correct, we would have to infer the ClassVar.
-        if not self._is_instance:
-            expr_stmt = name.get_definition()
-            if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
-                annassign = expr_stmt.children[1]
-                if annassign.type == 'annassign':
-                    # If there is an =, the variable is obviously also
-                    # defined on the class.
-                    if 'ClassVar' not in annassign.children[1].get_code() \
-                            and '=' not in annassign.children:
-                        return False
-
         # Filter for name mangling of private variables like __foo
         return not name.value.startswith('__') or name.value.endswith('__') \
             or self._equals_origin_scope()
