@@ -55,10 +55,9 @@ def test_classvar_completion(Script):
             self.var_class.
             int().
         ''')
-    expected_value = set(completion.name for completion in Script(code).complete(11, 14))
-    for completion in Script(code).complete(10, 23):
-        expected_value.remove(completion.name)
-    assert len(expected_value) == 0
+    actual_value = set(c.name for c in Script(code).complete(10, 23))
+    expected_value = set(c.name for c in Script(code).complete(11, 14))
+    assert expected_value == actual_value
 
 
 def test_indent_value(Script):
