@@ -167,7 +167,7 @@ model_instance.method
 
 #? ['objects']
 model_instance.object
-#? BaseManager()
+#?
 model_instance.objects
 #?
 model_instance.objects.filter
