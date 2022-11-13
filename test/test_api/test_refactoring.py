@@ -1,6 +1,7 @@
 import os
 from textwrap import dedent
 from pathlib import Path
+import platform
 
 import pytest
 
@@ -73,15 +74,19 @@ def test_diff_without_ending_newline(Script):
 
 
 def test_diff_path_outside_of_project(Script):
+    if platform.system().lower() == 'windows':
+        abs_path = r'D:\unknown_dir\file.py'
+    else:
+        abs_path = '/unknown_dir/file.py'
     script = Script(
         code='foo = 1',
-        path='/unknown_dir/file.py',
+        path=abs_path,
         project=jedi.get_default_project()
     )
     diff = script.rename(line=1, column=0, new_name='bar').get_diff()
-    assert diff == dedent('''\
-        --- /unknown_dir/file.py
-        +++ /unknown_dir/file.py
+    assert diff == dedent(f'''\
+        --- {abs_path}
+        +++ {abs_path}
         @@ -1 +1 @@
         -foo = 1
         +bar = 1
