@@ -70,3 +70,19 @@ def test_diff_without_ending_newline(Script):
         -a
         +c
         ''')
+
+
+def test_diff_path_outside_of_project(Script):
+    script = Script(
+        code='foo = 1',
+        path='/unknown_dir/file.py',
+        project=jedi.get_default_project()
+    )
+    diff = script.rename(line=1, column=0, new_name='bar').get_diff()
+    assert diff == dedent('''\
+        --- /unknown_dir/file.py
+        +++ /unknown_dir/file.py
+        @@ -1 +1 @@
+        -foo = 1
+        +bar = 1
+        ''')
