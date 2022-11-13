@@ -650,6 +650,7 @@ def test_cursor_after_signature(Script, column):
         ('abs(chr  ( \nclass y: pass', 1, 8, 'abs', 0),
         ('abs(chr  ( \nclass y: pass', 1, 9, 'abs', 0),
         ('abs(chr  ( \nclass y: pass', 1, 10, 'chr', 0),
+        ('abs(foo.bar=3)', 1, 13, 'abs', 0),
     ]
 )
 def test_base_signatures(Script, code, line, column, name, index):

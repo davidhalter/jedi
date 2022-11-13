@@ -306,7 +306,7 @@ def _iter_arguments(nodes, position):
             first = node.children[0]
             second = node.children[1]
             if second == '=':
-                if second.start_pos < position:
+                if second.start_pos < position and first.type == 'name':
                     yield 0, first.value, True
                 else:
                     yield 0, remove_after_pos(first), False
