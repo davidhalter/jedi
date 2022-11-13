@@ -280,7 +280,7 @@ class CallDetails:
     def count_positional_arguments(self):
         count = 0
         for star_count, key_start, had_equal in self._list_arguments()[:-1]:
-            if star_count:
+            if star_count or key_start:
                 break
             count += 1
         return count
