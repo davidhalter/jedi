@@ -739,3 +739,18 @@ def test_param_infer_default():
     param, = abs_sig.params
     assert param.name == 'x'
     assert param.infer_default() == []
+
+
+@pytest.mark.parametrize(
+    'code, expected', [
+        ("random.triangular(", ['high=', 'low=', 'mode=']),
+        ("random.triangular(low=1, ", ['high=', 'mode=']),
+        ("random.triangular(high=1, ", ['low=', 'mode=']),
+        ("random.triangular(low=1, high=2, ", ['mode=']),
+        ("random.triangular(low=1, mode=2, ", ['high=']),
+    ],
+)
+def test_keyword_param_completion(code, expected):
+    import random
+    completions = jedi.Interpreter(code, [locals()]).complete()
+    assert expected == [c.name for c in completions if c.name.endswith('=')]

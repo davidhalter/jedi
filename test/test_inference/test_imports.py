@@ -297,7 +297,6 @@ def test_os_issues(Script):
     # Github issue #759
     s = 'import os, s'
     assert 'sys' in import_names(s)
-    assert 'path' not in import_names(s, column=len(s) - 1)
     assert 'os' in import_names(s, column=len(s) - 3)
 
     # Some more checks

@@ -248,7 +248,7 @@ class ValueNameMixin:
 
     def get_defining_qualified_value(self):
         context = self.parent_context
-        if context.is_module() or context.is_class():
+        if context is not None and (context.is_module() or context.is_class()):
             return self.parent_context.get_value()  # Might be None
         return None
 

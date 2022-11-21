@@ -180,26 +180,34 @@ def _check_fs(inference_state, file_io, regex):
     return m.as_context()
 
 
-def gitignored_lines(folder_io, file_io):
-    ignored_paths = set()
-    ignored_names = set()
+def gitignored_paths(folder_io, file_io):
+    ignored_paths_abs = set()
+    ignored_paths_rel = set()
+
     for l in file_io.read().splitlines():
-        if not l or l.startswith(b'#'):
+        if not l or l.startswith(b'#') or l.startswith(b'!') or b'*' in l:
             continue
 
-        p = l.decode('utf-8', 'ignore')
-        if p.startswith('/'):
-            name = p[1:]
-            if name.endswith(os.path.sep):
-                name = name[:-1]
-            ignored_paths.add(os.path.join(folder_io.path, name))
+        p = l.decode('utf-8', 'ignore').rstrip('/')
+        if '/' in p:
+            name = p.lstrip('/')
+            ignored_paths_abs.add(os.path.join(folder_io.path, name))
         else:
-            ignored_names.add(p)
-    return ignored_paths, ignored_names
+            name = p
+            ignored_paths_rel.add((folder_io.path, name))
+
+    return ignored_paths_abs, ignored_paths_rel
+
+
+def expand_relative_ignore_paths(folder_io, relative_paths):
+    curr_path = folder_io.path
+    return {os.path.join(curr_path, p[1]) for p in relative_paths if curr_path.startswith(p[0])}
 
 
 def recurse_find_python_folders_and_files(folder_io, except_paths=()):
     except_paths = set(except_paths)
+    except_paths_relative = set()
+
     for root_folder_io, folder_ios, file_ios in folder_io.walk():
         # Delete folders that we don't want to iterate over.
         for file_io in file_ios:
@@ -209,14 +217,21 @@ def recurse_find_python_folders_and_files(folder_io, except_paths=()):
                     yield None, file_io
 
             if path.name == '.gitignore':
-                ignored_paths, ignored_names = \
-                    gitignored_lines(root_folder_io, file_io)
-                except_paths |= ignored_paths
+                ignored_paths_abs, ignored_paths_rel = gitignored_paths(
+                    root_folder_io, file_io
+                )
+                except_paths |= ignored_paths_abs
+                except_paths_relative |= ignored_paths_rel
+
+        except_paths_relative_expanded = expand_relative_ignore_paths(
+            root_folder_io, except_paths_relative
+        )
 
         folder_ios[:] = [
             folder_io
             for folder_io in folder_ios
             if folder_io.path not in except_paths
+            and folder_io.path not in except_paths_relative_expanded
             and folder_io.get_base_name() not in _IGNORE_FOLDERS
         ]
         for folder_io in folder_ios:

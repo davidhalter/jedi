@@ -280,7 +280,7 @@ class CallDetails:
     def count_positional_arguments(self):
         count = 0
         for star_count, key_start, had_equal in self._list_arguments()[:-1]:
-            if star_count:
+            if star_count or key_start:
                 break
             count += 1
         return count
@@ -306,7 +306,7 @@ def _iter_arguments(nodes, position):
             first = node.children[0]
             second = node.children[1]
             if second == '=':
-                if second.start_pos < position:
+                if second.start_pos < position and first.type == 'name':
                     yield 0, first.value, True
                 else:
                     yield 0, remove_after_pos(first), False

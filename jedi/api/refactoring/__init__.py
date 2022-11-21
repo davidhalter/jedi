@@ -42,11 +42,17 @@ class ChangedFile:
         if self._from_path is None:
             from_p = ''
         else:
-            from_p = self._from_path.relative_to(project_path)
+            try:
+                from_p = self._from_path.relative_to(project_path)
+            except ValueError:  # Happens it the path is not on th project_path
+                from_p = self._from_path
         if self._to_path is None:
             to_p = ''
         else:
-            to_p = self._to_path.relative_to(project_path)
+            try:
+                to_p = self._to_path.relative_to(project_path)
+            except ValueError:
+                to_p = self._to_path
         diff = difflib.unified_diff(
             old_lines, new_lines,
             fromfile=str(from_p),

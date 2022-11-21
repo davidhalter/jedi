@@ -433,7 +433,6 @@ def get_default_project(path=None):
             probable_path = dir
 
     if probable_path is not None:
-        # TODO search for setup.py etc
         return Project(probable_path)
 
     if first_no_init_file is not None:

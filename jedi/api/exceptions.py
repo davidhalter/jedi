@@ -23,7 +23,7 @@ class RefactoringError(_JediError):
     Refactorings can fail for various reasons. So if you work with refactorings
     like :meth:`.Script.rename`, :meth:`.Script.inline`,
     :meth:`.Script.extract_variable` and :meth:`.Script.extract_function`, make
-    sure to catch these. The descriptions in the errors are ususally valuable
+    sure to catch these. The descriptions in the errors are usually valuable
     for end users.
 
     A typical ``RefactoringError`` would tell the user that inlining is not

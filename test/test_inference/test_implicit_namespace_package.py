@@ -43,6 +43,9 @@ def test_implicit_namespace_package(Script):
         solution = "foo = '%s'" % solution
         assert completion.description == solution
 
+    c, = script_with_path('import pkg').complete()
+    assert c.docstring() == ""
+
 
 def test_implicit_nested_namespace_package(Script):
     code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
