@@ -352,9 +352,8 @@ class Project:
         # 3. Search for modules on sys.path
         sys_path = [
             p for p in self._get_sys_path(inference_state)
-            # Exclude folders that are handled by recursing of the Python
-            # folders.
-            if not p.startswith(str(self._path))
+            # Exclude the current folder which is handled by recursing the folders.
+            if p != self._path
         ]
         names = list(iter_module_names(inference_state, empty_module_context, sys_path))
         yield from search_in_module(
