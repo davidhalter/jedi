@@ -86,7 +86,7 @@ Gedit
 Eric IDE
 ~~~~~~~~
 
-- `Eric IDE`_ (Available as a plugin)
+- `Eric IDE`_
 
 Web Debugger
 ~~~~~~~~~~~~

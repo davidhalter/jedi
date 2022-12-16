@@ -42,7 +42,7 @@ Jedi can currently be used with the following editors/projects:
 - `GNOME Builder`_ (with support for GObject Introspection)
 - Gedit (gedi_)
 - wdb_ - Web Debugger
-- `Eric IDE`_ (Available as a plugin)
+- `Eric IDE`_
 - `IPython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
 - `xonsh shell <https://xon.sh/contents.html>`_ has `jedi extension <https://xon.sh/xontribs.html#jedi>`_
 
