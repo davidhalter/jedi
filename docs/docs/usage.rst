@@ -83,6 +83,11 @@ Gedit
 
 - gedi_
 
+Eric IDE
+~~~~~~~~
+
+- `Eric IDE`_ (Available as a plugin)
+
 Web Debugger
 ~~~~~~~~~~~~
 
