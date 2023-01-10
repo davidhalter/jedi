@@ -656,10 +656,12 @@ def bar():
         ({'return': 'typing.Union[str, int]'}, ['int', 'str'], ''),
         ({'return': 'typing.Union["str", int]'},
          ['int', 'str'] if sys.version_info >= (3, 9) else ['int'], ''),
-        ({'return': 'typing.Union["str", 1]'}, [], ''),
+        ({'return': 'typing.Union["str", 1]'},
+         ['str'] if sys.version_info >= (3, 11) else [], ''),
         ({'return': 'typing.Optional[str]'}, ['NoneType', 'str'], ''),
         ({'return': 'typing.Optional[str, int]'}, [], ''),  # Takes only one arg
-        ({'return': 'typing.Any'}, [], ''),
+        ({'return': 'typing.Any'},
+         ['_AnyMeta'] if sys.version_info >= (3, 11) else [], ''),
 
         ({'return': 'typing.Tuple[int, str]'},
          ['Tuple' if sys.version_info[:2] == (3, 6) else 'tuple'], ''),
