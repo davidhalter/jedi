@@ -96,6 +96,9 @@ def test_x(my_con
 #? 18 ['my_conftest_fixture']
 def test_x(my_conftest_fixture):
     return
+#? ['my_module_fixture']
+def test_x(my_modu
+    return
 
 #? []
 def lala(my_con

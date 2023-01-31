@@ -181,6 +181,9 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
             if Path(file_io.path) != module_context.py__file__():
                 try:
                     m = load_module_from_path(module_context.inference_state, file_io)
+                    pytest_plugins_pointer = m.goto("pytest_plugins")
+                    if pytest_plugins_pointer:
+                        yield from _load_pytest_plugins(module_context, pytest_plugins_pointer[0])
                     yield m.as_context()
                 except FileNotFoundError:
                     pass
@@ -194,6 +197,17 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
     for names in _PYTEST_FIXTURE_MODULES + _find_pytest_plugin_modules():
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
+
+
+def _load_pytest_plugins(module_context, plugins_pointers):
+    from jedi.inference.value import iterable
+    from parso.python.tree import String
+    for inferred in plugins_pointers.infer():
+        if isinstance(inferred, iterable.SequenceLiteralValue):
+            for value in inferred.get_tree_entries():
+                if isinstance(value, String):
+                    for module_value in module_context.inference_state.import_module(eval(value.value).split(".")):
+                        yield module_value.as_context()
 
 
 class FixtureFilter(ParserTreeFilter):
