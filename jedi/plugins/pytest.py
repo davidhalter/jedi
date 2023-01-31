@@ -206,7 +206,8 @@ def _load_pytest_plugins(module_context, plugins_pointers):
         if isinstance(inferred, iterable.SequenceLiteralValue):
             for value in inferred.get_tree_entries():
                 if isinstance(value, String):
-                    for module_value in module_context.inference_state.import_module(eval(value.value).split(".")):
+                    names = eval(value.value).split(".")
+                    for module_value in module_context.inference_state.import_module(names):
                         yield module_value.as_context()
 
 
