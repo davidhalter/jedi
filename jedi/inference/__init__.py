@@ -125,7 +125,7 @@ class InferenceState:
     @inference_state_function_cache()
     def builtins_module(self):
         module_name = 'builtins'
-        builtins_module, = self.import_module((module_name,), sys_path=())
+        builtins_module, = self.import_module((module_name,), sys_path=[])
         return builtins_module
 
     @property  # type: ignore[misc]
