@@ -8,6 +8,7 @@ import typing
 import pytest
 
 import jedi
+import jedi.settings
 from jedi.inference.compiled import mixed
 from importlib import import_module
 
@@ -219,7 +220,7 @@ def test__getattr__completions(allow_unsafe_getattr, class_is_findable):
 
 @pytest.fixture(params=[False, True])
 def allow_unsafe_getattr(request, monkeypatch):
-    monkeypatch.setattr(jedi.Interpreter, '_allow_descriptor_getattr_default', request.param)
+    monkeypatch.setattr(jedi.settings,'instance_allow_descriptor_getattr', request.param)
     return request.param
 
 

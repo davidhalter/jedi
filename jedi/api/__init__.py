@@ -708,7 +708,6 @@ class Interpreter(Script):
     :param namespaces: A list of namespace dictionaries such as the one
         returned by :func:`globals` and :func:`locals`.
     """
-    _allow_descriptor_getattr_default = True
 
     def __init__(self, code, namespaces, *, project=None, **kwds):
         try:
@@ -729,7 +728,7 @@ class Interpreter(Script):
         super().__init__(code, environment=environment, project=project, **kwds)
 
         self.namespaces = namespaces
-        self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
+        self._inference_state.allow_descriptor_getattr = settings.instance_allow_descriptor_getattr
 
     @cache.memoize_method
     def _get_module_context(self):
