@@ -143,6 +143,12 @@ This improves autocompletion for libraries that use ``setattr`` or
 ``globals()`` modifications a lot.
 """
 
+instance_allow_descriptor_getattr = True
+"""
+Controls whether descriptors are evaluated when using an Interpreter. This is
+something you might want to control when using Jedi from a Repl (e.g. IPython)
+"""
+
 # ----------------
 # Caching Validity
 # ----------------
