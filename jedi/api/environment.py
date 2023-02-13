@@ -15,7 +15,7 @@ from jedi.inference.compiled.subprocess import CompiledSubprocess, \
 
 import parso
 
-_VersionInfo = namedtuple('VersionInfo', 'major minor micro')
+_VersionInfo = namedtuple('VersionInfo', 'major minor micro')  # type: ignore[name-match]
 
 _SUPPORTED_PYTHONS = ['3.10', '3.9', '3.8', '3.7', '3.6']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
@@ -384,8 +384,7 @@ def _get_executable_path(path, safe=True):
 
 
 def _get_executables_from_windows_registry(version):
-    # https://github.com/python/typeshed/pull/3794 adds winreg
-    import winreg  # type: ignore[import]
+    import winreg
 
     # TODO: support Python Anaconda.
     sub_keys = [

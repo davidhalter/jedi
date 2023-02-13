@@ -40,7 +40,7 @@ NOT_CLASS_TYPES = (
 MethodDescriptorType = type(str.replace)
 WrapperDescriptorType = type(set.__iter__)
 # `object.__subclasshook__` is an already executed descriptor.
-object_class_dict = type.__dict__["__dict__"].__get__(object)
+object_class_dict = type.__dict__["__dict__"].__get__(object)  # type: ignore[index]
 ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
 
 _sentinel = object()

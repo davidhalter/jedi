@@ -46,7 +46,7 @@ jobs:
       - name: Run tests
         run: |
           python -m flake8 jedi setup.py
-          python -m mypy jedi sith.py
+          python -m mypy jedi sith.py setup.py
 
   coverage:
     runs-on: ubuntu-20.04

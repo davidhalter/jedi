@@ -45,7 +45,10 @@ setup(name='jedi',
           ],
           'qa': [
               'flake8==5.0.4',
-              'mypy==0.782',
+              # latest version supporting Python 3.6
+              'mypy==0.971',
+              # Arbitrary pins, latest at the time of pinning
+              'types-setuptools==67.2.0.1',
           ],
           'docs': [
               # Just pin all of these.
