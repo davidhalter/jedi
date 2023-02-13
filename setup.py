@@ -44,7 +44,7 @@ setup(name='jedi',
               'attrs',
           ],
           'qa': [
-              'flake8==3.8.3',
+              'flake8==5.0.4',
               'mypy==0.782',
           ],
           'docs': [
