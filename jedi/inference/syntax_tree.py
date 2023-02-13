@@ -329,8 +329,8 @@ def infer_atom(context, atom):
         c = atom.children
         # Parentheses without commas are not tuples.
         if c[0] == '(' and not len(c) == 2 \
-                and not(c[1].type == 'testlist_comp'
-                        and len(c[1].children) > 1):
+                and not (c[1].type == 'testlist_comp'
+                         and len(c[1].children) > 1):
             return context.infer_node(c[1])
 
         try:
