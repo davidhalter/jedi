@@ -30,14 +30,16 @@ def test_paths_from_assignment(Script):
     assert paths('sys.path, other = ["a"], 2') == set()
 
 
-def test_venv_and_pths(venv_path):
+def test_venv_and_pths(venv_path, environment):
     pjoin = os.path.join
 
-    site_pkg_path = pjoin(venv_path, 'lib')
     if os.name == 'nt':
-        site_pkg_path = pjoin(site_pkg_path, 'site-packages')
+        if environment.version_info < (3, 11):
+            site_pkg_path = pjoin(venv_path, 'lib', 'site-packages')
+        else:
+            site_pkg_path = pjoin(venv_path, 'Lib', 'site-packages')
     else:
-        site_pkg_path = glob(pjoin(site_pkg_path, 'python*', 'site-packages'))[0]
+        site_pkg_path = glob(pjoin(venv_path, 'lib', 'python*', 'site-packages'))[0]
     shutil.rmtree(site_pkg_path)
     shutil.copytree(get_example_dir('sample_venvs', 'pth_directory'), site_pkg_path)
 
