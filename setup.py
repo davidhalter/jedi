@@ -44,6 +44,7 @@ setup(name='jedi',
               'attrs',
           ],
           'qa': [
+              # latest version supporting Python 3.6
               'flake8==5.0.4',
               # latest version supporting Python 3.6
               'mypy==0.971',
