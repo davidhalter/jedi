@@ -32,7 +32,8 @@ setup(name='jedi',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
       python_requires='>=3.6',
-      install_requires=['parso>=0.8.0,<0.9.0'],
+      # Python 3.11 grammar is added to parso in 0.8.3
+      install_requires=['parso>=0.8.3,<0.9.0'],
       extras_require={
           'testing': [
               'pytest<7.0.0',
@@ -95,6 +96,7 @@ setup(name='jedi',
           'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: 3.9',
           'Programming Language :: Python :: 3.10',
+          'Programming Language :: Python :: 3.11',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Text Editors :: Integrated Development Environments (IDE)',
           'Topic :: Utilities',
