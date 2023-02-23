@@ -363,7 +363,14 @@ class DirectObjectAccess:
             # warnings should not be shown. See also GH #1383.
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("always")
-                return_obj = getattr(self._obj, name)
+
+                # Make sure we do not evaluate @property methods on autocompelte
+                # taken from https://github.com/python/cpython/pull/27401/commits/54c6d9c455abc6316a27f7ad443a86546af5f706
+                if isinstance(getattr(type(self._obj), name, None), property):
+                    return_obj = getattr(type(self._obj), name)
+                else:
+                    return_obj = getattr(self._obj, name)
+
         except Exception as e:
             if default is _sentinel:
                 if isinstance(e, AttributeError):
