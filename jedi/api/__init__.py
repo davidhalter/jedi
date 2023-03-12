@@ -369,6 +369,12 @@ class Script:
         if definitions:
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))
+
+        if leaf is not None and leaf.end_pos == (line, column) and leaf.type == 'newline':
+            next_ = leaf.get_next_leaf()
+            if next_ is not None and next_.start_pos == leaf.end_pos:
+                leaf = next_
+
         if leaf is not None and leaf.type in ('keyword', 'operator', 'error_leaf'):
             def need_pydoc():
                 if leaf.value in ('(', ')', '[', ']'):
