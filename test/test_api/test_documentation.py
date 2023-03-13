@@ -28,6 +28,11 @@ def test_import_keyword(Script):
     # unrelated to #44
 
 
+def test_import_keyword_after_newline(Script):
+    d, = Script("import x\nimport y").help(line=2, column=0)
+    assert d.docstring().startswith('The "import" statement')
+
+
 def test_import_keyword_with_gotos(goto_or_infer):
     assert not goto_or_infer("import x", column=0)
 
