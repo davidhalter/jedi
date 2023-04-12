@@ -16,7 +16,8 @@ Language Servers
 --------------
 
 - `jedi-language-server <https://github.com/pappasam/jedi-language-server>`_
-- `python-language-server <https://github.com/palantir/python-language-server>`_
+- `python-language-server <https://github.com/palantir/python-language-server>`_ (currently unmaintained)
+- `python-lsp-server <https://github.com/python-lsp/python-lsp-server>`_ (fork from python-language-server)
 - `anakin-language-server <https://github.com/muffinmad/anakin-language-server>`_
 
 .. _editor-plugins:
