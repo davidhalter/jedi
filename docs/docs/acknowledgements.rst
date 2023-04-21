@@ -35,7 +35,7 @@ to write my own version of a completion engine.
 The first idea was to execute non-dangerous code. But I soon realized, that
 this would not work. So I started to build a static analysis tool.
 The biggest problem that I had at the time was that I did not know a thing
-about parsers.I did not did not even know the word static analysis. It turns
+about parsers. I did not even know the word static analysis. It turns
 out they are the foundation of a good static analysis tool. I of course did not
 know that and tried to write my own poor version of a parser that I ended up
 throwing away two years later.
@@ -53,7 +53,7 @@ quick and is pretty much feature complete.
 
 --------
 
-I will leave you with a small annectote that happend in 2012, if I remember
+I will leave you with a small anecdote that happened in 2012, if I remember
 correctly. After I explained Guido van Rossum, how some parts of my
 auto-completion work, he said:
 
