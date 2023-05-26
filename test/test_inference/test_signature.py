@@ -355,6 +355,7 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     price, = sig.params[-2].infer()
     assert price.name == 'float'
 
+
 @pytest.mark.parametrize(
     'start, start_params', [
         ['@define\nclass X:', []],
