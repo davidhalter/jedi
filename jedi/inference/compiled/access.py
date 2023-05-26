@@ -343,7 +343,7 @@ class DirectObjectAccess:
                 try:
                     return hasattr(self._obj, name), False
                 except Exception:
-                    # Obviously has an attribute (propably a property) that
+                    # Obviously has an attribute (probably a property) that
                     # gets executed, so just avoid all exceptions here.
                     return False, False
         try:
