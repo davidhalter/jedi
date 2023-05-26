@@ -808,9 +808,11 @@ _implemented = {
     # https://www.attrs.org/en/stable/names.html
     'attr': {
         'define': _dataclass,
+        'frozen': _dataclass,
     },
     'attrs': {
         'define': _dataclass,
+        'frozen': _dataclass,
     },
     'os.path': {
         'dirname': _create_string_input_function(os.path.dirname),
