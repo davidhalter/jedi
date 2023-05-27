@@ -1,3 +1,5 @@
+import sys
+from typing import List
 from pathlib import Path
 
 from parso.tree import search_ancestor
@@ -131,15 +133,34 @@ def _is_pytest_func(func_name, decorator_nodes):
         or any('fixture' in n.get_code() for n in decorator_nodes)
 
 
-def _find_pytest_plugin_modules():
+def _find_pytest_plugin_modules() -> List[List[str]]:
     """
     Finds pytest plugin modules hooked by setuptools entry points
 
     See https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
     """
-    from pkg_resources import iter_entry_points
+    if sys.version_info >= (3, 8):
+        from importlib.metadata import entry_points
 
-    return [ep.module_name.split(".") for ep in iter_entry_points(group="pytest11")]
+        if sys.version_info >= (3, 10):
+            pytest_entry_points = entry_points(group="pytest11")
+        else:
+            pytest_entry_points = entry_points().get("pytest11", ())
+
+        if sys.version_info >= (3, 9):
+            return [ep.module.split(".") for ep in pytest_entry_points]
+        else:
+            # Python 3.8 doesn't have `EntryPoint.module`. Implement equivalent
+            # to what Python 3.9 does (with additional None check to placate `mypy`)
+            matches = [
+                ep.pattern.match(ep.value)
+                for ep in pytest_entry_points
+            ]
+            return [x.group('module').split(".") for x in matches if x]
+
+    else:
+        from pkg_resources import iter_entry_points
+        return [ep.module_name.split(".") for ep in iter_entry_points(group="pytest11")]
 
 
 @inference_state_method_cache()
