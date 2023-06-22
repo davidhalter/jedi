@@ -4,7 +4,7 @@ Using Jedi
 ==========
 
 |jedi| is can be used with a variety of :ref:`plugins <editor-plugins>`,
-`language servers <language-servers>` and other software.
+:ref:`language servers <language-servers>` and other software.
 It is also possible to use |jedi| in the :ref:`Python shell or with IPython
 <repl-completion>`.
 
