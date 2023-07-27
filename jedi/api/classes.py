@@ -105,8 +105,7 @@ class BaseName:
             # Compiled modules should not return a module path even if they
             # have one.
             path: Optional[Path] = self._get_module_context().py__file__()
-            if path is not None:
-                return path
+            return path
 
         return None
 

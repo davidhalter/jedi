@@ -1,4 +1,5 @@
 import os
+import shutil
 from textwrap import dedent
 from pathlib import Path
 import platform
@@ -6,6 +7,7 @@ import platform
 import pytest
 
 import jedi
+from test.helpers import get_example_dir
 
 
 @pytest.fixture()
@@ -49,6 +51,46 @@ def test_rename_mod(Script, dir_with_content):
         @@ -1,2 +1,2 @@
         -import modx; modx
         +import modr; modr
+        ''').format(dir=dir_with_content)
+
+
+def test_namespace_package(Script, tmpdir, skip_pre_python38):
+    origin = get_example_dir('implicit_namespace_package')
+    shutil.copytree(origin, tmpdir.strpath, dirs_exist_ok=True)
+    sys_path = [
+        os.path.join(tmpdir.strpath, 'ns1'),
+        os.path.join(tmpdir.strpath, 'ns2')
+    ]
+    script_path = os.path.join(tmpdir.strpath, 'script.py')
+    script = Script(
+        'import pkg\n',
+        path=script_path,
+        project=jedi.Project(os.path.join(tmpdir.strpath, 'does-not-exist'), sys_path=sys_path),
+    )
+    refactoring = script.rename(line=1, new_name='new_pkg')
+    refactoring.apply()
+    old1 = os.path.join(sys_path[0], "pkg")
+    new1 = os.path.join(sys_path[0], "new_pkg")
+    old2 = os.path.join(sys_path[1], "pkg")
+    new2 = os.path.join(sys_path[1], "new_pkg")
+    assert not os.path.exists(old1)
+    assert os.path.exists(new1)
+    assert not os.path.exists(old2)
+    assert os.path.exists(new2)
+
+    changed, = iter(refactoring.get_changed_files().values())
+    assert changed.get_new_code() == "import new_pkg\n"
+
+    assert refactoring.get_diff() == dedent(f'''\
+        rename from {old1}
+        rename to {new1}
+        rename from {old2}
+        rename to {new2}
+        --- {script_path}
+        +++ {script_path}
+        @@ -1,2 +1,2 @@
+        -import pkg
+        +import new_pkg
         ''').format(dir=dir_with_content)
 
 

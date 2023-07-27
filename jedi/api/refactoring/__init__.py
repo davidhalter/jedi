@@ -5,6 +5,7 @@ from typing import Dict, Iterable, Tuple
 from parso import split_lines
 
 from jedi.api.exceptions import RefactoringError
+from jedi.inference.value.namespace import ImplicitNSName
 
 EXPRESSION_PARTS = (
     'or_test and_test not_test comparison '
@@ -102,7 +103,12 @@ class Refactoring:
                 to_path=calculate_to_path(path),
                 module_node=next(iter(map_)).get_root_node(),
                 node_to_str_map=map_
-            ) for path, map_ in sorted(self._file_to_node_changes.items())
+            )
+            # We need to use `or`, because the path can be None
+            for path, map_ in sorted(
+                self._file_to_node_changes.items(),
+                key=lambda x: x[0] or Path("")
+            )
         }
 
     def get_renames(self) -> Iterable[Tuple[Path, Path]]:
@@ -116,7 +122,7 @@ class Refactoring:
         project_path = self._inference_state.project.path
         for from_, to in self.get_renames():
             text += 'rename from %s\nrename to %s\n' \
-                % (from_.relative_to(project_path), to.relative_to(project_path))
+                % (_try_relative_to(from_, project_path), _try_relative_to(to, project_path))
 
         return text + ''.join(f.get_diff() for f in self.get_changed_files().values())
 
@@ -146,13 +152,17 @@ def rename(inference_state, definitions, new_name):
         raise RefactoringError("There is no name under the cursor")
 
     for d in definitions:
+        # This private access is ok in a way. It's not public to
+        # protect Jedi users from seeing it.
         tree_name = d._name.tree_name
-        if d.type == 'module' and tree_name is None:
-            p = None if d.module_path is None else Path(d.module_path)
+        if d.type == 'module' and tree_name is None and d.module_path is not None:
+            p = Path(d.module_path)
             file_renames.add(_calculate_rename(p, new_name))
+        elif isinstance(d._name, ImplicitNSName):
+            #file_renames.add(_calculate_rename(p, new_name))
+            for p in d._name._value.py__path__():
+                file_renames.add(_calculate_rename(Path(p), new_name))
         else:
-            # This private access is ok in a way. It's not public to
-            # protect Jedi users from seeing it.
             if tree_name is not None:
                 fmap = file_tree_name_map.setdefault(d.module_path, {})
                 fmap[tree_name] = tree_name.prefix + new_name
@@ -246,3 +256,9 @@ def _remove_indent_of_prefix(prefix):
     Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
     """
     return ''.join(split_lines(prefix, keepends=True)[:-1])
+
+def _try_relative_to(path: Path, base: Path) -> Path:
+    try:
+        return path.relative_to(base)
+    except ValueError:
+        return path
