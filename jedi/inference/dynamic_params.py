@@ -66,10 +66,10 @@ def dynamic_param_lookup(function_value, param_index):
     have to look for all calls to ``func`` to find out what ``foo`` possibly
     is.
     """
-    funcdef = function_value.tree_node
-
-    if not settings.dynamic_params:
+    if not function_value.inference_state.do_dynamic_params_search:
         return NO_VALUES
+
+    funcdef = function_value.tree_node
 
     path = function_value.get_root_context().py__file__()
     if path is not None and is_stdlib_path(path):

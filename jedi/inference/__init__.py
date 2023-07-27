@@ -99,6 +99,7 @@ class InferenceState:
         self.mixed_cache = {}  # see `inference.compiled.mixed._create()`
         self.analysis = []
         self.dynamic_params_depth = 0
+        self.do_dynamic_params_search = settings.dynamic_params
         self.is_analysis = False
         self.project = project
         self.access_cache = {}

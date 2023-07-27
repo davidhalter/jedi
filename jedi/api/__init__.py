@@ -742,6 +742,14 @@ class Interpreter(Script):
 
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = settings.instance_allow_descriptor_getattr
+        # Dynamic params search is important when we work on functions that are
+        # called by other pieces of code. However for interpreter completions
+        # this is not important at all, because the current code is always new
+        # and will never be called by something.
+        # Also sometimes this logic goes a bit too far like in
+        # https://github.com/ipython/ipython/issues/13866, where it takes
+        # seconds to do a simple completion.
+        self._inference_state.do_dynamic_params_search = False
 
     @cache.memoize_method
     def _get_module_context(self):
