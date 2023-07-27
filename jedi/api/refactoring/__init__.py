@@ -159,7 +159,6 @@ def rename(inference_state, definitions, new_name):
             p = Path(d.module_path)
             file_renames.add(_calculate_rename(p, new_name))
         elif isinstance(d._name, ImplicitNSName):
-            #file_renames.add(_calculate_rename(p, new_name))
             for p in d._name._value.py__path__():
                 file_renames.add(_calculate_rename(Path(p), new_name))
         else:
@@ -256,6 +255,7 @@ def _remove_indent_of_prefix(prefix):
     Removes the last indentation of a prefix, e.g. " \n \n " becomes " \n \n".
     """
     return ''.join(split_lines(prefix, keepends=True)[:-1])
+
 
 def _try_relative_to(path: Path, base: Path) -> Path:
     try:
