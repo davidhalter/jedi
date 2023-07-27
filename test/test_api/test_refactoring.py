@@ -54,7 +54,8 @@ def test_rename_mod(Script, dir_with_content):
         ''').format(dir=dir_with_content)
 
 
-def test_namespace_package(Script, tmpdir, skip_pre_python38):
+@pytest.mark.skipif('sys.version_info[:2] < (3, 8)', message="Python 3.8 introduces dirs_exist_ok")
+def test_namespace_package(Script, tmpdir):
     origin = get_example_dir('implicit_namespace_package')
     shutil.copytree(origin, tmpdir.strpath, dirs_exist_ok=True)
     sys_path = [
