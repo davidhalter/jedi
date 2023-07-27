@@ -413,6 +413,10 @@ with Foo() as f3:
 with Foo() as f3:
     f3
 
+with open("a"), open("b") as bfile:
+    #? ['flush']
+   bfile.flush
+
 # -----------------
 # Avoiding multiple definitions
 # -----------------

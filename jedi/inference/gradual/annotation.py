@@ -402,6 +402,10 @@ def find_type_from_comment_hint_for(context, node, name):
 
 
 def find_type_from_comment_hint_with(context, node, name):
+    if len(node.children) > 4:
+        # In case there are multiple with_items, we do not want a type hint for
+        # now.
+        return []
     assert len(node.children[1].children) == 3, \
         "Can only be here when children[1] is 'foo() as f'"
     varlist = node.children[1].children[2]
