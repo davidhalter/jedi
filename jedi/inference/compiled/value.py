@@ -443,9 +443,6 @@ class CompiledValueFilter(AbstractFilter):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        if self._inference_state.allow_descriptor_getattr:
-            pass
-
         has_attribute, is_descriptor = allowed_getattr_callback(
             name,
             safe=not self._inference_state.allow_descriptor_getattr
