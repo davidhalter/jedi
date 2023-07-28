@@ -102,11 +102,13 @@ def test_side_effect_completion():
     assert foo.name == 'foo'
 
 
-def _assert_interpreter_complete(source, namespace, completions,
-                                 **kwds):
+def _assert_interpreter_complete(source, namespace, completions, *, check_type=False, **kwds):
     script = jedi.Interpreter(source, [namespace], **kwds)
     cs = script.complete()
     actual = [c.name for c in cs]
+    if check_type:
+        for c in cs:
+            c.type
     assert sorted(actual) == sorted(completions)
 
 
@@ -757,3 +759,23 @@ def test_keyword_param_completion(code, expected):
     import random
     completions = jedi.Interpreter(code, [locals()]).complete()
     assert expected == [c.name for c in completions if c.name.endswith('=')]
+
+
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test_avoid_descriptor_executions_if_not_necessary(class_is_findable):
+    counter = 0
+    class AvoidDescriptor(object):
+        @property
+        def prop(self):
+            nonlocal counter
+            counter += 1
+            return self
+
+    if not class_is_findable:
+        AvoidDescriptor.__name__ = "something_somewhere"
+    namespace = {'b': AvoidDescriptor()}
+    expected = ['prop']
+    _assert_interpreter_complete('b.pro', namespace, expected, check_type=True)
+    assert counter == 0
+    _assert_interpreter_complete('b.prop.pro', namespace, expected, check_type=True)
+    assert counter == 1

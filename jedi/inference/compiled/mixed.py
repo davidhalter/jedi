@@ -142,9 +142,9 @@ class MixedObjectFilter(compiled.CompiledValueFilter):
         super().__init__(inference_state, compiled_value)
         self._tree_value = tree_value
 
-    def _create_name(self, name):
+    def _create_name(self, *args, **kwargs):
         return MixedName(
-            super()._create_name(name),
+            super()._create_name(*args, **kwargs),
             self._tree_value,
         )
 

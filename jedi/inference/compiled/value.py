@@ -311,11 +311,12 @@ class CompiledModule(CompiledValue):
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, inference_state, parent_value, name):
+    def __init__(self, inference_state, parent_value, name, is_descriptor):
         self._inference_state = inference_state
         self.parent_context = parent_value.as_context()
         self._parent_value = parent_value
         self.string_name = name
+        self.is_descriptor = is_descriptor
 
     def py__doc__(self):
         return self.infer_compiled_value().py__doc__()
@@ -342,6 +343,11 @@ class CompiledName(AbstractNameDefinition):
 
     @property
     def api_type(self):
+        if self.is_descriptor:
+            # In case of properties we want to avoid executions as much as
+            # possible. Since the api_type can be wrong for other reasons
+            # anyway, we just return instance here.
+            return "instance"
         return self.infer_compiled_value().api_type
 
     def infer(self):
@@ -456,14 +462,14 @@ class CompiledValueFilter(AbstractFilter):
 
         if self.is_instance and not in_dir_callback(name):
             return []
-        return [self._get_cached_name(name)]
+        return [self._get_cached_name(name, is_descriptor=is_descriptor)]
 
     @memoize_method
-    def _get_cached_name(self, name, is_empty=False):
+    def _get_cached_name(self, name, is_empty=False, *, is_descriptor=False):
         if is_empty:
             return EmptyCompiledName(self._inference_state, name)
         else:
-            return self._create_name(name)
+            return self._create_name(name, is_descriptor=is_descriptor)
 
     def values(self):
         from jedi.inference.compiled import builtin_from_name
@@ -487,11 +493,12 @@ class CompiledValueFilter(AbstractFilter):
                 names += filter.values()
         return names
 
-    def _create_name(self, name):
+    def _create_name(self, name, is_descriptor):
         return CompiledName(
             self._inference_state,
             self.compiled_value,
-            name
+            name,
+            is_descriptor,
         )
 
     def __repr__(self):
