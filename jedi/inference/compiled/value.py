@@ -452,18 +452,21 @@ class CompiledValueFilter(AbstractFilter):
 
         if (is_descriptor or not has_attribute) \
                 and not self._inference_state.allow_descriptor_getattr:
-            return [self._get_cached_name(name, is_empty=True)]
+            return [self._get_name(name, is_empty=True)]
 
         if self.is_instance and not in_dir_callback(name):
             return []
-        return [self._get_cached_name(name)]
+        return [self._get_name(name)]
 
-    @memoize_method
-    def _get_cached_name(self, name, is_empty=False):
+    def _get_name(self, name, is_empty=False):
         if is_empty:
             return EmptyCompiledName(self._inference_state, name)
         else:
-            return self._create_name(name)
+            return CompiledName(
+                self._inference_state,
+                self.compiled_value,
+                name
+            )
 
     def values(self):
         from jedi.inference.compiled import builtin_from_name
@@ -486,13 +489,6 @@ class CompiledValueFilter(AbstractFilter):
             for filter in builtin_from_name(self._inference_state, 'type').get_filters():
                 names += filter.values()
         return names
-
-    def _create_name(self, name):
-        return CompiledName(
-            self._inference_state,
-            self.compiled_value,
-            name
-        )
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, self.compiled_value)
