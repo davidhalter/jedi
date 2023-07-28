@@ -444,7 +444,7 @@ class CompiledValueFilter(AbstractFilter):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        has_attribute, is_descriptor = allowed_getattr_callback(
+        has_attribute, is_descriptor, property_return_annotation = allowed_getattr_callback(
             name,
         )
         if check_has_attribute and not has_attribute:
