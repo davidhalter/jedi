@@ -143,10 +143,13 @@ This improves autocompletion for libraries that use ``setattr`` or
 ``globals()`` modifications a lot.
 """
 
-instance_allow_descriptor_getattr = True
+allow_unsafe_interpreter_executions = True
 """
 Controls whether descriptors are evaluated when using an Interpreter. This is
 something you might want to control when using Jedi from a Repl (e.g. IPython)
+
+Generally this setting allows Jedi to execute __getitem__ and descriptors like
+`property`.
 """
 
 # ----------------

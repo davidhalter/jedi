@@ -741,7 +741,8 @@ class Interpreter(Script):
         super().__init__(code, environment=environment, project=project, **kwds)
 
         self.namespaces = namespaces
-        self._inference_state.allow_descriptor_getattr = settings.instance_allow_descriptor_getattr
+        self._inference_state.allow_unsafe_executions = \
+            settings.allow_unsafe_interpreter_executions
         # Dynamic params search is important when we work on functions that are
         # called by other pieces of code. However for interpreter completions
         # this is not important at all, because the current code is always new

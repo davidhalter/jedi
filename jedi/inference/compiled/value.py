@@ -437,7 +437,7 @@ class CompiledValueFilter(AbstractFilter):
 
     def get(self, name):
         access_handle = self.compiled_value.access_handle
-        safe = not self._inference_state.allow_descriptor_getattr
+        safe = not self._inference_state.allow_unsafe_executions
         return self._get(
             name,
             lambda name: access_handle.is_allowed_getattr(name, safe=safe),
@@ -464,7 +464,7 @@ class CompiledValueFilter(AbstractFilter):
             return []
 
         if (is_descriptor or not has_attribute) \
-                and not self._inference_state.allow_descriptor_getattr:
+                and not self._inference_state.allow_unsafe_executions:
             return [self._get_cached_name(name, is_empty=True)]
 
         if self.is_instance and not in_dir_callback(name):
