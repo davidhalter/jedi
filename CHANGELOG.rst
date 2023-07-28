@@ -6,8 +6,14 @@ Changelog
 Unreleased
 ++++++++++
 
+0.19.0 (2023-07-29)
++++++++++++++++++++
+
+- Python 3.11 support
 - Massive improvements in performance for ``Interpreter`` (e.g. IPython) users.
   This especially affects ``pandas`` users with large datasets.
+- Add ``jedi.settings.allow_unsafe_interpreter_executions`` to make it easier
+  for IPython users to avoid unsafe executions.
 
 0.18.2 (2022-11-21)
 +++++++++++++++++++
