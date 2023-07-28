@@ -830,3 +830,11 @@ def test_try_to_use_return_annotation_for_property(class_is_findable):
     # This is a fallback, if the annotations don't help
     _assert_interpreter_complete('p.with_annotation_garbage1.its', namespace, ['its_me'])
     _assert_interpreter_complete('p.with_annotation_garbage2.its', namespace, ['its_me'])
+
+
+def test_nested__getitem__():
+    d = {'foo': {'bar': 1}}
+    _assert_interpreter_complete('d["fo', locals(), ['"foo"'])
+    _assert_interpreter_complete('d["foo"]["ba', locals(), ['"bar"'])
+    _assert_interpreter_complete('(d["foo"])["ba', locals(), ['"bar"'])
+    _assert_interpreter_complete('((d["foo"]))["ba', locals(), ['"bar"'])

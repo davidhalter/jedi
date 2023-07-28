@@ -36,8 +36,11 @@ def complete_dict(module_context, code_lines, leaf, position, string, fuzzy):
             string = cut_value_at_position(leaf, position)
 
         context = module_context.create_context(bracket_leaf)
-        before_bracket_leaf = bracket_leaf.get_previous_leaf()
-        if before_bracket_leaf.type in ('atom', 'trailer', 'name'):
+
+        before_node = before_bracket_leaf = bracket_leaf.get_previous_leaf()
+        if before_node in (')', ']', '}'):
+            before_node = before_node.parent
+        if before_node.type in ('atom', 'trailer', 'name'):
             values = infer_call_of_leaf(context, before_bracket_leaf)
             return list(_completions_for_dicts(
                 module_context.inference_state,
