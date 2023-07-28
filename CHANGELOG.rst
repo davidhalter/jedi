@@ -6,6 +6,9 @@ Changelog
 Unreleased
 ++++++++++
 
+- Massive improvements in performance for ``Interpreter`` (e.g. IPython) users.
+  This especially affects ``pandas`` users with large datasets.
+
 0.18.2 (2022-11-21)
 +++++++++++++++++++
 

@@ -9,7 +9,7 @@ import re
 import builtins
 import typing
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from jedi.inference.compiled.getattr_static import getattr_static
 
