@@ -162,7 +162,10 @@ class CompiledValue(Value):
     def py__simple_getitem__(self, index):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
             try:
-                access = self.access_handle.py__simple_getitem__(index)
+                access = self.access_handle.py__simple_getitem__(
+                    index,
+                    safe=not self.inference_state.allow_unsafe_executions
+                )
             except AttributeError:
                 return super().py__simple_getitem__(index)
         if access is None:

@@ -230,8 +230,8 @@ class DirectObjectAccess:
                 return [annotation]
         return None
 
-    def py__simple_getitem__(self, index):
-        if type(self._obj) not in ALLOWED_GETITEM_TYPES:
+    def py__simple_getitem__(self, index, *, safe=True):
+        if safe and type(self._obj) not in ALLOWED_GETITEM_TYPES:
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None
 

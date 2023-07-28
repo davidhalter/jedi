@@ -613,12 +613,12 @@ def test_dict_getitem(code, types):
         #('for x in dunder: x', 'str'),
     ]
 )
-def test_dunders(class_is_findable, code, expected):
+def test_dunders(class_is_findable, code, expected, allow_unsafe_getattr):
     from typing import Iterator
 
     class DunderCls:
         def __getitem__(self, key) -> int:
-            pass
+            return 1
 
         def __iter__(self, key) -> Iterator[str]:
             pass
@@ -838,3 +838,20 @@ def test_nested__getitem__():
     _assert_interpreter_complete('d["foo"]["ba', locals(), ['"bar"'])
     _assert_interpreter_complete('(d["foo"])["ba', locals(), ['"bar"'])
     _assert_interpreter_complete('((d["foo"]))["ba', locals(), ['"bar"'])
+
+
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test_custom__getitem__(class_is_findable, allow_unsafe_getattr):
+    class CustomGetItem:
+        def __getitem__(self, x: int):
+            return "asdf"
+
+    if not class_is_findable:
+        CustomGetItem.__name__ = "something_somewhere"
+
+    namespace = {'c': CustomGetItem()}
+    if not class_is_findable and not allow_unsafe_getattr:
+        expected = []
+    else:
+        expected = ['upper']
+    _assert_interpreter_complete('c["a"].up', namespace, expected)
