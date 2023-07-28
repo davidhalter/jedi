@@ -432,9 +432,10 @@ class CompiledValueFilter(AbstractFilter):
 
     def get(self, name):
         access_handle = self.compiled_value.access_handle
+        safe = not self._inference_state.allow_descriptor_getattr
         return self._get(
             name,
-            lambda name, safe: access_handle.is_allowed_getattr(name, safe=safe),
+            lambda name: access_handle.is_allowed_getattr(name, safe=safe),
             lambda name: name in access_handle.dir(),
             check_has_attribute=True
         )
@@ -445,7 +446,6 @@ class CompiledValueFilter(AbstractFilter):
         """
         has_attribute, is_descriptor = allowed_getattr_callback(
             name,
-            safe=not self._inference_state.allow_descriptor_getattr
         )
         if check_has_attribute and not has_attribute:
             return []
@@ -477,7 +477,7 @@ class CompiledValueFilter(AbstractFilter):
         for name in dir_infos:
             names += self._get(
                 name,
-                lambda name, safe: dir_infos[name],
+                lambda name: dir_infos[name],
                 lambda name: name in dir_infos,
             )
 
