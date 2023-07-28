@@ -354,7 +354,7 @@ class DirectObjectAccess:
             if is_get_descriptor and type(attr) not in ALLOWED_DESCRIPTOR_ACCESS:
                 if isinstance(attr, property):
                     if hasattr(attr.fget, '__annotations__'):
-                        a = DirectObjectAccess(self._inference_state, attr)
+                        a = DirectObjectAccess(self._inference_state, attr.fget)
                         return True, True, a.get_return_annotation()
                 # In case of descriptors that have get methods we cannot return
                 # it's value, because that would mean code execution.

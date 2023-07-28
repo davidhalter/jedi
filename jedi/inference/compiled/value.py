@@ -51,7 +51,6 @@ class CompiledValue(Value):
     def py__call__(self, arguments):
         return_annotation = self.access_handle.get_return_annotation()
         if return_annotation is not None:
-            # TODO the return annotation may also be a string.
             return create_from_access_path(
                 self.inference_state,
                 return_annotation
@@ -453,6 +452,14 @@ class CompiledValueFilter(AbstractFilter):
         has_attribute, is_descriptor, property_return_annotation = allowed_getattr_callback(
             name,
         )
+        if property_return_annotation is not None:
+            values = create_from_access_path(
+                self._inference_state,
+                property_return_annotation
+            ).execute_annotation()
+            if values:
+                return [CompiledValueName(v, name) for v in values]
+
         if check_has_attribute and not has_attribute:
             return []
 

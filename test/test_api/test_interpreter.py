@@ -764,6 +764,7 @@ def test_keyword_param_completion(code, expected):
 @pytest.mark.parametrize('class_is_findable', [False, True])
 def test_avoid_descriptor_executions_if_not_necessary(class_is_findable):
     counter = 0
+
     class AvoidDescriptor(object):
         @property
         def prop(self):
@@ -779,3 +780,53 @@ def test_avoid_descriptor_executions_if_not_necessary(class_is_findable):
     assert counter == 0
     _assert_interpreter_complete('b.prop.pro', namespace, expected, check_type=True)
     assert counter == 1
+
+
+class Hello:
+    its_me = 1
+
+
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test_try_to_use_return_annotation_for_property(class_is_findable):
+    class WithProperties(object):
+        @property
+        def with_annotation1(self) -> str:
+            raise BaseException
+
+        @property
+        def with_annotation2(self) -> 'str':
+            raise BaseException
+
+        @property
+        def with_annotation3(self) -> Hello:
+            raise BaseException
+
+        @property
+        def with_annotation4(self) -> 'Hello':
+            raise BaseException
+
+        @property
+        def with_annotation_garbage1(self) -> 'asldjflksjdfljdslkjfsl':  # noqa
+            return Hello()
+
+        @property
+        def with_annotation_garbage2(self) -> 'sdf$@@$5*+8':  # noqa
+            return Hello()
+
+        @property
+        def without_annotation(self):
+            return ""
+
+    if not class_is_findable:
+        WithProperties.__name__ = "something_somewhere"
+        Hello.__name__ = "something_somewhere_else"
+
+    namespace = {'p': WithProperties()}
+    _assert_interpreter_complete('p.without_annotation.upp', namespace, ['upper'])
+    _assert_interpreter_complete('p.with_annotation1.upp', namespace, ['upper'])
+    _assert_interpreter_complete('p.with_annotation2.upp', namespace, ['upper'])
+    _assert_interpreter_complete('p.with_annotation3.its', namespace, ['its_me'])
+    _assert_interpreter_complete('p.with_annotation4.its', namespace, ['its_me'])
+    # This is a fallback, if the annotations don't help
+    _assert_interpreter_complete('p.with_annotation_garbage1.its', namespace, ['its_me'])
+    _assert_interpreter_complete('p.with_annotation_garbage2.its', namespace, ['its_me'])
