@@ -84,7 +84,7 @@ class TestSetupReadline(unittest.TestCase):
                              'SCHED_'])
         }
         # There are quite a few differences, because both Windows and Linux
-        # (posix and nt) librariesare included.
+        # (posix and nt) libraries are included.
         assert len(difference) < 30
 
     def test_local_import(self):
