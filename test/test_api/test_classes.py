@@ -188,10 +188,7 @@ def test_functions_should_have_params(Script):
                 assert c.get_signatures()
 
 
-def test_hashlib_params(Script, environment):
-    if environment.version_info < (3,):
-        pytest.skip()
-
+def test_hashlib_params(Script):
     script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()

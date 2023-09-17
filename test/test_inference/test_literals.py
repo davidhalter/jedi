@@ -12,29 +12,23 @@ def _infer_literal(Script, code, is_fstring=False):
         return def_._name._value.get_safe_value()
 
 
-def test_f_strings(Script, environment):
+def test_f_strings(Script):
     """
     f literals are not really supported in Jedi. They just get ignored and an
     empty string is returned.
     """
-    if environment.version_info < (3, 6):
-        pytest.skip()
-
     assert _infer_literal(Script, 'f"asdf"', is_fstring=True) == ''
     assert _infer_literal(Script, 'f"{asdf} "', is_fstring=True) == ''
     assert _infer_literal(Script, 'F"{asdf} "', is_fstring=True) == ''
     assert _infer_literal(Script, 'rF"{asdf} "', is_fstring=True) == ''
 
 
-def test_rb_strings(Script, environment):
+def test_rb_strings(Script):
     assert _infer_literal(Script, 'x = br"asdf"; x') == b'asdf'
     assert _infer_literal(Script, 'x = rb"asdf"; x') == b'asdf'
 
 
-def test_thousand_separators(Script, environment):
-    if environment.version_info < (3, 6):
-        pytest.skip()
-
+def test_thousand_separators(Script):
     assert _infer_literal(Script, '1_2_3') == 123
     assert _infer_literal(Script, '123_456_789') == 123456789
     assert _infer_literal(Script, '0x3_4') == 52

@@ -1,5 +1,5 @@
 from textwrap import dedent
-from operator import ge, lt
+from operator import ge
 import re
 import os
 
@@ -17,14 +17,10 @@ from ..helpers import get_example_dir
 
         ('str', "str(object='', /) -> str", ['object'], ge, (3, 6)),
 
-        ('pow', 'pow(x, y, z=None, /) -> number', ['x', 'y', 'z'], lt, (3, 6)),
         ('pow', 'pow(base, exp, mod=None)', ['base', 'exp', 'mod'], ge, (3, 8)),
 
-        ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)',
-         ['self', 'sep'], lt, (3, 6)),
         ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 6)),
 
-        ('bytes().partition', 'partition(sep, /) -> (head, sep, tail)', ['sep'], lt, (3, 6)),
         ('bytes().partition', 'partition(sep, /)', ['sep'], ge, (3, 6)),
     ]
 )
