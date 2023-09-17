@@ -13,7 +13,8 @@ from ..helpers import get_example_dir
     'code, sig, names, op, version', [
         ('import math; math.cos', 'cos(x, /)', ['x'], ge, (3, 6)),
 
-        ('next', 'next(iterator, default=None, /)', ['iterator', 'default'], ge, (3, 6)),
+        ('next', 'next(iterator, default=None, /)', ['iterator', 'default'], lt, (3, 12)),
+        ('next', 'next()', [], ge, (3, 12)),
 
         ('str', "str(object='', /) -> str", ['object'], ge, (3, 6)),
 

@@ -1,4 +1,5 @@
 from textwrap import dedent
+import sys
 import math
 from collections import Counter
 from datetime import datetime
@@ -26,7 +27,10 @@ def test_builtin_loading(inference_state):
     assert not from_name.py__doc__()  # It's a stub
 
 
-def test_next_docstr(inference_state):
+def test_next_docstr(inference_state, environment):
+    if environment.version_info[:2] != sys.version_info[:2]:
+        pytest.skip()
+
     next_ = compiled.builtin_from_name(inference_state, 'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
