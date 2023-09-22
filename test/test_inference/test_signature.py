@@ -1,5 +1,5 @@
 from textwrap import dedent
-from operator import ge
+from operator import ge, lt
 import re
 import os
 
