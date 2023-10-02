@@ -6,7 +6,10 @@ Changelog
 Unreleased
 ++++++++++
 
-- Python 3.12 support
+0.19.1 (2023-10-02)
++++++++++++++++++++
+
+- Python 3.12 support (Thanks Peter!)
 
 0.19.0 (2023-07-29)
 +++++++++++++++++++
