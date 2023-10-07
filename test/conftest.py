@@ -118,13 +118,8 @@ def venv_path(tmpdir_factory, environment):
         "print(sys.real_prefix if hasattr(sys, 'real_prefix') else sys.base_prefix)"
     ])
     prefix = output.rstrip().decode('utf8')
-    if os.name == 'nt':
-        executable_path = os.path.join(prefix, 'python')
-    else:
-        executable_name = os.path.basename(environment.executable)
-        executable_path = os.path.join(prefix, 'bin', executable_name)
 
-    return_code = subprocess.call([executable_path, '-m', 'venv', dirname])
+    return_code = subprocess.call([sys.executable, '-m', 'venv', dirname])
     assert return_code == 0, return_code
     return dirname
 
