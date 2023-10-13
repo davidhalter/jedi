@@ -68,7 +68,9 @@ Adds an opening bracket after a function for completions.
 # Filesystem Cache
 # ----------------
 
-if platform.system().lower() == 'windows':
+if os.getenv("JEDI_CACHE_DIR"):
+    cache_directory = os.getenv("JEDI_CACHE_DIR")
+elif platform.system().lower() == 'windows':
     _cache_directory = os.path.join(
         os.getenv('LOCALAPPDATA') or os.path.expanduser('~'),
         'Jedi',
