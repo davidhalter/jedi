@@ -85,10 +85,15 @@ cache_directory = os.path.expanduser(_cache_directory)
 """
 The path where the cache is stored.
 
-On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
-``~/Library/Caches/Jedi/`` and on Windows to ``%LOCALAPPDATA%\\Jedi\\Jedi\\``.
+The cache-directory can be explicitly set by an environment-variable
+``JEDI_CACHE_DIR``. If this env-var in not set, then
+on Linux, the cache-directory defaults to ``~/.cache/jedi/``,
+on OS X to ``~/Library/Caches/Jedi/`` and
+on Windows to ``%LOCALAPPDATA%\\Jedi\\Jedi\\``.
+
 On Linux, if the environment variable ``$XDG_CACHE_HOME`` is set,
 ``$XDG_CACHE_HOME/jedi`` is used instead of the default one.
+
 """
 
 # ----------------
