@@ -97,7 +97,13 @@ class Script:
         references works well, because the right folder is searched. There are
         also ways to modify the sys path and other things.
     """
-    def __init__(self, code=None, *, path=None, environment=None, project=None):
+    def __init__(self, code=None, *, path=None, environment=None, project=None,
+                 sys_path=None):
+        if sys_path is not None:
+            sys_paths = set(sys.path)
+            for spath in sys_path:
+                if spath not in sys_paths:
+                    sys.path.append(spath)
         self._orig_path = path
         if isinstance(path, str):
             path = Path(path)
