@@ -178,7 +178,11 @@ class IntegrationTestCase(BaseTestCase):
         self.start = start
         self.line = line
         self.path = path
-        self._project = jedi.Project(test_dir)
+        self._project = jedi.Project(
+            test_dir,
+            added_conftest_path=(
+                os.path.join(test_dir, 'completion/fixture_module.py'),),
+        )
 
     @property
     def module_name(self):

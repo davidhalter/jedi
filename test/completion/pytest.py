@@ -139,6 +139,9 @@ def test_p(monkeypatch):
 #? ['capsysbinary']
 def test_p(capsysbin
 
+#? ['module_fixture']
+def test_p(module_fi
+
 
 def close_parens():
     pass

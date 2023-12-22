@@ -8,6 +8,7 @@ from jedi.inference.imports import goto_import, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
 from jedi.inference.helpers import infer_call_of_leaf
+from jedi.file_io import FileIO
 
 _PYTEST_FIXTURE_MODULES = [
     ('_pytest', 'monkeypatch'),
@@ -190,6 +191,15 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
             if last_folder is not None and folder.path == last_folder.path:
                 break
             last_folder = folder  # keep track of the last found parent name
+
+    extra_conftest = module_context.inference_state.project.conftest_path
+    for conftest in extra_conftest:
+        file_io = FileIO(conftest)
+        try:
+            m = load_module_from_path(module_context.inference_state, file_io)
+            yield m.as_context()
+        except FileNotFoundError:
+            pass
 
     for names in _PYTEST_FIXTURE_MODULES + _find_pytest_plugin_modules():
         for module_value in module_context.inference_state.import_module(names):

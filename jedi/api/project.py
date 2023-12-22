@@ -115,6 +115,7 @@ class Project:
         sys_path=None,
         added_sys_path=(),
         smart_sys_path=True,
+        added_conftest_path=(),
     ) -> None:
         """
         :param path: The base path for this project.
@@ -147,6 +148,7 @@ class Project:
         self._smart_sys_path = smart_sys_path
         self._load_unsafe_extensions = load_unsafe_extensions
         self._django = False
+        self._added_conftest_path = added_conftest_path
         # Remap potential pathlib.Path entries
         self.added_sys_path = list(map(str, added_sys_path))
         """The sys path that is going to be added at the end of the """
@@ -173,6 +175,10 @@ class Project:
         additional paths are added.
         """
         return self._smart_sys_path
+
+    @property
+    def conftest_path(self):
+        return self._added_conftest_path
 
     @property
     def load_unsafe_extensions(self):
