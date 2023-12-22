@@ -50,7 +50,6 @@ def test_completion(case, monkeypatch, environment, has_django):
         # add a stub pytest plugin to the project sys_path...
         pytest_plugin_dir = str(helpers.get_example_dir("pytest_plugin_package"))
         case._project.added_sys_path = [pytest_plugin_dir]
-        case._project.added_conftest_path = []
 
         # ... and mock the entry points to include it
         # see https://docs.pytest.org/en/stable/how-to/writing_plugins.html#setuptools-entry-points
