@@ -216,7 +216,6 @@ class Script:
 
     @validate_line_column
     def infer(self, line=None, column=None, *, only_stubs=False, prefer_stubs=False):
-        self._inference_state.reset_recursion_limitations()
         """
         Return the definitions of under the cursor. It is basically a wrapper
         around Jedi's type inference.
@@ -232,6 +231,7 @@ class Script:
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
+        self._inference_state.reset_recursion_limitations()
         pos = line, column
         leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
@@ -262,7 +262,6 @@ class Script:
     @validate_line_column
     def goto(self, line=None, column=None, *, follow_imports=False, follow_builtin_imports=False,
              only_stubs=False, prefer_stubs=False):
-        self._inference_state.reset_recursion_limitations()
         """
         Goes to the name that defined the object under the cursor. Optionally
         you can follow imports.
@@ -276,6 +275,7 @@ class Script:
         :param prefer_stubs: Prefer stubs to Python objects for this method.
         :rtype: list of :class:`.Name`
         """
+        self._inference_state.reset_recursion_limitations()
         tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
