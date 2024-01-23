@@ -181,10 +181,12 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
             if Path(file_io.path) != module_context.py__file__():
                 try:
                     m = load_module_from_path(module_context.inference_state, file_io)
-                    pytest_plugins_pointer = m.goto("pytest_plugins")
-                    if pytest_plugins_pointer:
-                        yield from _load_pytest_plugins(module_context, pytest_plugins_pointer[0])
-                    yield m.as_context()
+                    conftest_module = m.as_context()
+                    plugins_list = m.tree_node.get_used_names().get("pytest_plugins")
+                    if plugins_list:
+                        name = conftest_module.create_name(plugins_list[0])
+                        yield from _load_pytest_plugins(module_context, name)
+                    yield conftest_module
                 except FileNotFoundError:
                     pass
             folder = folder.get_parent_folder()
@@ -198,15 +200,15 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
 
+def _load_pytest_plugins(module_context, name):
+    from jedi.inference.helpers import get_str_or_none
 
-def _load_pytest_plugins(module_context, plugins_pointers):
-    from jedi.inference.value import iterable
-    from parso.python.tree import String
-    for inferred in plugins_pointers.infer():
-        if isinstance(inferred, iterable.SequenceLiteralValue):
-            for value in inferred.get_tree_entries():
-                if isinstance(value, String):
-                    names = eval(value.value).split(".")
+    for inferred in name.infer():
+        for seq_value in inferred.py__iter__():
+            for value in seq_value.infer():
+                fq_name = get_str_or_none(value)
+                if fq_name:
+                    names = fq_name.split(".")
                     for module_value in module_context.inference_state.import_module(names):
                         yield module_value.as_context()
 
