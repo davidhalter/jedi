@@ -200,6 +200,7 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
 
+
 def _load_pytest_plugins(module_context, name):
     from jedi.inference.helpers import get_str_or_none
 
