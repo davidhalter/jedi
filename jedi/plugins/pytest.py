@@ -181,7 +181,13 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
             if Path(file_io.path) != module_context.py__file__():
                 try:
                     m = load_module_from_path(module_context.inference_state, file_io)
-                    yield m.as_context()
+                    conftest_module = m.as_context()
+                    yield conftest_module
+
+                    plugins_list = m.tree_node.get_used_names().get("pytest_plugins")
+                    if plugins_list:
+                        name = conftest_module.create_name(plugins_list[0])
+                        yield from _load_pytest_plugins(module_context, name)
                 except FileNotFoundError:
                     pass
             folder = folder.get_parent_folder()
@@ -194,6 +200,19 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
     for names in _PYTEST_FIXTURE_MODULES + _find_pytest_plugin_modules():
         for module_value in module_context.inference_state.import_module(names):
             yield module_value.as_context()
+
+
+def _load_pytest_plugins(module_context, name):
+    from jedi.inference.helpers import get_str_or_none
+
+    for inferred in name.infer():
+        for seq_value in inferred.py__iter__():
+            for value in seq_value.infer():
+                fq_name = get_str_or_none(value)
+                if fq_name:
+                    names = fq_name.split(".")
+                    for module_value in module_context.inference_state.import_module(names):
+                        yield module_value.as_context()
 
 
 class FixtureFilter(ParserTreeFilter):

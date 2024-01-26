@@ -27,3 +27,9 @@ def capsysbinary(capsysbinary):
     #? ['close']
     capsysbinary.clos
     return capsysbinary
+
+
+# used when fixtures are defined in multiple files
+pytest_plugins = [
+    "completion.fixture_module",
+]

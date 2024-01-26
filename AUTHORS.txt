@@ -63,6 +63,7 @@ Code Contributors
 - Leo Ryu (@Leo-Ryu)
 - Joseph Birkner (@josephbirkner)
 - Márcio Mazza (@marciomazza)
+- Martin Vielsmaier (@moser) <martin@vielsmaier.net>
 
 And a few more "anonymous" contributors.
 
