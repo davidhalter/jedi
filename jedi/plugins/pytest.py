@@ -182,11 +182,12 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
                 try:
                     m = load_module_from_path(module_context.inference_state, file_io)
                     conftest_module = m.as_context()
+                    yield conftest_module
+
                     plugins_list = m.tree_node.get_used_names().get("pytest_plugins")
                     if plugins_list:
                         name = conftest_module.create_name(plugins_list[0])
                         yield from _load_pytest_plugins(module_context, name)
-                    yield conftest_module
                 except FileNotFoundError:
                     pass
             folder = folder.get_parent_folder()
