@@ -339,10 +339,10 @@ def _function_is_x_method(decorator_checker):
 function_is_staticmethod = _function_is_x_method(lambda m: m == "staticmethod")
 function_is_classmethod = _function_is_x_method(lambda m: m == "classmethod")
 function_is_property = _function_is_x_method(
-    lambda m: m == "property" \
-                or m == "cached_property" \
-                # do not report __class__.__setter__ as a property
-                # eirannejad 2024-02-07:
-                # not sure if there are other cases but this passes the tests
-                or (m.endswith(".setter") and not m.startswith('__class__'))
+    lambda m: m == "property"
+            or m == "cached_property"
+            # do not report __class__.__setter__ as a property
+            # eirannejad 2024-02-07:
+            # not sure if there are other cases but this passes the tests
+            or (m.endswith(".setter") and not m.startswith('__class__'))
 )
