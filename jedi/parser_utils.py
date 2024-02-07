@@ -336,6 +336,8 @@ def _function_is_x_method(decorator_checker):
     return wrapper
 
 
-function_is_staticmethod = _function_is_x_method(lambda m: m == 'staticmethod')
-function_is_classmethod = _function_is_x_method(lambda m: m == 'classmethod')
-function_is_property = _function_is_x_method(lambda m: m == 'property' or m == 'cached_property' or m.endswith('.setter'))
+function_is_staticmethod = _function_is_x_method(lambda m: m == "staticmethod")
+function_is_classmethod = _function_is_x_method(lambda m: m == "classmethod")
+function_is_property = _function_is_x_method(
+    lambda m: m == "property" or m == "cached_property" or m.endswith(".setter")
+)
