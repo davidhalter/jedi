@@ -21,11 +21,9 @@ class Y(X):
     #? []
     def __doc__
 
-    # This might or might not be what we wanted, currently properties are also
-    # used like this. IMO this is not wanted ~dave.
-    #? ['__class__']
-    def __class__
     #? []
+    def __class__
+    #? ['__class__']
     __class__
 
 
