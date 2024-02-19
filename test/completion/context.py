@@ -24,7 +24,7 @@ class Y(X):
     #? []
     def __class__
     #? ['__class__']
-    __class__ 
+    __class__
 
 
     #? ['__repr__']
