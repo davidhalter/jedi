@@ -698,9 +698,11 @@ def tree_name_to_values(inference_state, context, tree_name):
                 ann_assign = expr_stmt.children[1]
                 if correct_scope and name.start_pos < ann_assign.start_pos:
                     found_annotation = True
-                    if ((expr_stmt.children[1].children[1].type == 'name') and
-                            (expr_stmt.children[1].children[1].value == tree_name.value) and
-                            context.parent_context):
+                    if (
+                        (expr_stmt.children[1].children[1].type == 'name')
+                        and (expr_stmt.children[1].children[1].value == tree_name.value)
+                        and context.parent_context
+                    ):
                         context = context.parent_context
                     value_set |= annotation.infer_annotation(
                         context, expr_stmt.children[1].children[1]
