@@ -2,7 +2,7 @@
 
 If security issues arise, we will try to fix those as soon as possible.
 
-Due to Jedi's nature, Security Issues will probably be extremely rare, but we will neverless treat them seriously.
+Due to Jedi's nature, Security Issues will probably be extremely rare, but we will of course treat them seriously.
 
 ## Reporting Security Problems
 
