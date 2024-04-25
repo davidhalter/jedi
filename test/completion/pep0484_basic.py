@@ -180,6 +180,11 @@ def argskwargs(*args: int, **kwargs: float):
     #? float()
     kwargs['']
 
+class Test:
+    str: str = 'abc'
+
+#? ['upper']
+Test.str.upp
 
 class NotCalledClass:
     def __init__(self, x):
