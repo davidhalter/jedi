@@ -373,10 +373,13 @@ def _get_executable_path(path, safe=True):
     """
 
     if os.name == 'nt':
-        python = os.path.join(path, 'Scripts', 'python.exe')
+        pythons = [os.path.join(path, 'Scripts', 'python.exe'), os.path.join(path, 'python.exe')]
     else:
-        python = os.path.join(path, 'bin', 'python')
-    if not os.path.exists(python):
+        pythons = [os.path.join(path, 'bin', 'python')]
+    for python in pythons:
+        if os.path.exists(python):
+            break
+    else:
         raise InvalidPythonEnvironment("%s seems to be missing." % python)
 
     _assert_safe(python, safe)
