@@ -12,7 +12,7 @@ class TestSetupReadline(unittest.TestCase):
     class NameSpace(object):
         pass
 
-    def __init__(self, *args, **kwargs):
+    def setUp(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.namespace = self.NameSpace()
