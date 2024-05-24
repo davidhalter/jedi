@@ -13,7 +13,7 @@ class TestSetupReadline(unittest.TestCase):
         pass
 
     def setUp(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.namespace = self.NameSpace()
         utils.setup_readline(self.namespace)
