@@ -78,9 +78,9 @@ class TestSetupReadline(unittest.TestCase):
         # items as well as items that are not only available on linux.
         difference = set(self.complete(s)).symmetric_difference(goal)
         ACCEPTED_DIFFERENCE_PREFIXES = [
-            '_', 'O_', 'EX_', 'MFD_',
+            '_', 'O_', 'EX_', 'EFD_', 'MFD_', 'TFD_',
             'SF_', 'ST_', 'CLD_', 'POSIX_SPAWN_', 'P_',
-            'RWF_', 'CLONE_', 'SCHED_',
+            'RWF_', 'CLONE_', 'SCHED_', 'SPLICE_',
         ]
         difference = {
             x for x in difference
