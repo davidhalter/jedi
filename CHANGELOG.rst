@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Python 3.13 support
+
 0.19.1 (2023-10-02)
 +++++++++++++++++++
 
