@@ -84,8 +84,10 @@ class TestSetupReadline(unittest.TestCase):
         ]
         difference = {
             x for x in difference
-            if all(not x.startswith('from os import ' + prefix)
-                   for prefix in ACCEPTED_DIFFERENCE_PREFIXES)
+            if not any(
+                x.startswith('from os import ' + prefix)
+                for prefix in ACCEPTED_DIFFERENCE_PREFIXES
+            )
         }
         # There are quite a few differences, because both Windows and Linux
         # (posix and nt) libraries are included.
