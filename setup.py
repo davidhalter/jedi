@@ -39,7 +39,7 @@ setup(name='jedi',
       install_requires=['parso>=0.8.3,<0.9.0'],
       extras_require={
           'testing': [
-              'pytest<7.0.0',
+              'pytest<9.0.0',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
