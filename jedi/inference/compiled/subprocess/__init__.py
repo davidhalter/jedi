@@ -128,7 +128,7 @@ class InferenceStateSubprocess(_InferenceStateProcess):
             self._used = True
 
             result = self._compiled_subprocess.run(
-                self._inference_state_weakref(),
+                self._inference_state_id,
                 func,
                 args=args,
                 kwargs=kwargs,
@@ -213,18 +213,18 @@ class CompiledSubprocess:
                                                   t)
         return process
 
-    def run(self, inference_state, function, args=(), kwargs={}):
+    def run(self, inference_state_id, function, args=(), kwargs={}):
         # Delete old inference_states.
         while True:
             try:
-                inference_state_id = self._inference_state_deletion_queue.pop()
+                delete_id = self._inference_state_deletion_queue.pop()
             except IndexError:
                 break
             else:
-                self._send(inference_state_id, None)
+                self._send(delete_id, None)
 
         assert callable(function)
-        return self._send(id(inference_state), function, args, kwargs)
+        return self._send(inference_state_id, function, args, kwargs)
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
