@@ -5,11 +5,24 @@ different Python versions.
 import errno
 import sys
 import pickle
+from typing import Any
+
+
+class Unpickler(pickle.Unpickler):
+    def find_class(self, module: str, name: str) -> Any:
+        # Python 3.13 moved pathlib implementation out of __init__.py as part of
+        # generalising its implementation. Ensure that we support loading
+        # pickles from 3.13 on older version of Python. Since 3.13 maintained a
+        # compatible API, pickles from older Python work natively on the newer
+        # version.
+        if module == 'pathlib._local':
+            module = 'pathlib'
+        return super().find_class(module, name)
 
 
 def pickle_load(file):
     try:
-        return pickle.load(file)
+        return Unpickler(file).load()
     # Python on Windows don't throw EOF errors for pipes. So reraise them with
     # the correct type, which is caught upwards.
     except OSError:
