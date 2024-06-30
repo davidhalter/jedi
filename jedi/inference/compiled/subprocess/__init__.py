@@ -284,9 +284,6 @@ class CompiledSubprocess:
 class Listener:
     def __init__(self):
         self._inference_states = {}
-        # TODO refactor so we don't need to process anymore just handle
-        # controlling.
-        self._process = _InferenceStateProcess(Listener)
 
     def _get_inference_state(self, function, inference_state_id):
         from jedi.inference import InferenceState
