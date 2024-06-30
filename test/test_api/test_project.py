@@ -144,13 +144,17 @@ def test_load_save_project(tmpdir):
     ]
 )
 def test_search(string, full_names, kwargs):
-    some_search_test_var = 1.0
+    some_search_test_var = 1.0  # noqa: F841
     project = Project(test_dir)
     if kwargs.pop('complete', False) is True:
         defs = project.complete_search(string, **kwargs)
     else:
         defs = project.search(string, **kwargs)
-    assert sorted([('stub:' if d.is_stub() else '') + (d.full_name or d.name) for d in defs]) == full_names
+    actual = sorted([
+        ('stub:' if d.is_stub() else '') + (d.full_name or d.name)
+        for d in defs
+    ])
+    assert actual == full_names
 
 
 @pytest.mark.parametrize(
@@ -169,8 +173,8 @@ def test_complete_search(Script, string, completions, all_scopes):
 
 @pytest.mark.parametrize(
     'path,expected', [
-        (Path(__file__).parents[2], True), # The path of the project
-        (Path(__file__).parents[1], False), # The path of the tests, not a project
+        (Path(__file__).parents[2], True),  # The path of the project
+        (Path(__file__).parents[1], False),  # The path of the tests, not a project
         (Path.home(), None)
     ]
 )

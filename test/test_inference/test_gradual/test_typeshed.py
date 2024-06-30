@@ -222,7 +222,7 @@ def test_goto_stubs_on_itself(Script, code, type_):
 
 def test_module_exists_only_as_stub(Script):
     try:
-        import redis
+        import redis  # noqa: F401
     except ImportError:
         pass
     else:
@@ -234,7 +234,7 @@ def test_module_exists_only_as_stub(Script):
 
 def test_django_exists_only_as_stub(Script):
     try:
-        import django
+        import django  # noqa: F401
     except ImportError:
         pass
     else:

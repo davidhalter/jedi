@@ -33,7 +33,9 @@ def test_get_signatures_stdlib(Script):
 
 # Check only on linux 64 bit platform and Python3.8.
 @pytest.mark.parametrize('load_unsafe_extensions', [False, True])
-@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 8)')
+@pytest.mark.skipif(
+    'sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 8)',
+)
 def test_init_extension_module(Script, load_unsafe_extensions):
     """
     ``__init__`` extension modules are also packages and Jedi should understand

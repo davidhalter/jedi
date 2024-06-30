@@ -17,7 +17,7 @@ def func1(x, y):
 def func2():
  what ?
 i = 3
-    
+
 def func3():
     1'''
 cls_code = '''\

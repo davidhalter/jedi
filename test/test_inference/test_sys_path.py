@@ -48,8 +48,8 @@ def test_venv_and_pths(venv_path, environment):
 
     ETALON = [
         # For now disable egg-links. I have no idea how they work... ~ dave
-        #pjoin('/path', 'from', 'egg-link'),
-        #pjoin(site_pkg_path, '.', 'relative', 'egg-link', 'path'),
+        # pjoin('/path', 'from', 'egg-link'),
+        # pjoin(site_pkg_path, '.', 'relative', 'egg-link', 'path'),
         site_pkg_path,
         pjoin(site_pkg_path, 'dir-from-foo-pth'),
         '/foo/smth.py:module',
