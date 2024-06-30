@@ -106,7 +106,6 @@ def _cleanup_process(process, thread):
 class _InferenceStateProcess:
     def __init__(self, inference_state: 'InferenceState') -> None:
         self._inference_state_weakref = weakref.ref(inference_state)
-        self._inference_state_id = id(inference_state)
         self._handles: Dict[int, AccessHandle] = {}
 
     def get_or_create_access_handle(self, obj):
@@ -158,6 +157,27 @@ class InferenceStateSubprocess(_InferenceStateProcess):
         super().__init__(inference_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
+
+        # Opaque id we'll pass to the subprocess to identify the context (an
+        # `InferenceState`) which should be used for the request. This allows us
+        # to make subsequent requests which operate on results from previous
+        # ones, while keeping a single subprocess which can work with several
+        # contexts in the parent process. Once it is no longer needed(i.e: when
+        # this class goes away), we also use this id to indicate that the
+        # subprocess can discard the context.
+        #
+        # Note: this id is deliberately coupled to this class (and not to
+        # `InferenceState`) as this class manages access handle mappings which
+        # must correspond to those in the subprocess. This approach also avoids
+        # race conditions from successive `InferenceState`s with the same object
+        # id (as observed while adding support for Python 3.13).
+        #
+        # This value does not need to be the `id()` of this instance, we merely
+        # need to ensure that it enables the (visible) lifetime of the context
+        # within the subprocess to match that of this class. We therefore also
+        # depend on the semantics of `CompiledSubprocess.delete_inference_state`
+        # for correctness.
+        self._inference_state_id = id(self)
 
     def __getattr__(self, name):
         func = _get_function(name)
@@ -330,6 +350,10 @@ class CompiledSubprocess:
         Note: it is not guaranteed that the corresponding state will actually be
         deleted immediately.
         """
+        # Warning: if changing the semantics of context deletion see the comment
+        # in `InferenceStateSubprocess.__init__` regarding potential race
+        # conditions.
+
         # Currently we are not deleting the related state instantly. They only
         # get deleted once the subprocess is used again. It would probably a
         # better solution to move all of this into a thread. However, the memory
@@ -397,6 +421,9 @@ class Listener:
         if inference_state_id is None:
             return function(*args, **kwargs)
         elif function is None:
+            # Warning: if changing the semantics of context deletion see the comment
+            # in `InferenceStateSubprocess.__init__` regarding potential race
+            # conditions.
             del self._inference_states[inference_state_id]
         else:
             inference_state = self._get_inference_state(function, inference_state_id)
