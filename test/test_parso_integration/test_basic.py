@@ -1,6 +1,5 @@
 from textwrap import dedent
 
-import pytest
 from parso import parse
 
 

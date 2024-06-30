@@ -26,7 +26,7 @@ def get_completion(source, namespace):
 
 
 def test_builtin_details():
-    import keyword
+    import keyword  # noqa: F401
 
     class EmptyClass:
         pass
@@ -53,9 +53,9 @@ def test_numpy_like_non_zero():
     """
 
     class NumpyNonZero:
-
         def __zero__(self):
             raise ValueError('Numpy arrays would raise and tell you to use .any() or all()')
+
         def __bool__(self):
             raise ValueError('Numpy arrays would raise and tell you to use .any() or all()')
 
@@ -113,17 +113,17 @@ def _assert_interpreter_complete(source, namespace, completions, *, check_type=F
 
 
 def test_complete_raw_function():
-    from os.path import join
+    from os.path import join  # noqa: F401
     _assert_interpreter_complete('join("").up', locals(), ['upper'])
 
 
 def test_complete_raw_function_different_name():
-    from os.path import join as pjoin
+    from os.path import join as pjoin  # noqa: F401
     _assert_interpreter_complete('pjoin("").up', locals(), ['upper'])
 
 
 def test_complete_raw_module():
-    import os
+    import os  # noqa: F401
     _assert_interpreter_complete('os.path.join("a").up', locals(), ['upper'])
 
 
@@ -281,7 +281,7 @@ def test_param_completion():
     def foo(bar):
         pass
 
-    lambd = lambda xyz: 3
+    lambd = lambda xyz: 3  # noqa: E731
 
     _assert_interpreter_complete('foo(bar', locals(), ['bar='])
     _assert_interpreter_complete('lambd(xyz', locals(), ['xyz='])
@@ -295,7 +295,7 @@ def test_endless_yield():
 
 
 def test_completion_params():
-    foo = lambda a, b=3: None
+    foo = lambda a, b=3: None  # noqa: E731
 
     script = jedi.Interpreter('foo', [locals()])
     c, = script.complete()
@@ -409,7 +409,7 @@ def test_dir_magic_method(allow_unsafe_getattr):
 def test_name_not_findable():
     class X():
         if 0:
-            NOT_FINDABLE
+            NOT_FINDABLE  # noqa: F821
 
         def hidden(self):
             return
@@ -422,7 +422,7 @@ def test_name_not_findable():
 
 
 def test_stubs_working():
-    from multiprocessing import cpu_count
+    from multiprocessing import cpu_count  # noqa: F401
     defs = jedi.Interpreter("cpu_count()", [locals()]).infer()
     assert [d.name for d in defs] == ['int']
 
@@ -532,7 +532,6 @@ def test_partial_signatures(code, expected, index):
 
 def test_type_var():
     """This was an issue before, see Github #1369"""
-    import typing
     x = typing.TypeVar('myvar')
     def_, = jedi.Interpreter('x', [locals()]).infer()
     assert def_.name == 'TypeVar'
@@ -610,7 +609,7 @@ def test_dict_getitem(code, types):
         ('next(DunderCls())', 'float'),
         ('next(dunder)', 'float'),
         ('for x in DunderCls(): x', 'str'),
-        #('for x in dunder: x', 'str'),
+        # ('for x in dunder: x', 'str'),
     ]
 )
 def test_dunders(class_is_findable, code, expected, allow_unsafe_getattr):
@@ -687,7 +686,7 @@ def bar():
     ]
 )
 def test_string_annotation(annotations, result, code):
-    x = lambda foo: 1
+    x = lambda foo: 1  # noqa: E731
     x.__annotations__ = annotations
     defs = jedi.Interpreter(code or 'x()', [locals()]).infer()
     assert [d.name for d in defs] == result
@@ -720,8 +719,8 @@ def test_negate():
 
 def test_complete_not_findable_class_source():
     class TestClass():
-        ta=1
-        ta1=2
+        ta = 1
+        ta1 = 2
 
     # Simulate the environment where the class is defined in
     # an interactive session and therefore inspect module
@@ -756,7 +755,7 @@ def test_param_infer_default():
     ],
 )
 def test_keyword_param_completion(code, expected):
-    import random
+    import random  # noqa: F401
     completions = jedi.Interpreter(code, [locals()]).complete()
     assert expected == [c.name for c in completions if c.name.endswith('=')]
 

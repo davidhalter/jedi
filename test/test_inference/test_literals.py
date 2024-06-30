@@ -1,4 +1,3 @@
-import pytest
 from jedi.inference.value import TreeInstance
 
 

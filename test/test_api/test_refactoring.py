@@ -113,7 +113,7 @@ def test_diff_without_ending_newline(Script):
          b
         -a
         +c
-        ''')
+        ''')  # noqa: W291
 
 
 def test_diff_path_outside_of_project(Script):

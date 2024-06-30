@@ -206,6 +206,7 @@ def test_numpydoc_parameters_set_of_values():
     assert 'capitalize' in names
     assert 'numerator' in names
 
+
 @pytest.mark.skipif(numpydoc_unavailable,
                     reason='numpydoc module is unavailable')
 def test_numpydoc_parameters_set_single_value():
@@ -390,7 +391,8 @@ def test_numpydoc_yields():
 @pytest.mark.skipif(numpydoc_unavailable or numpy_unavailable,
                     reason='numpydoc or numpy module is unavailable')
 def test_numpy_returns():
-    s = dedent('''
+    s = dedent(
+        '''
         import numpy
         x = numpy.asarray([])
         x.d'''
@@ -402,7 +404,8 @@ def test_numpy_returns():
 @pytest.mark.skipif(numpydoc_unavailable or numpy_unavailable,
                     reason='numpydoc or numpy module is unavailable')
 def test_numpy_comp_returns():
-    s = dedent('''
+    s = dedent(
+        '''
         import numpy
         x = numpy.array([])
         x.d'''
