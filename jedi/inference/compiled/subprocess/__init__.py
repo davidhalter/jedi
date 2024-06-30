@@ -5,6 +5,23 @@ goals:
 1. Making it safer - Segfaults and RuntimeErrors as well as stdout/stderr can
    be ignored and dealt with.
 2. Make it possible to handle different Python versions as well as virtualenvs.
+
+The architecture here is briefly:
+ - For each Jedi `Environment` there is a corresponding subprocess which
+   operates within the target environment. If the subprocess dies it is replaced
+   at this level.
+ - `CompiledSubprocess` manages exactly one subprocess and handles communication
+   from the parent side.
+ - `Listener` runs within the subprocess, processing each request and yielding
+   results.
+ - `InterpreterEnvironment` provides an API which matches that of `Environment`,
+   but runs functionality inline rather than within a subprocess. It is thus
+   used both directly in places where a subprocess is unnecessary and/or
+   undesirable and also within subprocesses themselves.
+ - `InferenceStateSubprocess` (or `InferenceStateSameProcess`) provide high
+   level access to functionality within the subprocess from within the parent.
+   Each `InterpreterState` has an instance of one of these, provided by its
+   environment.
 """
 
 import collections
@@ -16,6 +33,7 @@ import traceback
 import weakref
 from functools import partial
 from threading import Thread
+from typing import Dict, TYPE_CHECKING
 
 from jedi._compatibility import pickle_dump, pickle_load
 from jedi import debug
@@ -24,6 +42,9 @@ from jedi.inference.compiled.subprocess import functions
 from jedi.inference.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
 from jedi.api.exceptions import InternalError
+
+if TYPE_CHECKING:
+    from jedi.inference import InferenceState
 
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
@@ -83,10 +104,10 @@ def _cleanup_process(process, thread):
 
 
 class _InferenceStateProcess:
-    def __init__(self, inference_state):
+    def __init__(self, inference_state: 'InferenceState') -> None:
         self._inference_state_weakref = weakref.ref(inference_state)
         self._inference_state_id = id(inference_state)
-        self._handles = {}
+        self._handles: Dict[int, AccessHandle] = {}
 
     def get_or_create_access_handle(self, obj):
         id_ = id(obj)
@@ -116,7 +137,24 @@ class InferenceStateSameProcess(_InferenceStateProcess):
 
 
 class InferenceStateSubprocess(_InferenceStateProcess):
-    def __init__(self, inference_state, compiled_subprocess):
+    """
+    API to functionality which will run in a subprocess.
+
+    This mediates the interaction between an `InferenceState` and the actual
+    execution of functionality running within a `CompiledSubprocess`. Available
+    functions are defined in `.functions`, though should be accessed via
+    attributes on this class of the same name.
+
+    This class is responsible for indicating that the `InferenceState` within
+    the subprocess can be removed once the corresponding instance in the parent
+    goes away.
+    """
+
+    def __init__(
+        self,
+        inference_state: 'InferenceState',
+        compiled_subprocess: 'CompiledSubprocess',
+    ) -> None:
         super().__init__(inference_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
@@ -164,6 +202,17 @@ class InferenceStateSubprocess(_InferenceStateProcess):
 
 
 class CompiledSubprocess:
+    """
+    A subprocess which runs inference within a target environment.
+
+    This class manages the interface to a single instance of such a process as
+    well as the lifecycle of the process itself. See `.__main__` and `Listener`
+    for the implementation of the subprocess and details of the protocol.
+
+    A single live instance of this is maintained by `jedi.api.environment.Environment`,
+    so that typically a single subprocess is used at a time.
+    """
+
     is_crashed = False
 
     def __init__(self, executable, env_vars=None):
@@ -272,16 +321,59 @@ class CompiledSubprocess:
 
     def delete_inference_state(self, inference_state_id):
         """
-        Currently we are not deleting inference_state instantly. They only get
-        deleted once the subprocess is used again. It would probably a better
-        solution to move all of this into a thread. However, the memory usage
-        of a single inference_state shouldn't be that high.
+        Indicate that an inference state (in the subprocess) is no longer
+        needed.
+
+        The state corresponding to the given id will become inaccessible and the
+        id may safely be re-used to refer to a different context.
+
+        Note: it is not guaranteed that the corresponding state will actually be
+        deleted immediately.
         """
-        # With an argument - the inference_state gets deleted.
+        # Currently we are not deleting the related state instantly. They only
+        # get deleted once the subprocess is used again. It would probably a
+        # better solution to move all of this into a thread. However, the memory
+        # usage of a single inference_state shouldn't be that high.
         self._inference_state_deletion_queue.append(inference_state_id)
 
 
 class Listener:
+    """
+    Main loop for the subprocess which actually does the inference.
+
+    This class runs within the target environment. It listens to instructions
+    from the parent process, runs inference and returns the results.
+
+    The subprocess has a long lifetime and is expected to process several
+    requests, including for different `InferenceState` instances in the parent.
+    See `CompiledSubprocess` for the parent half of the system.
+
+    Communication is via pickled data sent serially over stdin and stdout.
+    Stderr is read only if the child process crashes.
+
+    The request protocol is a 4-tuple of:
+     * inference_state_id | None: an opaque identifier of the parent's
+       `InferenceState`. An `InferenceState` operating over an
+       `InterpreterEnvironment` is created within this process for each of
+       these, ensuring that each parent context has a corresponding context
+       here. This allows context to be persisted between requests. Unless
+       `None`, the local `InferenceState` will be passed to the given function
+       as the first positional argument.
+     * function | None: the function to run. This is expected to be a member of
+       `.functions`. `None` indicates that the corresponding inference state is
+       no longer needed and should be dropped.
+     * args: positional arguments to the `function`. If any of these are
+       `AccessHandle` instances they will be adapted to the local
+       `InferenceState` before being passed.
+     * kwargs: keyword arguments to the `function`. If any of these are
+       `AccessHandle` instances they will be adapted to the local
+       `InferenceState` before being passed.
+
+    The result protocol is a 3-tuple of either:
+     * (False, None, function result): if the function returns without error, or
+     * (True, traceback, exception): if the function raises an exception
+    """
+
     def __init__(self):
         self._inference_states = {}
 
@@ -345,7 +437,12 @@ class Listener:
 
 
 class AccessHandle:
-    def __init__(self, subprocess, access, id_):
+    def __init__(
+        self,
+        subprocess: _InferenceStateProcess,
+        access: DirectObjectAccess,
+        id_: int,
+    ) -> None:
         self.access = access
         self._subprocess = subprocess
         self.id = id_
