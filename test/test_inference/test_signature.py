@@ -1,5 +1,5 @@
 from textwrap import dedent
-from operator import ge, lt
+from operator import eq, ge, lt
 import re
 import os
 
@@ -14,7 +14,8 @@ from ..helpers import get_example_dir
         ('import math; math.cos', 'cos(x, /)', ['x'], ge, (3, 6)),
 
         ('next', 'next(iterator, default=None, /)', ['iterator', 'default'], lt, (3, 12)),
-        ('next', 'next()', [], ge, (3, 12)),
+        ('next', 'next()', [], eq, (3, 12)),
+        ('next', 'next(iterator, default=None, /)', ['iterator', 'default'], ge, (3, 13)),
 
         ('str', "str(object='', /) -> str", ['object'], ge, (3, 6)),
 

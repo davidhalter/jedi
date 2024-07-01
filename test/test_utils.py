@@ -73,15 +73,21 @@ class TestSetupReadline(unittest.TestCase):
         import os
         s = 'from os import '
         goal = {s + el for el in dir(os)}
+
         # There are minor differences, e.g. the dir doesn't include deleted
         # items as well as items that are not only available on linux.
         difference = set(self.complete(s)).symmetric_difference(goal)
+        ACCEPTED_DIFFERENCE_PREFIXES = [
+            '_', 'O_', 'EX_', 'EFD_', 'MFD_', 'TFD_',
+            'SF_', 'ST_', 'CLD_', 'POSIX_SPAWN_', 'P_',
+            'RWF_', 'CLONE_', 'SCHED_', 'SPLICE_',
+        ]
         difference = {
             x for x in difference
-            if all(not x.startswith('from os import ' + s)
-                   for s in ['_', 'O_', 'EX_', 'MFD_', 'SF_', 'ST_',
-                             'CLD_', 'POSIX_SPAWN_', 'P_', 'RWF_',
-                             'CLONE_', 'SCHED_'])
+            if not any(
+                x.startswith('from os import ' + prefix)
+                for prefix in ACCEPTED_DIFFERENCE_PREFIXES
+            )
         }
         # There are quite a few differences, because both Windows and Linux
         # (posix and nt) libraries are included.
