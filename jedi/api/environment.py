@@ -8,12 +8,17 @@ import hashlib
 import filecmp
 from collections import namedtuple
 from shutil import which
+from typing import TYPE_CHECKING
 
 from jedi.cache import memoize_method, time_cache
 from jedi.inference.compiled.subprocess import CompiledSubprocess, \
     InferenceStateSameProcess, InferenceStateSubprocess
 
 import parso
+
+if TYPE_CHECKING:
+    from jedi.inference import InferenceState
+
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')  # type: ignore[name-match]
 
@@ -102,7 +107,10 @@ class Environment(_BaseEnvironment):
         version = '.'.join(str(i) for i in self.version_info)
         return '<%s: %s in %s>' % (self.__class__.__name__, version, self.path)
 
-    def get_inference_state_subprocess(self, inference_state):
+    def get_inference_state_subprocess(
+        self,
+        inference_state: 'InferenceState',
+    ) -> InferenceStateSubprocess:
         return InferenceStateSubprocess(inference_state, self._get_subprocess())
 
     @memoize_method
@@ -134,7 +142,10 @@ class SameEnvironment(_SameEnvironmentMixin, Environment):
 
 
 class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
-    def get_inference_state_subprocess(self, inference_state):
+    def get_inference_state_subprocess(
+        self,
+        inference_state: 'InferenceState',
+    ) -> InferenceStateSameProcess:
         return InferenceStateSameProcess(inference_state)
 
     def get_sys_path(self):
