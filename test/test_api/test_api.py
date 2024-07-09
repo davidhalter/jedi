@@ -403,3 +403,8 @@ def test_infer_after_parentheses(Script, code, column, expected):
         assert completions == []
     else:
         assert [c.name for c in completions] == [expected]
+
+
+def test_infer_in_operator(Script):
+    completions = Script("res = 'f' in 'foo'").infer(column=1)
+    assert completions[0].full_name == 'builtins.bool'
