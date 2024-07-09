@@ -64,6 +64,7 @@ Code Contributors
 - Joseph Birkner (@josephbirkner)
 - Márcio Mazza (@marciomazza)
 - Martin Vielsmaier (@moser) <martin@vielsmaier.net>
+- TingJia Wu (@WutingjiaX) <wutingjia@bytedance.com>
 
 And a few more "anonymous" contributors.
 

@@ -424,3 +424,10 @@ with open("a"), open("b") as bfile:
 some_array = ['', '']
 #! ['def upper']
 some_array[some_not_defined_index].upper
+
+# -----------------
+# operator
+# -----------------
+
+#? bool()
+res = 'f' in 'foo'; res
