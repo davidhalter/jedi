@@ -645,7 +645,10 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             _bool_to_value(inference_state, False)
         ])
     elif str_operator in ('in', 'not in'):
-        return NO_VALUES
+        return ValueSet([
+            _bool_to_value(inference_state, True),
+            _bool_to_value(inference_state, False)
+        ])
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
