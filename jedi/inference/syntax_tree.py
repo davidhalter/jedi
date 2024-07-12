@@ -493,8 +493,10 @@ def infer_factor(value_set, operator):
         elif operator == 'not':
             b = value.py__bool__()
             if b is None:  # Uncertainty.
-                return
-            yield compiled.create_simple_object(value.inference_state, not b)
+
+                yield list(value.inference_state.builtins_module.py__getattribute__('bool').execute_annotation()).pop()
+            else:
+                yield compiled.create_simple_object(value.inference_state, not b)
         else:
             yield value
 
@@ -645,10 +647,7 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             _bool_to_value(inference_state, False)
         ])
     elif str_operator in ('in', 'not in'):
-        return ValueSet([
-            _bool_to_value(inference_state, True),
-            _bool_to_value(inference_state, False)
-        ])
+        return inference_state.builtins_module.py__getattribute__('bool').execute_annotation()
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
