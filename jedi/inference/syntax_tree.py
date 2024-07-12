@@ -493,8 +493,8 @@ def infer_factor(value_set, operator):
         elif operator == 'not':
             b = value.py__bool__()
             if b is None:  # Uncertainty.
-
-                yield list(value.inference_state.builtins_module.py__getattribute__('bool').execute_annotation()).pop()
+                yield list(value.inference_state.builtins_module.py__getattribute__('bool')
+                           .execute_annotation()).pop()
             else:
                 yield compiled.create_simple_object(value.inference_state, not b)
         else:
