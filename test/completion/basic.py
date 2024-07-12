@@ -431,3 +431,6 @@ some_array[some_not_defined_index].upper
 
 #? bool()
 res = 'f' in 'foo'; res
+
+#? bool()
+res = not {}; res
