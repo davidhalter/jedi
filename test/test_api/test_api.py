@@ -321,10 +321,19 @@ def test_docstrings_for_completions(Script):
         assert isinstance(c.docstring(), str)
 
 
+def test_completions_order_most_resemblance_on_top(Script):
+    """Test that the completion which resembles the in-typing the most will come first."""
+    code = "from pathlib import Path\npath = Path('hello.txt')\n\npat"
+    script = Script(code)
+    # User is typing "pat" and "path" is closer to it than "Path".
+    assert ['path', 'Path'] == [comp.name for comp in script.complete()]
+
+
 def test_fuzzy_completion(Script):
     script = Script('string =  "hello"\nstring.upper')
-    assert ['isupper',
-            'upper'] == [comp.name for comp in script.complete(fuzzy=True)]
+    # 'isupper' is included because it is fuzzily matched.
+    assert ['upper',
+            'isupper'] == [comp.name for comp in script.complete(fuzzy=True)]
 
 
 def test_math_fuzzy_completion(Script, environment):
