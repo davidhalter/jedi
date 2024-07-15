@@ -138,6 +138,11 @@ class Completion:
 
         self._fuzzy = fuzzy
 
+    # Return list of completions in this order:
+    # - Beginning with what user is typing
+    # - Public (alphabet)
+    # - Private ("_xxx")
+    # - Dunder ("__xxx")
     def complete(self):
         leaf = self._module_node.get_leaf_for_position(
             self._original_position,
@@ -176,7 +181,8 @@ class Completion:
         return (
             # Removing duplicates mostly to remove False/True/None duplicates.
             _remove_duplicates(prefixed_completions, completions)
-            + sorted(completions, key=lambda x: (x.name.startswith('__'),
+            + sorted(completions, key=lambda x: (not x.name.startswith(self._like_name), 
+                                                 x.name.startswith('__'),
                                                  x.name.startswith('_'),
                                                  x.name.lower()))
         )
