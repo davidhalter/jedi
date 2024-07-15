@@ -181,7 +181,7 @@ class Completion:
         return (
             # Removing duplicates mostly to remove False/True/None duplicates.
             _remove_duplicates(prefixed_completions, completions)
-            + sorted(completions, key=lambda x: (not x.name.startswith(self._like_name), 
+            + sorted(completions, key=lambda x: (not x.name.startswith(self._like_name),
                                                  x.name.startswith('__'),
                                                  x.name.startswith('_'),
                                                  x.name.lower()))
