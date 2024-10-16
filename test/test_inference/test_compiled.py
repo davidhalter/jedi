@@ -6,6 +6,7 @@ from datetime import datetime
 
 import pytest
 
+import jedi
 from jedi.inference import compiled
 from jedi.inference.compiled.access import DirectObjectAccess
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
@@ -81,9 +82,9 @@ def test_method_completion(Script, environment):
     assert [c.name for c in Script(code).complete()] == ['__func__']
 
 
-def test_time_docstring(Script):
+def test_time_docstring():
     import time
-    comp, = Script('import time\ntime.sleep').complete()
+    comp, = jedi.Script('import time\ntime.sleep').complete()
     assert comp.docstring(raw=True) == time.sleep.__doc__
     expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
     assert comp.docstring() == expected
