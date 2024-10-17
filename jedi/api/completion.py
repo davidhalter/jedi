@@ -65,12 +65,15 @@ def _must_be_kwarg(signatures, positional_count, used_kwargs):
     return must_be_kwarg
 
 
-def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cached_name):
+def filter_names(inference_state, completion_names, stack, like_name, fuzzy,
+                 imported_names, cached_name):
     comp_dct = set()
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
     for name in completion_names:
         string = name.string_name
+        if string in imported_names and string != like_name:
+            continue
         if settings.case_insensitive_completion:
             string = string.lower()
         if helpers.match(string, like_name, fuzzy=fuzzy):
@@ -174,9 +177,13 @@ class Completion:
 
         cached_name, completion_names = self._complete_python(leaf)
 
+        imported_names = []
+        if leaf.parent is not None and leaf.parent.type in ['import_as_names', 'dotted_as_names']:
+            imported_names.extend(extract_imported_names(leaf.parent))
+
         completions = list(filter_names(self._inference_state, completion_names,
                                         self.stack, self._like_name,
-                                        self._fuzzy, cached_name=cached_name))
+                                        self._fuzzy, imported_names, cached_name=cached_name))
 
         return (
             # Removing duplicates mostly to remove False/True/None duplicates.
@@ -448,6 +455,7 @@ class Completion:
         - Having some doctest code that starts with `>>>`
         - Having backticks that doesn't have whitespace inside it
         """
+
         def iter_relevant_lines(lines):
             include_next_line = False
             for l in code_lines:
@@ -670,3 +678,19 @@ def search_in_module(inference_state, module_context, names, wanted_names,
                     def_ = classes.Name(inference_state, n2)
                 if not wanted_type or wanted_type == def_.type:
                     yield def_
+
+
+def extract_imported_names(node):
+    imported_names = []
+
+    if node.type in ['import_as_names', 'dotted_as_names', 'import_as_name']:
+        for index, child in enumerate(node.children):
+            if child.type == 'name':
+                if (index > 0 and node.children[index - 1].type == "keyword"
+                        and node.children[index - 1].value == "as"):
+                    continue
+                imported_names.append(child.value)
+            elif child.type == 'import_as_name':
+                imported_names.extend(extract_imported_names(child))
+
+    return imported_names

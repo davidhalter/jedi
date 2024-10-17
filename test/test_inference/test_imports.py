@@ -307,6 +307,28 @@ def test_os_issues(Script):
     assert 'path' in import_names(s, column=len(s) - 3)
 
 
+def test_duplicated_import(Script):
+    def import_names(*args, **kwargs):
+        return [d.name for d in Script(*args).complete(**kwargs)]
+
+    s = 'import os, o'
+    assert 'os' not in import_names(s)
+    assert 'os' in import_names(s, column=len(s) - 3)
+
+    s = 'from os import path, p'
+    assert 'path' not in import_names(s)
+    assert 'path' in import_names(s, column=len(s) - 3)
+
+    s = 'import path as pp, p'
+    assert 'path' not in import_names(s)
+
+    s = 'from os import path as pp, p'
+    assert 'path' not in import_names(s)
+
+    s = 'from os import chdir as path, p'
+    assert 'path' in import_names(s)
+
+
 def test_path_issues(Script):
     """
     See pull request #684 for details.
