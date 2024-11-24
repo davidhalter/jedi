@@ -683,14 +683,14 @@ def search_in_module(inference_state, module_context, names, wanted_names,
 def extract_imported_names(node):
     imported_names = []
 
-    if node.type in ['import_as_names', 'dotted_as_names', 'import_as_name']:
+    if node.type in ['import_as_names', 'dotted_as_names', 'dotted_as_name', 'import_as_name']:
         for index, child in enumerate(node.children):
             if child.type == 'name':
-                if (index > 0 and node.children[index - 1].type == "keyword"
+                if (index > 1 and node.children[index - 1].type == "keyword"
                         and node.children[index - 1].value == "as"):
                     continue
                 imported_names.append(child.value)
-            elif child.type == 'import_as_name':
+            elif child.type in ('import_as_name', 'dotted_as_name'):
                 imported_names.extend(extract_imported_names(child))
 
     return imported_names

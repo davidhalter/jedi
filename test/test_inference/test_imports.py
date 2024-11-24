@@ -318,9 +318,14 @@ def test_duplicated_import(Script):
     s = 'from os import path, p'
     assert 'path' not in import_names(s)
     assert 'path' in import_names(s, column=len(s) - 3)
+    assert 'path' in import_names("from import path")
+    assert 'path' in import_names("from import chdir, path")
 
-    s = 'import path as pp, p'
-    assert 'path' not in import_names(s)
+    s = 'import math as mm, m'
+    assert 'math' not in import_names(s)
+
+    s = 'import math as os, o'
+    assert 'os' in import_names(s)
 
     s = 'from os import path as pp, p'
     assert 'path' not in import_names(s)
