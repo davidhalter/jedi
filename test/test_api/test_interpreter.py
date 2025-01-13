@@ -9,8 +9,10 @@ import pytest
 
 import jedi
 import jedi.settings
+from jedi import Project
 from jedi.inference.compiled import mixed
 from importlib import import_module
+from test.helpers import get_example_dir
 
 
 class _GlobalNameSpace:
@@ -588,6 +590,18 @@ def test_dict_completion(code, column, expected):
         comps = [c for c in comps if not c._name.is_value_name and not c.is_keyword]
         expected = [e for e in expected if e is not Ellipsis]
 
+    assert [c.complete for c in comps] == expected
+
+
+def test_implicit_namespace_package_with_subpackages():
+    sys_path = [
+        get_example_dir('implicit_namespace_package_with_subpackages', 'ns1'),
+        get_example_dir('implicit_namespace_package_with_subpackages', 'ns2'),
+    ]
+    project = Project('.', sys_path=sys_path)
+    interpreter = jedi.Interpreter("import pkg; pkg.", namespaces=[], project=project)
+    comps = interpreter.complete()
+    expected = ["pkgA", "pkgB"]
     assert [c.complete for c in comps] == expected
 
 
