@@ -599,8 +599,12 @@ def test_implicit_namespace_package_with_subpackages(monkeypatch):
     monkeypatch.syspath_prepend(sys_path_dir1)
     monkeypatch.syspath_prepend(sys_path_dir2)
 
-    import pkg
-    interpreter = jedi.Interpreter("pkg.", namespaces=[locals()], project=Project('.'))
+    import pkg_implicit_namespace_package_test
+    interpreter = jedi.Interpreter(
+        "pkg_implicit_namespace_package_test.",
+        namespaces=[locals()],
+        project=Project('.')
+    )
     comps = interpreter.complete()
     expected = ["pkgA", "pkgB"]
     assert [c.complete for c in comps] == expected
