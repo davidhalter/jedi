@@ -593,13 +593,14 @@ def test_dict_completion(code, column, expected):
     assert [c.complete for c in comps] == expected
 
 
-def test_implicit_namespace_package_with_subpackages():
-    sys_path = [
-        get_example_dir('implicit_namespace_package_with_subpackages', 'ns1'),
-        get_example_dir('implicit_namespace_package_with_subpackages', 'ns2'),
-    ]
-    project = Project('.', sys_path=sys_path)
-    interpreter = jedi.Interpreter("import pkg; pkg.", namespaces=[], project=project)
+def test_implicit_namespace_package_with_subpackages(monkeypatch):
+    sys_path_dir1 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns1')
+    sys_path_dir2 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns2')
+    monkeypatch.syspath_prepend(sys_path_dir1)
+    monkeypatch.syspath_prepend(sys_path_dir2)
+
+    import pkg
+    interpreter = jedi.Interpreter("pkg.", namespaces=[locals()], project=Project('.'))
     comps = interpreter.complete()
     expected = ["pkgA", "pkgB"]
     assert [c.complete for c in comps] == expected
