@@ -593,7 +593,7 @@ def test_dict_completion(code, column, expected):
     assert [c.complete for c in comps] == expected
 
 
-def test_implicit_namespace_package_with_subpackages(monkeypatch):
+def test_implicit_namespace_package_with_subpackages_v1(monkeypatch):
     sys_path_dir1 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns1')
     sys_path_dir2 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns2')
     monkeypatch.syspath_prepend(sys_path_dir1)
@@ -602,6 +602,23 @@ def test_implicit_namespace_package_with_subpackages(monkeypatch):
     import pkg_implicit_namespace_package_test
     interpreter = jedi.Interpreter(
         "pkg_implicit_namespace_package_test.",
+        namespaces=[locals()],
+        project=Project('.')
+    )
+    comps = interpreter.complete()
+    expected = ["pkgA", "pkgB"]
+    assert [c.complete for c in comps] == expected
+
+
+def test_implicit_namespace_package_with_subpackages_v2(monkeypatch):
+    sys_path_dir1 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns1')
+    sys_path_dir2 = get_example_dir('implicit_namespace_package_with_subpackages', 'ns2')
+    monkeypatch.syspath_prepend(sys_path_dir1)
+    monkeypatch.syspath_prepend(sys_path_dir2)
+
+    # import pkg_implicit_namespace_package_test
+    interpreter = jedi.Interpreter(
+        "import pkg_implicit_namespace_package_test.",
         namespaces=[locals()],
         project=Project('.')
     )
