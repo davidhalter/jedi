@@ -275,6 +275,9 @@ class ClassMixin:
         is_dataclass_transform = False
         for cls in reversed(list(self.py__mro__())):
             if not is_dataclass_transform and (
+                # If dataclass_transform is applied to a class, dataclass-like semantics
+                # will be assumed for any class that directly or indirectly derives from
+                # the decorated class or uses the decorated class as a metaclass.
                 isinstance(cls, DataclassWrapper)
                 or (
                     # Some object like CompiledValues would not be compatible
