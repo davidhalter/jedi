@@ -47,11 +47,15 @@ from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ValueName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
-    NO_VALUES
+    NO_VALUES, ValueWrapper
 from jedi.inference.context import ClassContext
 from jedi.inference.value.function import FunctionAndClassBase
+from jedi.inference.value.decorator import Decoratee
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
+from inspect import Parameter
+from jedi.inference.names import BaseTreeParamName
+from jedi.inference.signature import AbstractSignature
 
 
 class ClassName(TreeNameDefinition):
@@ -127,6 +131,32 @@ class ClassFilter(ParserTreeFilter):
     def _filter(self, names):
         names = super()._filter(names)
         return [name for name in names if self._access_possible(name)]
+
+
+def get_dataclass_param_names(cls):
+    """
+    ``cls`` is a :class:`ClassMixin`.
+    """
+    param_names = []
+    filter_ = cls.as_context().get_global_filter()
+    # .values ordering is not guaranteed, at least not in
+    # Python < 3.6, when dicts where not ordered, which is an
+    # implementation detail anyway.
+    for name in sorted(filter_.values(), key=lambda name: name.start_pos):
+        d = name.tree_name.get_definition()
+        annassign = d.children[1]
+        if d.type == 'expr_stmt' and annassign.type == 'annassign':
+            if len(annassign.children) < 4:
+                default = None
+            else:
+                default = annassign.children[3]
+            param_names.append(DataclassParamName(
+                parent_context=cls.parent_context,
+                tree_name=name.tree_name,
+                annotation_node=annassign.children[1],
+                default_node=default,
+            ))
+    return param_names
 
 
 class ClassMixin:
@@ -221,6 +251,53 @@ class ClassMixin:
                     assert x is not None
                     yield x
 
+    def _has_dataclass_transform_metaclasses(self) -> bool:
+        for meta in self.get_metaclasses():
+            if (
+                # Not sure if necessary
+                isinstance(meta, DataclassWrapper)
+                or (
+                    isinstance(meta, Decoratee)
+                    # Internal leakage :|
+                    and isinstance(meta._wrapped_value, DataclassWrapper)
+                )
+            ):
+                return True
+
+        return False
+
+    def _get_dataclass_transform_signatures(self):
+        """
+        Returns: A non-empty list if the class is dataclass transformed else an
+        empty list.
+        """
+        param_names = []
+        is_dataclass_transform = False
+        for cls in reversed(list(self.py__mro__())):
+            if not is_dataclass_transform and (
+                isinstance(cls, DataclassWrapper)
+                or (
+                    # Some object like CompiledValues would not be compatible
+                    isinstance(cls, ClassMixin)
+                    and cls._has_dataclass_transform_metaclasses()
+                )
+            ):
+                is_dataclass_transform = True
+                # Attributes on the decorated class and its base classes are not
+                # considered to be fields.
+                continue
+
+            # All inherited behave like dataclass
+            if is_dataclass_transform:
+                param_names.extend(
+                    get_dataclass_param_names(cls)
+                )
+
+        if is_dataclass_transform:
+            return [DataclassSignature(cls, param_names)]
+        else:
+            []
+
     def get_signatures(self):
         # Since calling staticmethod without a function is illegal, the Jedi
         # plugin doesn't return anything. Therefore call directly and get what
@@ -232,7 +309,12 @@ class ClassMixin:
                 return sigs
         args = ValuesArguments([])
         init_funcs = self.py__call__(args).py__getattribute__('__init__')
-        return [sig.bind(self) for sig in init_funcs.get_signatures()]
+
+        dataclass_sigs = self._get_dataclass_transform_signatures()
+        if dataclass_sigs:
+            return dataclass_sigs
+        else:
+            return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def _as_context(self):
         return ClassContext(self)
@@ -317,6 +399,42 @@ class ClassMixin:
                 TupleGenericManager(tuple(remap_type_vars()))
             )])
         return ValueSet({self})
+
+
+class DataclassParamName(BaseTreeParamName):
+    def __init__(self, parent_context, tree_name, annotation_node, default_node):
+        super().__init__(parent_context, tree_name)
+        self.annotation_node = annotation_node
+        self.default_node = default_node
+
+    def get_kind(self):
+        return Parameter.POSITIONAL_OR_KEYWORD
+
+    def infer(self):
+        if self.annotation_node is None:
+            return NO_VALUES
+        else:
+            return self.parent_context.infer_node(self.annotation_node)
+
+
+class DataclassSignature(AbstractSignature):
+    def __init__(self, value, param_names):
+        super().__init__(value)
+        self._param_names = param_names
+
+    def get_param_names(self, resolve_stars=False):
+        return self._param_names
+
+
+class DataclassWrapper(ValueWrapper, ClassMixin):
+    def get_signatures(self):
+        param_names = []
+        for cls in reversed(list(self.py__mro__())):
+            if isinstance(cls, DataclassWrapper):
+                param_names.extend(
+                    get_dataclass_param_names(cls)
+                )
+        return [DataclassSignature(cls, param_names)]
 
 
 class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):

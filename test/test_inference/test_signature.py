@@ -354,23 +354,56 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     assert price.name == 'float'
 
 
+dataclass_transform_cases = [
+    # Direct
+    ['@dataclass_transform\nclass X:', []],
+    # With params
+    ['@dataclass_transform(eq=True)\nclass X:', []],
+    # Subclass
+    [dedent('''
+        class Y():
+            y: int
+        @dataclass_transform
+        class X(Y):'''), []],
+    # Both classes
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        @dataclass_transform
+        class X(Y):'''), ['y']],
+    # Base class
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), []],
+    # Alternative decorator
+    [dedent('''
+        @dataclass_transform
+        def create_model(cls):
+            return cls
+        @create_model
+        class X:'''), []],
+    # Metaclass
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase):'''), []],
+]
+
+ids = ["direct", "with_params", "sub", "both", "base", "alternative_decorator", "metaclass"]
+
+
 @pytest.mark.parametrize(
-    'start, start_params', [
-        ['@dataclass_transform\nclass X:', []],
-        ['@dataclass_transform(eq=True)\nclass X:', []],
-        [dedent('''
-         class Y():
-             y: int
-         @dataclass_transform
-         class X(Y):'''), []],
-        [dedent('''
-         @dataclass_transform
-         class Y():
-             y: int
-             z = 5
-         @dataclass_transform
-         class X(Y):'''), ['y']],
-    ]
+    'start, start_params', dataclass_transform_cases, ids=ids
 )
 def test_extensions_dataclass_transform_signature(Script, skip_pre_python37, start, start_params):
     code = dedent('''
@@ -392,22 +425,7 @@ def test_extensions_dataclass_transform_signature(Script, skip_pre_python37, sta
 
 
 @pytest.mark.parametrize(
-    'start, start_params', [
-        ['@dataclass_transform\nclass X:', []],
-        ['@dataclass_transform(eq=True)\nclass X:', []],
-        [dedent('''
-         class Y():
-             y: int
-         @dataclass_transform
-         class X(Y):'''), []],
-        [dedent('''
-         @dataclass_transform
-         class Y():
-             y: int
-             z = 5
-         @dataclass_transform
-         class X(Y):'''), ['y']],
-    ]
+    'start, start_params', dataclass_transform_cases, ids=ids
 )
 def test_dataclass_transform_signature(Script, skip_pre_python311, start, start_params):
     code = dedent('''
