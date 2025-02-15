@@ -356,6 +356,80 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
 
 @pytest.mark.parametrize(
     'start, start_params', [
+        ['@dataclass_transform\nclass X:', []],
+        ['@dataclass_transform(eq=True)\nclass X:', []],
+        [dedent('''
+         class Y():
+             y: int
+         @dataclass_transform
+         class X(Y):'''), []],
+        [dedent('''
+         @dataclass_transform
+         class Y():
+             y: int
+             z = 5
+         @dataclass_transform
+         class X(Y):'''), ['y']],
+    ]
+)
+def test_extensions_dataclass_transform_signature(Script, skip_pre_python37, start, start_params):
+    code = dedent('''
+            name: str
+            foo = 3
+            price: float
+            quantity: int = 0.0
+
+        X(''')
+
+    code = 'from typing_extensions import dataclass_transform\n' + start + code
+
+    sig, = Script(code).get_signatures()
+    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
+    quantity, = sig.params[-1].infer()
+    assert quantity.name == 'int'
+    price, = sig.params[-2].infer()
+    assert price.name == 'float'
+
+
+@pytest.mark.parametrize(
+    'start, start_params', [
+        ['@dataclass_transform\nclass X:', []],
+        ['@dataclass_transform(eq=True)\nclass X:', []],
+        [dedent('''
+         class Y():
+             y: int
+         @dataclass_transform
+         class X(Y):'''), []],
+        [dedent('''
+         @dataclass_transform
+         class Y():
+             y: int
+             z = 5
+         @dataclass_transform
+         class X(Y):'''), ['y']],
+    ]
+)
+def test_dataclass_transform_signature(Script, skip_pre_python311, start, start_params):
+    code = dedent('''
+            name: str
+            foo = 3
+            price: float
+            quantity: int = 0.0
+
+        X(''')
+
+    code = 'from typing import dataclass_transform\n' + start + code
+
+    sig, = Script(code).get_signatures()
+    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
+    quantity, = sig.params[-1].infer()
+    assert quantity.name == 'int'
+    price, = sig.params[-2].infer()
+    assert price.name == 'float'
+
+
+@pytest.mark.parametrize(
+    'start, start_params', [
         ['@define\nclass X:', []],
         ['@frozen\nclass X:', []],
         ['@define(eq=True)\nclass X:', []],

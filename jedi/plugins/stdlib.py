@@ -798,6 +798,12 @@ _implemented = {
         # runtime_checkable doesn't really change anything and is just
         # adding logs for infering stuff, so we can safely ignore it.
         'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
+        # Python 3.11+
+        'dataclass_transform': _dataclass,
+    },
+    'typing_extensions': {
+        # Python <3.11
+        'dataclass_transform': _dataclass,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.

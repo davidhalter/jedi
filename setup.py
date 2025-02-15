@@ -46,6 +46,7 @@ setup(name='jedi',
               'colorama',
               'Django',
               'attrs',
+              'typing_extensions',
           ],
           'qa': [
               # latest version supporting Python 3.6
