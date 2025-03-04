@@ -10,6 +10,9 @@ python:
 submodules:
   include: all
 
+sphinx:
+  configuration: docs/conf.py
+
 build:
   os: ubuntu-22.04
   tools:
