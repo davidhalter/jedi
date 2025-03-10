@@ -183,9 +183,11 @@ class DirectObjectAccess:
 
     def py__file__(self) -> Optional[Path]:
         try:
-            return Path(self._obj.__file__)
+            __file__attribute = self._obj.__file__
         except AttributeError:
             return None
+
+        return Path(__file__attribute) if __file__attribute is not None else None
 
     def py__doc__(self):
         return inspect.getdoc(self._obj) or ''
