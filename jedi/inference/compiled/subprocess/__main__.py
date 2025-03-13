@@ -3,10 +3,6 @@ import sys
 from importlib.abc import MetaPathFinder
 from importlib.machinery import PathFinder
 
-# Remove the first entry, because it's simply a directory entry that equals
-# this directory.
-del sys.path[0]
-
 
 def _get_paths():
     # Get the path to jedi.
