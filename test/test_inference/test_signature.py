@@ -392,13 +392,18 @@ def test_dataclass_signature(
         """
             name: str
             foo = 3
+            blob: ClassVar[str]
             price: float
             quantity: int = 0.0
 
         X("""
     )
 
-    code = 'from dataclasses import dataclass\n' + start + code
+    code = (
+        "from dataclasses import dataclass\nfrom typing import ClassVar\n"
+        + start
+        + code
+    )
 
     sig, = Script(code).get_signatures()
     expected_params = (

@@ -146,6 +146,10 @@ def get_dataclass_param_names(cls):
         d = name.tree_name.get_definition()
         annassign = d.children[1]
         if d.type == 'expr_stmt' and annassign.type == 'annassign':
+            node = annassign.children[1]
+            if node.type == "atom_expr" and node.children[0].value == "ClassVar":
+                continue
+
             if len(annassign.children) < 4:
                 default = None
             else:
