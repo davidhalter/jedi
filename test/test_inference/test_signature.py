@@ -318,40 +318,265 @@ def test_wraps_signature(Script, code, signature):
 
 
 @pytest.mark.parametrize(
-    'start, start_params', [
-        ['@dataclass\nclass X:', []],
-        ['@dataclass(eq=True)\nclass X:', []],
-        [dedent('''
+    "start, start_params, include_params",
+    [
+        ["@dataclass\nclass X:", [], True],
+        ["@dataclass(eq=True)\nclass X:", [], True],
+        [
+            dedent(
+                """
          class Y():
              y: int
          @dataclass
-         class X(Y):'''), []],
-        [dedent('''
+         class X(Y):"""
+            ),
+            [],
+            True,
+        ],
+        [
+            dedent(
+                """
          @dataclass
          class Y():
              y: int
              z = 5
          @dataclass
-         class X(Y):'''), ['y']],
-    ]
+         class X(Y):"""
+            ),
+            ["y"],
+            True,
+        ],
+        # init=False
+        [
+            dedent(
+                """
+            @dataclass(init=False)
+            class X:"""
+            ),
+            [],
+            False,
+        ],
+        [
+            dedent(
+                """
+            @dataclass(eq=True, init=False)
+            class X:"""
+            ),
+            [],
+            False,
+        ],
+        # custom init
+        [
+            dedent(
+                """
+        @dataclass()
+        class X:
+            def __init__(self, toto: str):
+                pass
+            """
+            ),
+            ["toto"],
+            False,
+        ],
+    ],
+    ids=[
+        "direct_transformed",
+        "transformed_with_params",
+        "subclass_transformed",
+        "both_transformed",
+        "init_false",
+        "init_false_multiple",
+        "custom_init",
+    ],
 )
-def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
+def test_dataclass_signature(
+    Script, skip_pre_python37, start, start_params, include_params
+):
+    code = dedent(
+        """
+            name: str
+            foo = 3
+            blob: ClassVar[str]
+            price: Final[float]
+            quantity: int = 0.0
+
+        X("""
+    )
+
+    code = (
+        "from dataclasses import dataclass\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
+
+    sig, = Script(code).get_signatures()
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == 'object'
+
+
+dataclass_transform_cases = [
+    # Attributes on the decorated class and its base classes
+    # are not considered to be fields.
+    # 1/ Declare dataclass transformer
+    # Base Class
+    ['@dataclass_transform\nclass X:', [], False],
+    # Base Class with params
+    ['@dataclass_transform(eq=True)\nclass X:', [], False],
+    # Subclass
+    [dedent('''
+        class Y():
+            y: int
+        @dataclass_transform
+        class X(Y):'''), [], False],
+    # 2/ Declare dataclass transformed
+    # Class based
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], True],
+    # Decorator based
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class X:'''), [], True],
+    # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase):'''), [], True],
+    # 3/ Init tweaks
+    # init=False
+    [dedent('''
+        @dataclass_transform(init=False)
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], False],
+    [dedent('''
+        @dataclass_transform(eq=True, init=False)
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], False],
+    # custom init
+    [dedent('''
+    @dataclass_transform()
+    class Y():
+        y: int
+        z = 5
+    class X(Y):
+        def __init__(self, toto: str):
+            pass
+        '''), ["toto"], False],
+]
+
+ids = [
+    "direct_transformer",
+    "transformer_with_params",
+    "subclass_transformer",
+    "base_transformed",
+    "decorator_transformed",
+    "metaclass_transformed",
+    "init_false",
+    "init_false_multiple",
+    "custom_init",
+]
+
+
+@pytest.mark.parametrize(
+    'start, start_params, include_params', dataclass_transform_cases, ids=ids
+)
+def test_extensions_dataclass_transform_signature(
+    Script, skip_pre_python37, start, start_params, include_params
+):
+    code = dedent(
+        """
+            name: str
+            foo = 3
+            blob: ClassVar[str]
+            price: Final[float]
+            quantity: int = 0.0
+
+        X("""
+    )
+
+    code = (
+        "from typing_extensions import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
+
+    (sig,) = Script(code).get_signatures()
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == 'object'
+
+
+@pytest.mark.parametrize(
+    "start, start_params, include_params", dataclass_transform_cases, ids=ids
+)
+def test_dataclass_transform_signature(
+    Script, skip_pre_python311, start, start_params, include_params
+):
     code = dedent('''
             name: str
             foo = 3
-            price: float
+            blob: ClassVar[str]
+            price: Final[float]
             quantity: int = 0.0
 
         X(''')
 
-    code = 'from dataclasses import dataclass\n' + start + code
+    code = (
+        "from typing import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
 
     sig, = Script(code).get_signatures()
-    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
-    quantity, = sig.params[-1].infer()
-    assert quantity.name == 'int'
-    price, = sig.params[-2].infer()
-    assert price.name == 'float'
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == 'object'
 
 
 @pytest.mark.parametrize(

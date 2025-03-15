@@ -11,7 +11,6 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 import os
-from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import safe_property
@@ -25,15 +24,16 @@ from jedi.inference.value.instance import \
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
-from jedi.inference.value.klass import ClassMixin
+from jedi.inference.value.decorator import Decoratee
+from jedi.inference.value.klass import DataclassWrapper, DataclassDecorator
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
     LazyKnownValues
-from jedi.inference.names import ValueName, BaseTreeParamName
+from jedi.inference.names import ValueName
 from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
-from jedi.inference.signature import AbstractSignature, SignatureWrapper
+from jedi.inference.signature import SignatureWrapper
 
 
 # Copied from Python 3.6's stdlib.
@@ -591,63 +591,49 @@ def _random_choice(sequences):
 
 
 def _dataclass(value, arguments, callback):
+    """
+    dataclass decorator can be called 2 times with different arguments. One to
+    customize it dataclass(eq=True) and another one with the class to
+    transform.
+    """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            return ValueSet([DataclassWrapper(c)])
+            # Decorate a dataclass / base dataclass
+            dataclass_init = (
+                # Customized decorator, init may be disabled
+                not value.has_dataclass_init_false
+                if isinstance(value, DataclassDecorator)
+                # Bare dataclass decorator, always with init
+                else True
+            )
+
+            is_dataclass_transform = (
+                value.name.string_name == "dataclass_transform"
+                # The decorator function from dataclass_transform acting as the
+                # dataclass decorator.
+                and not isinstance(value, Decoratee)
+            )
+
+            return ValueSet(
+                [
+                    DataclassWrapper(
+                        c,
+                        dataclass_init,
+                        is_dataclass_transform,
+                    )
+                ]
+            )
         else:
-            return ValueSet([value])
+            # Decorator customization
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                    )
+                ]
+            )
     return NO_VALUES
-
-
-class DataclassWrapper(ValueWrapper, ClassMixin):
-    def get_signatures(self):
-        param_names = []
-        for cls in reversed(list(self.py__mro__())):
-            if isinstance(cls, DataclassWrapper):
-                filter_ = cls.as_context().get_global_filter()
-                # .values ordering is not guaranteed, at least not in
-                # Python < 3.6, when dicts where not ordered, which is an
-                # implementation detail anyway.
-                for name in sorted(filter_.values(), key=lambda name: name.start_pos):
-                    d = name.tree_name.get_definition()
-                    annassign = d.children[1]
-                    if d.type == 'expr_stmt' and annassign.type == 'annassign':
-                        if len(annassign.children) < 4:
-                            default = None
-                        else:
-                            default = annassign.children[3]
-                        param_names.append(DataclassParamName(
-                            parent_context=cls.parent_context,
-                            tree_name=name.tree_name,
-                            annotation_node=annassign.children[1],
-                            default_node=default,
-                        ))
-        return [DataclassSignature(cls, param_names)]
-
-
-class DataclassSignature(AbstractSignature):
-    def __init__(self, value, param_names):
-        super().__init__(value)
-        self._param_names = param_names
-
-    def get_param_names(self, resolve_stars=False):
-        return self._param_names
-
-
-class DataclassParamName(BaseTreeParamName):
-    def __init__(self, parent_context, tree_name, annotation_node, default_node):
-        super().__init__(parent_context, tree_name)
-        self.annotation_node = annotation_node
-        self.default_node = default_node
-
-    def get_kind(self):
-        return Parameter.POSITIONAL_OR_KEYWORD
-
-    def infer(self):
-        if self.annotation_node is None:
-            return NO_VALUES
-        else:
-            return self.parent_context.infer_node(self.annotation_node)
 
 
 class ItemGetterCallable(ValueWrapper):
@@ -798,6 +784,12 @@ _implemented = {
         # runtime_checkable doesn't really change anything and is just
         # adding logs for infering stuff, so we can safely ignore it.
         'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
+        # Python 3.11+
+        'dataclass_transform': _dataclass,
+    },
+    'typing_extensions': {
+        # Python <3.11
+        'dataclass_transform': _dataclass,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
