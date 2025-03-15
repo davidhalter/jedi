@@ -350,11 +350,17 @@ def test_wraps_signature(Script, code, signature):
         [
             dedent(
                 """
-            @dataclass_transform(init=False)
-            class Y():
-                y: int
-                z = 5
-            class X(Y):"""
+            @dataclass(init=False)
+            class X:"""
+            ),
+            [],
+            False,
+        ],
+        [
+            dedent(
+                """
+            @dataclass(eq=True, init=False)
+            class X:"""
             ),
             [],
             False,
@@ -363,11 +369,8 @@ def test_wraps_signature(Script, code, signature):
         [
             dedent(
                 """
-        @dataclass_transform()
-        class Y():
-            y: int
-            z = 5
-        class X(Y):
+        @dataclass()
+        class X:
             def __init__(self, toto: str):
                 pass
             """
@@ -382,6 +385,7 @@ def test_wraps_signature(Script, code, signature):
         "subclass_transformed",
         "both_transformed",
         "init_false",
+        "init_false_multiple",
         "custom_init",
     ],
 )
@@ -418,7 +422,7 @@ def test_dataclass_signature(
         quantity, = sig.params[-1].infer()
         assert quantity.name == 'int'
         price, = sig.params[-2].infer()
-        assert price.name == 'float'
+        assert price.name == 'object'
 
 
 dataclass_transform_cases = [

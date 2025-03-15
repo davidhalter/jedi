@@ -24,7 +24,7 @@ from jedi.inference.value.instance import \
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
-from jedi.inference.value.klass import DataclassWrapper
+from jedi.inference.value.klass import DataclassWrapper, DataclassDecorator
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
@@ -590,11 +590,37 @@ def _random_choice(sequences):
 
 
 def _dataclass(value, arguments, callback):
+    """
+    dataclass decorator can be called 2 times with different arguments. One to
+    customize it dataclass(eq=True) and another one with the class to
+    transform.
+    """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            return ValueSet([DataclassWrapper(c)])
+            # Decorate the class
+            dataclass_init = (
+                # Customized decorator
+                not value.has_dataclass_init_false
+                if isinstance(value, DataclassDecorator)
+                # Bare dataclass decorator
+                else True
+            )
+
+            if dataclass_init:
+                return ValueSet([DataclassWrapper(c)])
+            else:
+                return ValueSet([c])
         else:
-            return ValueSet([value])
+            # Decorator customization
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value._wrapped_value,
+                        value._overloaded_functions,
+                        arguments=arguments,
+                    )
+                ]
+            )
     return NO_VALUES
 
 

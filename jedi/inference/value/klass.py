@@ -49,7 +49,7 @@ from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES, ValueWrapper
 from jedi.inference.context import ClassContext
-from jedi.inference.value.function import FunctionAndClassBase
+from jedi.inference.value.function import FunctionAndClassBase, OverloadedFunctionValue
 from jedi.inference.value.decorator import Decoratee
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
@@ -431,6 +431,40 @@ class DataclassSignature(AbstractSignature):
 
     def get_param_names(self, resolve_stars=False):
         return self._param_names
+
+
+class DataclassDecorator(OverloadedFunctionValue):
+    def __init__(self, function, overloaded_functions, arguments):
+        """
+        Args:
+            arguments: The parameters to the dataclass function decorator.
+        """
+        super().__init__(function, overloaded_functions)
+        self.arguments = arguments
+
+    @property
+    def has_dataclass_init_false(self) -> bool:
+        """
+        Returns:
+            bool: True if dataclass(init=False)
+        """
+        if not self.arguments.argument_node:
+            return False
+
+        arg_nodes = (
+            self.arguments.argument_node.children
+            if self.arguments.argument_node.type == "arglist"
+            else [self.arguments.argument_node]
+        )
+        for arg_node in arg_nodes:
+            if (
+                arg_node.type == "argument"
+                and arg_node.children[0].value == "init"
+                and arg_node.children[2].value == "False"
+            ):
+                return True
+
+        return False
 
 
 class DataclassWrapper(ValueWrapper, ClassMixin):
