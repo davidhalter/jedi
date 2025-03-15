@@ -252,7 +252,7 @@ class ClassMixin:
                     yield x
 
     def _has_dataclass_transform_metaclasses(self) -> bool:
-        for meta in self.get_metaclasses():
+        for meta in self.get_metaclasses():  # type: ignore[attr-defined]
             if (
                 # Not sure if necessary
                 isinstance(meta, DataclassWrapper)
