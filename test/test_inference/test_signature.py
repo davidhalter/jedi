@@ -522,13 +522,19 @@ def test_extensions_dataclass_transform_signature(
         """
             name: str
             foo = 3
-            price: float
+            blob: ClassVar[str]
+            price: Final[float]
             quantity: int = 0.0
 
         X("""
     )
 
-    code = "from typing_extensions import dataclass_transform\n" + start + code
+    code = (
+        "from typing_extensions import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
 
     (sig,) = Script(code).get_signatures()
     expected_params = (
@@ -542,7 +548,7 @@ def test_extensions_dataclass_transform_signature(
         quantity, = sig.params[-1].infer()
         assert quantity.name == 'int'
         price, = sig.params[-2].infer()
-        assert price.name == 'float'
+        assert price.name == 'object'
 
 
 @pytest.mark.parametrize(
@@ -554,12 +560,18 @@ def test_dataclass_transform_signature(
     code = dedent('''
             name: str
             foo = 3
-            price: float
+            blob: ClassVar[str]
+            price: Final[float]
             quantity: int = 0.0
 
         X(''')
 
-    code = 'from typing import dataclass_transform\n' + start + code
+    code = (
+        "from typing import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
 
     sig, = Script(code).get_signatures()
     expected_params = (
@@ -573,7 +585,7 @@ def test_dataclass_transform_signature(
         quantity, = sig.params[-1].infer()
         assert quantity.name == 'int'
         price, = sig.params[-2].infer()
-        assert price.name == 'float'
+        assert price.name == 'object'
 
 
 @pytest.mark.parametrize(
