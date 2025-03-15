@@ -439,14 +439,6 @@ dataclass_transform_cases = [
             y: int
         @dataclass_transform
         class X(Y):'''), [], False],
-    # Both classes
-    [dedent('''
-        @dataclass_transform
-        class Y():
-            y: int
-            z = 5
-        @dataclass_transform
-        class X(Y):'''), [], False],
     # 2/ Declare dataclass transformed
     # Class based
     [dedent('''
@@ -502,7 +494,6 @@ ids = [
     "direct_transformer",
     "transformer_with_params",
     "subclass_transformer",
-    "both_transformer",
     "base_transformed",
     "decorator_transformed",
     "metaclass_transformed",

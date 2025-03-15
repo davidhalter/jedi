@@ -259,11 +259,12 @@ class ClassMixin:
         for meta in self.get_metaclasses():  # type: ignore[attr-defined]
             if (
                 # Not sure if necessary
-                isinstance(meta, DataclassWrapper)
+                (isinstance(meta, DataclassWrapper) and meta.dataclass_init)
                 or (
                     isinstance(meta, Decoratee)
                     # Internal leakage :|
                     and isinstance(meta._wrapped_value, DataclassWrapper)
+                    and meta._wrapped_value.dataclass_init
                 )
             ):
                 return True
@@ -276,31 +277,31 @@ class ClassMixin:
         empty list.
         """
         param_names = []
-        is_dataclass_transform = False
+        is_dataclass_transform_with_init = False
         for cls in reversed(list(self.py__mro__())):
-            if not is_dataclass_transform and (
+            if not is_dataclass_transform_with_init and (
                 # If dataclass_transform is applied to a class, dataclass-like semantics
                 # will be assumed for any class that directly or indirectly derives from
                 # the decorated class or uses the decorated class as a metaclass.
-                isinstance(cls, DataclassWrapper)
+                (isinstance(cls, DataclassWrapper) and cls.dataclass_init)
                 or (
                     # Some object like CompiledValues would not be compatible
                     isinstance(cls, ClassMixin)
                     and cls._has_dataclass_transform_metaclasses()
                 )
             ):
-                is_dataclass_transform = True
+                is_dataclass_transform_with_init = True
                 # Attributes on the decorated class and its base classes are not
                 # considered to be fields.
                 continue
 
             # All inherited behave like dataclass
-            if is_dataclass_transform:
+            if is_dataclass_transform_with_init:
                 param_names.extend(
                     get_dataclass_param_names(cls)
                 )
 
-        if is_dataclass_transform:
+        if is_dataclass_transform_with_init:
             return [DataclassSignature(cls, param_names)]
         else:
             []
@@ -468,13 +469,25 @@ class DataclassDecorator(ValueWrapper, FunctionMixin):
 
 
 class DataclassWrapper(ValueWrapper, ClassMixin):
+
+    def __init__(
+        self, wrapped_value, dataclass_init: bool, is_dataclass_transform: bool = False
+    ):
+        super().__init__(wrapped_value)
+        self.dataclass_init = dataclass_init
+        self.is_dataclass_transform = is_dataclass_transform
+
     def get_signatures(self):
         param_names = []
         for cls in reversed(list(self.py__mro__())):
-            if isinstance(cls, DataclassWrapper):
-                param_names.extend(
-                    get_dataclass_param_names(cls)
-                )
+            if (
+                isinstance(cls, DataclassWrapper)
+                and cls.dataclass_init
+                # Attributes on the decorated class and its base classes are not
+                # considered to be fields.
+                and not cls.is_dataclass_transform
+            ):
+                param_names.extend(get_dataclass_param_names(cls))
         return [DataclassSignature(cls, param_names)]
 
 

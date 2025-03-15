@@ -597,19 +597,26 @@ def _dataclass(value, arguments, callback):
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            # Decorate the class
+            # Decorate a class
             dataclass_init = (
-                # Customized decorator
+                # Customized decorator, init may be disabled
                 not value.has_dataclass_init_false
                 if isinstance(value, DataclassDecorator)
-                # Bare dataclass decorator
+                # Bare dataclass decorator, always with init
                 else True
             )
 
-            if dataclass_init:
-                return ValueSet([DataclassWrapper(c)])
-            else:
-                return ValueSet([c])
+            return ValueSet(
+                [
+                    DataclassWrapper(
+                        c,
+                        dataclass_init,
+                        is_dataclass_transform=value.name.string_name
+                        == "dataclass_transform",
+                    )
+                ]
+            )
+
         else:
             # Decorator customization
             return ValueSet(
