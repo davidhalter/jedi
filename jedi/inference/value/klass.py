@@ -49,7 +49,7 @@ from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES, ValueWrapper
 from jedi.inference.context import ClassContext
-from jedi.inference.value.function import FunctionAndClassBase, OverloadedFunctionValue
+from jedi.inference.value.function import FunctionAndClassBase, FunctionMixin
 from jedi.inference.value.decorator import Decoratee
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
@@ -433,13 +433,13 @@ class DataclassSignature(AbstractSignature):
         return self._param_names
 
 
-class DataclassDecorator(OverloadedFunctionValue):
-    def __init__(self, function, overloaded_functions, arguments):
+class DataclassDecorator(ValueWrapper, FunctionMixin):
+    def __init__(self, function, arguments):
         """
         Args:
             arguments: The parameters to the dataclass function decorator.
         """
-        super().__init__(function, overloaded_functions)
+        super().__init__(function)
         self.arguments = arguments
 
     @property

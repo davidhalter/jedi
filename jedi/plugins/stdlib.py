@@ -615,8 +615,7 @@ def _dataclass(value, arguments, callback):
             return ValueSet(
                 [
                     DataclassDecorator(
-                        value._wrapped_value,
-                        value._overloaded_functions,
+                        value,
                         arguments=arguments,
                     )
                 ]
