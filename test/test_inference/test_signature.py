@@ -393,14 +393,15 @@ def test_dataclass_signature(
             name: str
             foo = 3
             blob: ClassVar[str]
-            price: float
+            price: Final[float]
             quantity: int = 0.0
 
         X("""
     )
 
     code = (
-        "from dataclasses import dataclass\nfrom typing import ClassVar\n"
+        "from dataclasses import dataclass\n"
+        + "from typing import ClassVar, Final\n"
         + start
         + code
     )
