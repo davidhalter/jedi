@@ -24,6 +24,7 @@ from jedi.inference.value.instance import \
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
+from jedi.inference.value.decorator import Decoratee
 from jedi.inference.value.klass import DataclassWrapper, DataclassDecorator
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
@@ -597,7 +598,7 @@ def _dataclass(value, arguments, callback):
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            # Decorate a class
+            # Decorate a dataclass / base dataclass
             dataclass_init = (
                 # Customized decorator, init may be disabled
                 not value.has_dataclass_init_false
@@ -606,17 +607,22 @@ def _dataclass(value, arguments, callback):
                 else True
             )
 
+            is_dataclass_transform = (
+                value.name.string_name == "dataclass_transform"
+                # The decorator function from dataclass_transform acting as the
+                # dataclass decorator.
+                and not isinstance(value, Decoratee)
+            )
+
             return ValueSet(
                 [
                     DataclassWrapper(
                         c,
                         dataclass_init,
-                        is_dataclass_transform=value.name.string_name
-                        == "dataclass_transform",
+                        is_dataclass_transform,
                     )
                 ]
             )
-
         else:
             # Decorator customization
             return ValueSet(

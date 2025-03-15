@@ -450,8 +450,8 @@ dataclass_transform_cases = [
     # Decorator based
     [dedent('''
         @dataclass_transform
-        def create_model(cls):
-            return cls
+        def create_model():
+            pass
         @create_model
         class X:'''), [], True],
     # Metaclass based
