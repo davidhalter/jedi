@@ -563,18 +563,26 @@ ids = [
     'start, start_params, include_params', dataclass_transform_cases, ids=ids
 )
 def test_extensions_dataclass_transform_signature(
-    Script, skip_pre_python37, start, start_params, include_params
+    Script, skip_pre_python37, start, start_params, include_params, environment
 ):
     has_typing_ext = bool(Script('import typing_extensions').infer())
     if not has_typing_ext:
         raise pytest.skip("typing_extensions needed in target environment to run this test")
 
+    if environment.version_info < (3, 8):
+        # Final is not yet supported
+        price_type = "float"
+        price_type_infer = "float"
+    else:
+        price_type = "Final[float]"
+        price_type_infer = "object"
+
     code = dedent(
-        """
+        f"""
             name: str
             foo = 3
             blob: ClassVar[str]
-            price: Final[float]
+            price: {price_type}
             quantity: int = 0.0
 
         X("""
@@ -599,7 +607,7 @@ def test_extensions_dataclass_transform_signature(
         quantity, = sig.params[-1].infer()
         assert quantity.name == 'int'
         price, = sig.params[-2].infer()
-        assert price.name == 'object'
+        assert price.name == price_type_infer
 
 
 @pytest.mark.parametrize(
