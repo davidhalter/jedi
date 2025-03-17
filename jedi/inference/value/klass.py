@@ -296,7 +296,9 @@ class ClassMixin:
                 continue
 
             # All inherited behave like dataclass
-            if is_dataclass_transform_with_init:
+            if is_dataclass_transform_with_init and (
+                isinstance(cls, ClassValue) and not cls._has_init_false()
+            ):
                 param_names.extend(
                     get_dataclass_param_names(cls)
                 )
@@ -556,6 +558,27 @@ class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
                     if values:
                         return values
         return NO_VALUES
+
+    def _has_init_false(self) -> bool:
+        """
+        It returns ``True`` if ``class X(init=False):`` else ``False``.
+        """
+        bases_arguments = self._get_bases_arguments()
+
+        if bases_arguments.argument_node.type != "arglist":
+            # If it is not inheriting from the base model and having
+            # extra parameters, then init behavior is not changed.
+            return False
+
+        for arg in bases_arguments.argument_node.children:
+            if (
+                arg.type == "argument"
+                and arg.children[0].value == "init"
+                and arg.children[2].value == "False"
+            ):
+                return True
+
+        return False
 
     @plugin_manager.decorate()
     def get_metaclass_signatures(self, metaclasses):

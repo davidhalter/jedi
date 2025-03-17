@@ -625,9 +625,17 @@ def _dataclass(value, arguments, callback):
                 ]
             )
         elif c.is_function():
-            # dataclass_transform on a decorator equivalent of @dataclass
+            # @dataclass_transform
+            # def create_model(): pass
             return ValueSet([value])
-        elif value.name.string_name != "dataclass_transform":
+        elif (
+            # @dataclass(...)
+            value.name.string_name != "dataclass_transform"
+            # @dataclass_transform
+            # def create_model(): pass
+            # @create_model(...)
+            or isinstance(value, Decoratee)
+        ):
             # dataclass (or like) decorator customization
             return ValueSet(
                 [

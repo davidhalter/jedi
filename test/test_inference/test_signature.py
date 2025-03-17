@@ -482,6 +482,30 @@ dataclass_transform_cases = [
         def __init__(self, toto: str):
             pass
         '''), ["toto"], False],
+    # Class based init=false
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y, init=False):'''), [], False],
+    # Decorator based init=false
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model(init=False)
+        class X:'''), [], False],
+    # Metaclass based init=false
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=False):'''), [], False],
 ]
 
 ids = [
@@ -493,6 +517,9 @@ ids = [
     "decorator_transformed",
     "metaclass_transformed",
     "custom_init",
+    "base_transformed_init_false",
+    "decorator_transformed_init_false",
+    "metaclass_transformed_init_false",
 ]
 
 
