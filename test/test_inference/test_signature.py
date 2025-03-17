@@ -471,8 +471,7 @@ dataclass_transform_cases = [
             t: int
             p = 5
         class X(ModelBase):'''), [], True],
-    # 3/ Init tweaks
-    # custom init
+    # 3/ Init custom init
     [dedent('''
     @dataclass_transform()
     class Y():
@@ -482,21 +481,22 @@ dataclass_transform_cases = [
         def __init__(self, toto: str):
             pass
         '''), ["toto"], False],
-    # Class based init=false
+    # 4/ init=false
+    # Class based
     [dedent('''
         @dataclass_transform
         class Y():
             y: int
             z = 5
         class X(Y, init=False):'''), [], False],
-    # Decorator based init=false
+    # Decorator based
     [dedent('''
         @dataclass_transform
         def create_model():
             pass
         @create_model(init=False)
         class X:'''), [], False],
-    # Metaclass based init=false
+    # Metaclass based
     [dedent('''
         @dataclass_transform
         class ModelMeta():
@@ -506,6 +506,31 @@ dataclass_transform_cases = [
             t: int
             p = 5
         class X(ModelBase, init=False):'''), [], False],
+    # 4/ Other parameters
+    # Class based
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y, eq=True):'''), [], True],
+    # Decorator based
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model(eq=True)
+        class X:'''), [], True],
+    # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, eq=True):'''), [], True],
 ]
 
 ids = [
@@ -520,6 +545,9 @@ ids = [
     "base_transformed_init_false",
     "decorator_transformed_init_false",
     "metaclass_transformed_init_false",
+    "base_transformed_other_parameters",
+    "decorator_transformed_other_parameters",
+    "metaclass_transformed_other_parameters",
 ]
 
 

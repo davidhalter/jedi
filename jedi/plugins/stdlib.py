@@ -613,6 +613,9 @@ def _dataclass(value, arguments, callback):
                 # The decorator function from dataclass_transform acting as the
                 # dataclass decorator.
                 and not isinstance(value, Decoratee)
+                # The decorator function from dataclass_transform acting as the
+                # dataclass decorator with customized parameters
+                and not isinstance(value, DataclassDecorator)
             )
 
             return ValueSet(
