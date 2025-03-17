@@ -624,8 +624,11 @@ def _dataclass(value, arguments, callback):
                     )
                 ]
             )
-        else:
-            # Decorator customization
+        elif c.is_function():
+            # dataclass_transform on a decorator equivalent of @dataclass
+            return ValueSet([value])
+        elif value.name.string_name != "dataclass_transform":
+            # dataclass (or like) decorator customization
             return ValueSet(
                 [
                     DataclassDecorator(
@@ -634,6 +637,9 @@ def _dataclass(value, arguments, callback):
                     )
                 ]
             )
+        else:
+            # dataclass_transform decorator customization; nothing impactful
+            return ValueSet([value])
     return NO_VALUES
 
 
@@ -795,17 +801,6 @@ _implemented = {
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
         'dataclass': _dataclass
-    },
-    # attrs exposes declaration interface roughly compatible with dataclasses
-    # via attrs.define, attrs.frozen and attrs.mutable
-    # https://www.attrs.org/en/stable/names.html
-    'attr': {
-        'define': _dataclass,
-        'frozen': _dataclass,
-    },
-    'attrs': {
-        'define': _dataclass,
-        'frozen': _dataclass,
     },
     'os.path': {
         'dirname': _create_string_input_function(os.path.dirname),

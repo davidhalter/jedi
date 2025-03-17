@@ -432,7 +432,7 @@ dataclass_transform_cases = [
     # Base Class
     ['@dataclass_transform\nclass X:', [], False],
     # Base Class with params
-    ['@dataclass_transform(eq=True)\nclass X:', [], False],
+    ['@dataclass_transform(eq_default=True)\nclass X:', [], False],
     # Subclass
     [dedent('''
         class Y():
@@ -443,6 +443,13 @@ dataclass_transform_cases = [
     # Class based
     [dedent('''
         @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], True],
+    # Class based with params
+    [dedent('''
+        @dataclass_transform(eq_default=True)
         class Y():
             y: int
             z = 5
@@ -465,19 +472,6 @@ dataclass_transform_cases = [
             p = 5
         class X(ModelBase):'''), [], True],
     # 3/ Init tweaks
-    # init=False
-    [dedent('''
-        @dataclass_transform(init=False)
-        class Y():
-            y: int
-            z = 5
-        class X(Y):'''), [], False],
-    [dedent('''
-        @dataclass_transform(eq=True, init=False)
-        class Y():
-            y: int
-            z = 5
-        class X(Y):'''), [], False],
     # custom init
     [dedent('''
     @dataclass_transform()
@@ -495,10 +489,9 @@ ids = [
     "transformer_with_params",
     "subclass_transformer",
     "base_transformed",
+    "base_transformed_with_params",
     "decorator_transformed",
     "metaclass_transformed",
-    "init_false",
-    "init_false_multiple",
     "custom_init",
 ]
 
