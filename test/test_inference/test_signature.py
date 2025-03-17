@@ -390,14 +390,22 @@ def test_wraps_signature(Script, code, signature):
     ],
 )
 def test_dataclass_signature(
-    Script, skip_pre_python37, start, start_params, include_params
+    Script, skip_pre_python37, start, start_params, include_params, environment
 ):
+    if environment.version_info < (3, 8):
+        # Final is not yet supported
+        price_type = "float"
+        price_type_infer = "float"
+    else:
+        price_type = "Final[float]"
+        price_type_infer = "object"
+
     code = dedent(
-        """
+        f"""
             name: str
             foo = 3
             blob: ClassVar[str]
-            price: Final[float]
+            price: {price_type}
             quantity: int = 0.0
 
         X("""
@@ -422,7 +430,7 @@ def test_dataclass_signature(
         quantity, = sig.params[-1].infer()
         assert quantity.name == 'int'
         price, = sig.params[-2].infer()
-        assert price.name == 'object'
+        assert price.name == price_type_infer
 
 
 dataclass_transform_cases = [
