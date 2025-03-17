@@ -593,8 +593,9 @@ def _random_choice(sequences):
 def _dataclass(value, arguments, callback):
     """
     dataclass decorator can be called 2 times with different arguments. One to
-    customize it dataclass(eq=True) and another one with the class to
-    transform.
+    customize it dataclass(eq=True) and another one with the class to transform.
+
+    It supports dataclass, dataclass_transform and attrs.
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():

@@ -509,6 +509,10 @@ ids = [
 def test_extensions_dataclass_transform_signature(
     Script, skip_pre_python37, start, start_params, include_params
 ):
+    has_typing_ext = bool(Script('import typing_extensions').infer())
+    if not has_typing_ext:
+        raise pytest.skip("typing_extensions needed in target environment to run this test")
+
     code = dedent(
         """
             name: str
@@ -596,7 +600,8 @@ def test_dataclass_transform_signature(
              z = 5
          @define
          class X(Y):'''), ['y']],
-    ]
+    ],
+    ids=["define", "frozen", "define_customized", "define_subclass", "define_both"]
 )
 def test_attrs_signature(Script, skip_pre_python37, start, start_params):
     has_attrs = bool(Script('import attrs').infer())
