@@ -36,6 +36,8 @@ py__doc__()                            Returns the docstring for a value.
 ====================================== ========================================
 
 """
+from typing import List
+
 from jedi import debug
 from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted, \
     function_is_property
@@ -133,9 +135,19 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-def get_dataclass_param_names(cls):
+def get_dataclass_param_names(cls) -> List["DataclassParamName"]:
     """
-    ``cls`` is a :class:`ClassMixin`.
+    ``cls`` is a :class:`ClassMixin`. The type is only documented as mypy would
+    complain that some fields are missing.
+
+    .. code:: python
+
+        @dataclass
+        class A:
+            a: int
+            b: str = "toto"
+
+    For the previous example, the param names would be ``a`` and ``b``.
     """
     param_names = []
     filter_ = cls.as_context().get_global_filter()
@@ -154,6 +166,7 @@ def get_dataclass_param_names(cls):
                 default = None
             else:
                 default = annassign.children[3]
+
             param_names.append(DataclassParamName(
                 parent_context=cls.parent_context,
                 tree_name=name.tree_name,
@@ -259,21 +272,21 @@ class ClassMixin:
         for meta in self.get_metaclasses():  # type: ignore[attr-defined]
             if (
                 # Not sure if necessary
-                (isinstance(meta, DataclassWrapper) and meta.dataclass_init)
+                (isinstance(meta, DataclassWrapper) and meta.should_generate_init)
                 or (
                     isinstance(meta, Decoratee)
                     # Internal leakage :|
                     and isinstance(meta._wrapped_value, DataclassWrapper)
-                    and meta._wrapped_value.dataclass_init
+                    and meta._wrapped_value.should_generate_init
                 )
             ):
                 return True
 
         return False
 
-    def _get_dataclass_transform_signatures(self):
+    def _get_dataclass_transform_signatures(self) -> List["DataclassSignature"]:
         """
-        Returns: A non-empty list if the class is dataclass transformed else an
+        Returns: A non-empty list if the class has dataclass semantics else an
         empty list.
         """
         param_names = []
@@ -283,7 +296,7 @@ class ClassMixin:
                 # If dataclass_transform is applied to a class, dataclass-like semantics
                 # will be assumed for any class that directly or indirectly derives from
                 # the decorated class or uses the decorated class as a metaclass.
-                (isinstance(cls, DataclassWrapper) and cls.dataclass_init)
+                (isinstance(cls, DataclassWrapper) and cls.should_generate_init)
                 or (
                     # Some object like CompiledValues would not be compatible
                     isinstance(cls, ClassMixin)
@@ -295,9 +308,9 @@ class ClassMixin:
                 # considered to be fields.
                 continue
 
-            # All inherited behave like dataclass
+            # All inherited classes behave like dataclass semantics
             if is_dataclass_transform_with_init and (
-                isinstance(cls, ClassValue) and not cls._has_init_false()
+                isinstance(cls, ClassValue) and not cls._has_init_param_set_false()
             ):
                 param_names.extend(
                     get_dataclass_param_names(cls)
@@ -306,7 +319,7 @@ class ClassMixin:
         if is_dataclass_transform_with_init:
             return [DataclassSignature(cls, param_names)]
         else:
-            []
+            return []
 
     def get_signatures(self):
         # Since calling staticmethod without a function is illegal, the Jedi
@@ -412,6 +425,17 @@ class ClassMixin:
 
 
 class DataclassParamName(BaseTreeParamName):
+    """
+    Represent a field declaration on a class with dataclass semantics.
+
+    .. code:: python
+
+        class A:
+            a: int
+
+    ``a`` is a :class:`DataclassParamName`.
+    """
+
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
         super().__init__(parent_context, tree_name)
         self.annotation_node = annotation_node
@@ -428,6 +452,12 @@ class DataclassParamName(BaseTreeParamName):
 
 
 class DataclassSignature(AbstractSignature):
+    """
+    It represents the ``__init__`` signature of a class with dataclass semantics.
+
+    .. code:: python
+
+    """
     def __init__(self, value, param_names):
         super().__init__(value)
         self._param_names = param_names
@@ -437,6 +467,21 @@ class DataclassSignature(AbstractSignature):
 
 
 class DataclassDecorator(ValueWrapper, FunctionMixin):
+    """
+    A dataclass(-like) decorator with custom parameters.
+
+    .. code:: python
+
+        @dataclass(init=True) # this
+        class A: ...
+
+        @dataclass_transform
+        def create_model(*, init=False): pass
+
+        @create_model(init=False) # or this
+        class B: ...
+    """
+
     def __init__(self, function, arguments):
         """
         Args:
@@ -446,10 +491,10 @@ class DataclassDecorator(ValueWrapper, FunctionMixin):
         self.arguments = arguments
 
     @property
-    def has_dataclass_init_false(self) -> bool:
+    def has_init_param_set_false(self) -> bool:
         """
         Returns:
-            bool: True if dataclass(init=False)
+            bool: ``True`` if ``@dataclass(init=False)``
         """
         if not self.arguments.argument_node:
             return False
@@ -471,12 +516,26 @@ class DataclassDecorator(ValueWrapper, FunctionMixin):
 
 
 class DataclassWrapper(ValueWrapper, ClassMixin):
+    """
+    A class with dataclass semantics.
+
+    .. code:: python
+
+        @dataclass
+        class A: ... # this
+
+        @dataclass_transform
+        def create_model(): pass
+
+        @create_model()
+        class B: ... # or this
+    """
 
     def __init__(
-        self, wrapped_value, dataclass_init: bool, is_dataclass_transform: bool = False
+        self, wrapped_value, should_generate_init: bool, is_dataclass_transform: bool = False
     ):
         super().__init__(wrapped_value)
-        self.dataclass_init = dataclass_init
+        self.should_generate_init = should_generate_init
         self.is_dataclass_transform = is_dataclass_transform
 
     def get_signatures(self):
@@ -484,7 +543,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
         for cls in reversed(list(self.py__mro__())):
             if (
                 isinstance(cls, DataclassWrapper)
-                and cls.dataclass_init
+                and cls.should_generate_init
                 # Attributes on the decorated class and its base classes are not
                 # considered to be fields.
                 and not cls.is_dataclass_transform
@@ -559,7 +618,7 @@ class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
                         return values
         return NO_VALUES
 
-    def _has_init_false(self) -> bool:
+    def _has_init_param_set_false(self) -> bool:
         """
         It returns ``True`` if ``class X(init=False):`` else ``False``.
         """

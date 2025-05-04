@@ -592,17 +592,22 @@ def _random_choice(sequences):
 
 def _dataclass(value, arguments, callback):
     """
-    dataclass decorator can be called 2 times with different arguments. One to
-    customize it dataclass(eq=True) and another one with the class to transform.
-
     It supports dataclass, dataclass_transform and attrs.
+
+    Entry points for the following cases:
+
+    1. dataclass-like decorator instantiation from a dataclass_transform decorator
+    2. dataclass_transform decorator declaration with parameters
+    3. dataclass(-like) decorator declaration with parameters
+    4. dataclass(-like) semantics on a class from a dataclass(-like) decorator
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            # Decorate a dataclass / base dataclass
-            dataclass_init = (
+            # dataclass(-like) semantics on a class from a
+            # dataclass(-like) decorator
+            should_generate_init = (
                 # Customized decorator, init may be disabled
-                not value.has_dataclass_init_false
+                not value.has_init_param_set_false
                 if isinstance(value, DataclassDecorator)
                 # Bare dataclass decorator, always with init
                 else True
@@ -622,21 +627,22 @@ def _dataclass(value, arguments, callback):
                 [
                     DataclassWrapper(
                         c,
-                        dataclass_init,
+                        should_generate_init,
                         is_dataclass_transform,
                     )
                 ]
             )
         elif c.is_function():
+            # dataclass-like decorator instantiation:
             # @dataclass_transform
-            # def create_model(): pass
+            # def create_model()
             return ValueSet([value])
         elif (
-            # @dataclass(...)
+            # @dataclass(smth=...)
             value.name.string_name != "dataclass_transform"
             # @dataclass_transform
             # def create_model(): pass
-            # @create_model(...)
+            # @create_model(smth=...)
             or isinstance(value, Decoratee)
         ):
             # dataclass (or like) decorator customization
@@ -649,7 +655,7 @@ def _dataclass(value, arguments, callback):
                 ]
             )
         else:
-            # dataclass_transform decorator customization; nothing impactful
+            # dataclass_transform decorator with parameters; nothing impactful
             return ValueSet([value])
     return NO_VALUES
 
