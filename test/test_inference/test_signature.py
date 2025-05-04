@@ -346,6 +346,20 @@ def test_wraps_signature(Script, code, signature):
             ["y"],
             True,
         ],
+        [
+            dedent(
+                """
+         @dataclass
+         class Y():
+             y: int
+         class Z(Y): # Not included
+             z = 5
+         @dataclass
+         class X(Z):"""
+            ),
+            ["y"],
+            True,
+        ],
         # init=False
         [
             dedent(
@@ -384,6 +398,7 @@ def test_wraps_signature(Script, code, signature):
         "transformed_with_params",
         "subclass_transformed",
         "both_transformed",
+        "intermediate_not_transformed",
         "init_false",
         "init_false_multiple",
         "custom_init",
@@ -469,6 +484,34 @@ dataclass_transform_cases = [
             pass
         @create_model
         class X:'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        class Y:
+            y: int
+        @create_model
+        class X(Y):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class Y:
+            y: int
+        @create_model
+        class X(Y):'''), ["y"], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class Y:
+            y: int
+        class Z(Y):
+            z: int
+        @create_model
+        class X(Z):'''), ["y"], True],
     # Metaclass based
     [dedent('''
         @dataclass_transform
@@ -547,7 +590,10 @@ ids = [
     "subclass_transformer",
     "base_transformed",
     "base_transformed_with_params",
-    "decorator_transformed",
+    "decorator_transformed_direct",
+    "decorator_transformed_subclass",
+    "decorator_transformed_both",
+    "decorator_transformed_intermediate_not",
     "metaclass_transformed",
     "custom_init",
     "base_transformed_init_false",
