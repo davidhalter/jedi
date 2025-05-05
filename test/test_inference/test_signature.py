@@ -534,6 +534,40 @@ dataclass_transform_cases = [
         '''), ["toto"], False],
     # 4/ init=false
     # Class based
+    # WARNING: Unsupported
+    # [dedent('''
+    #     @dataclass_transform
+    #     class Y():
+    #         y: int
+    #         z = 5
+    #         def __init_subclass__(
+    #             cls,
+    #             *,
+    #             init: bool = False,
+    #         )
+    #     class X(Y):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+            def __init_subclass__(
+                cls,
+                *,
+                init: bool = False,
+            )
+        class X(Y, init=True):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+            def __init_subclass__(
+                cls,
+                *,
+                init: bool = False,
+            )
+        class X(Y, init=False):'''), [], False],
     [dedent('''
         @dataclass_transform
         class Y():
@@ -543,11 +577,83 @@ dataclass_transform_cases = [
     # Decorator based
     [dedent('''
         @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model()
+        class X:'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model(init=True)
+        class X:'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model(init=False)
+        class X:'''), [], False],
+    [dedent('''
+        @dataclass_transform
         def create_model():
             pass
         @create_model(init=False)
         class X:'''), [], False],
     # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=True):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=False):'''), [], False],
     [dedent('''
         @dataclass_transform
         class ModelMeta():
@@ -596,9 +702,18 @@ ids = [
     "decorator_transformed_intermediate_not",
     "metaclass_transformed",
     "custom_init",
-    "base_transformed_init_false",
-    "decorator_transformed_init_false",
-    "metaclass_transformed_init_false",
+    # "base_transformed_init_false_dataclass_init_default",
+    "base_transformed_init_false_dataclass_init_true",
+    "base_transformed_init_false_dataclass_init_false",
+    "base_transformed_init_default_dataclass_init_false",
+    "decorator_transformed_init_false_dataclass_init_default",
+    "decorator_transformed_init_false_dataclass_init_true",
+    "decorator_transformed_init_false_dataclass_init_false",
+    "decorator_transformed_init_default_dataclass_init_false",
+    "metaclass_transformed_init_false_dataclass_init_default",
+    "metaclass_transformed_init_false_dataclass_init_true",
+    "metaclass_transformed_init_false_dataclass_init_false",
+    "metaclass_transformed_init_default_dataclass_init_false",
     "base_transformed_other_parameters",
     "decorator_transformed_other_parameters",
     "metaclass_transformed_other_parameters",

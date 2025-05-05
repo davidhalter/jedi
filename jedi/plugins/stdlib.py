@@ -25,7 +25,11 @@ from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
 from jedi.inference.value.decorator import Decoratee
-from jedi.inference.value.klass import DataclassWrapper, DataclassDecorator
+from jedi.inference.value.klass import (
+    DataclassWrapper,
+    DataclassDecorator,
+    DataclassTransformer,
+)
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
@@ -592,9 +596,7 @@ def _random_choice(sequences):
 
 def _dataclass(value, arguments, callback):
     """
-    It supports dataclass, dataclass_transform and attrs.
-
-    Entry points for the following cases:
+    Decorator entry points for dataclass, dataclass_transform and attrs.
 
     1. dataclass-like decorator instantiation from a dataclass_transform decorator
     2. dataclass_transform decorator declaration with parameters
@@ -603,15 +605,6 @@ def _dataclass(value, arguments, callback):
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            # dataclass(-like) semantics on a class from a
-            # dataclass(-like) decorator
-            should_generate_init = (
-                # Customized decorator, init may be disabled
-                not value.has_init_param_set_false
-                if isinstance(value, DataclassDecorator)
-                # Bare dataclass decorator, always with init
-                else True
-            )
 
             is_dataclass_transform = (
                 value.name.string_name == "dataclass_transform"
@@ -623,26 +616,39 @@ def _dataclass(value, arguments, callback):
                 and not isinstance(value, DataclassDecorator)
             )
 
-            return ValueSet(
-                [
-                    DataclassWrapper(
-                        c,
-                        should_generate_init,
-                        is_dataclass_transform,
-                    )
-                ]
-            )
+            if is_dataclass_transform:
+                # Declare base class
+                return ValueSet([DataclassTransformer(c)])
+            else:
+                # Declare dataclass(-like) semantics on a class from a
+                # dataclass(-like) decorator
+                should_generate_init = (
+                    # Customized decorator, init may be disabled
+                    value.init_param_mode
+                    if isinstance(value, DataclassDecorator)
+                    # Bare dataclass decorator, always with init mode
+                    else True
+                )
+                return ValueSet([DataclassWrapper(c, should_generate_init)])
         elif c.is_function():
             # dataclass-like decorator instantiation:
             # @dataclass_transform
             # def create_model()
-            return ValueSet([value])
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                        default_init=True,
+                    )
+                ]
+            )
         elif (
-            # @dataclass(smth=...)
+            # @dataclass(init=False)
             value.name.string_name != "dataclass_transform"
             # @dataclass_transform
             # def create_model(): pass
-            # @create_model(smth=...)
+            # @create_model(init=...)
             or isinstance(value, Decoratee)
         ):
             # dataclass (or like) decorator customization
@@ -651,6 +657,11 @@ def _dataclass(value, arguments, callback):
                     DataclassDecorator(
                         value,
                         arguments=arguments,
+                        default_init=(
+                            value._wrapped_value.init_param_mode
+                            if isinstance(value, Decoratee)
+                            else True
+                        ),
                     )
                 ]
             )
