@@ -16,7 +16,7 @@ Jedi's main API calls and features are:
 Basic Features
 --------------
 
-- Python 3.6+ support
+- Python 3.8+ support
 - Ignores syntax errors and wrong indentation
 - Can deal with complex module / function / class structures
 - Great ``virtualenv``/``venv`` support

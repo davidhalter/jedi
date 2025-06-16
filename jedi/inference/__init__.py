@@ -122,14 +122,14 @@ class InferenceState:
         return value_set
 
     # mypy doesn't suppport decorated propeties (https://github.com/python/mypy/issues/1362)
-    @property  # type: ignore[misc]
+    @property
     @inference_state_function_cache()
     def builtins_module(self):
         module_name = 'builtins'
         builtins_module, = self.import_module((module_name,), sys_path=[])
         return builtins_module
 
-    @property  # type: ignore[misc]
+    @property
     @inference_state_function_cache()
     def typing_module(self):
         typing_module, = self.import_module(('typing',))

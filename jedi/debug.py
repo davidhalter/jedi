@@ -21,7 +21,7 @@ try:
         raise ImportError
     else:
         # Use colorama for nicer console output.
-        from colorama import Fore, init  # type: ignore[import]
+        from colorama import Fore, init  # type: ignore[import, unused-ignore]
         from colorama import initialise
 
         def _lazy_colorama_init():  # noqa: F811

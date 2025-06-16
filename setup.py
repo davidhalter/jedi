@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import cast
 
 from setuptools import setup, find_packages
 from setuptools.depends import get_module_constant
@@ -9,7 +10,7 @@ __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 # Get the version from within jedi. It's defined in exactly one place now.
-version = get_module_constant("jedi", "__version__")
+version = cast(str, get_module_constant("jedi", "__version__"))
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 
@@ -34,7 +35,7 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
-      python_requires='>=3.6',
+      python_requires='>=3.8',
       # Python 3.13 grammars are added to parso in 0.8.4
       install_requires=['parso>=0.8.4,<0.9.0'],
       extras_require={
@@ -48,12 +49,12 @@ setup(name='jedi',
               'attrs',
           ],
           'qa': [
+              # latest version on 2025-06-16
+              'flake8==7.2.0',
               # latest version supporting Python 3.6
-              'flake8==5.0.4',
-              # latest version supporting Python 3.6
-              'mypy==0.971',
+              'mypy==1.16',
               # Arbitrary pins, latest at the time of pinning
-              'types-setuptools==67.2.0.1',
+              'types-setuptools==80.9.0.20250529',
           ],
           'docs': [
               # Just pin all of these.
@@ -94,8 +95,6 @@ setup(name='jedi',
           'License :: OSI Approved :: MIT License',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.6',
-          'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: 3.9',
           'Programming Language :: Python :: 3.10',
