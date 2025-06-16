@@ -35,7 +35,7 @@ jobs:
           JEDI_TEST_ENVIRONMENT: ${{ matrix.environment }}
 
   code-quality:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           python -m mypy jedi sith.py setup.py
 
   coverage:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
