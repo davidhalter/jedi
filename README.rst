@@ -102,7 +102,7 @@ Features and Limitations
 Jedi's features are listed here:
 `Features <https://jedi.readthedocs.org/en/latest/docs/features.html>`_.
 
-You can run Jedi on Python 3.6+ but it should also
+You can run Jedi on Python 3.8+ but it should also
 understand code that is older than those versions. Additionally you should be
 able to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
 very well.

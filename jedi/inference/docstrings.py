@@ -109,7 +109,7 @@ def _expand_typestr(type_str):
         yield type_str.split('of')[0]
     # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
     elif type_str.startswith('{'):
-        node = parse(type_str, version='3.7').children[0]
+        node = parse(type_str, version='3.13').children[0]
         if node.type == 'atom':
             for leaf in getattr(node.children[1], "children", []):
                 if leaf.type == 'number':

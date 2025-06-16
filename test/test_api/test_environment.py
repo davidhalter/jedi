@@ -26,7 +26,7 @@ def test_find_system_environments():
 
 @pytest.mark.parametrize(
     'version',
-    ['3.6', '3.7', '3.8', '3.9']
+    ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
 )
 def test_versions(version):
     try:
