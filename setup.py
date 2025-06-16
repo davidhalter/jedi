@@ -48,8 +48,8 @@ setup(name='jedi',
               'attrs',
           ],
           'qa': [
-              # latest version supporting Python 3.6
-              'flake8==5.0.4',
+              # latest version on 2025-06-16
+              'flake8==7.2.0',
               # latest version supporting Python 3.6
               'mypy==0.971',
               # Arbitrary pins, latest at the time of pinning
