@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import cast
 
 from setuptools import setup, find_packages
 from setuptools.depends import get_module_constant
@@ -9,7 +10,7 @@ __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 # Get the version from within jedi. It's defined in exactly one place now.
-version = get_module_constant("jedi", "__version__")
+version = cast(str, get_module_constant("jedi", "__version__"))
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 
@@ -51,9 +52,9 @@ setup(name='jedi',
               # latest version on 2025-06-16
               'flake8==7.2.0',
               # latest version supporting Python 3.6
-              'mypy==0.971',
+              'mypy==1.16',
               # Arbitrary pins, latest at the time of pinning
-              'types-setuptools==67.2.0.1',
+              'types-setuptools==80.9.0.20250529',
           ],
           'docs': [
               # Just pin all of these.
