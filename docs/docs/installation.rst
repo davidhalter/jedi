@@ -38,7 +38,7 @@ using pip::
 
 If you want to install the current development version (master branch)::
 
-    sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
+    sudo pip install -e git+https://github.com/davidhalter/jedi.git#egg=jedi
 
 
 System-wide installation via a package manager
