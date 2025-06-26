@@ -47,6 +47,7 @@ setup(name='jedi',
               'colorama',
               'Django',
               'attrs',
+              'typing_extensions',
           ],
           'qa': [
               # latest version on 2025-06-16
