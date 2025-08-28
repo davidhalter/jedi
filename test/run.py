@@ -134,7 +134,7 @@ TEST_GOTO = 2
 TEST_REFERENCES = 3
 
 
-grammar36 = parso.load_grammar(version='3.6')
+grammar313 = parso.load_grammar(version='3.13')
 
 
 class BaseTestCase(object):
@@ -238,7 +238,7 @@ class IntegrationTestCase(BaseTestCase):
             should_be = set()
             for match in re.finditer('(?:[^ ]+)', correct):
                 string = match.group(0)
-                parser = grammar36.parse(string, start_symbol='eval_input', error_recovery=False)
+                parser = grammar313.parse(string, start_symbol='eval_input', error_recovery=False)
                 parser_utils.move(parser.get_root_node(), self.line_nr)
                 node = parser.get_root_node()
                 module_context = script._get_module_context()
@@ -504,7 +504,7 @@ if __name__ == '__main__':
     if arguments['--env']:
         environment = get_system_environment(arguments['--env'])
     else:
-        # Will be 3.6.
+        # Will be 3.13.
         environment = get_default_environment()
 
     import traceback

@@ -6,9 +6,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019]
-        python-version: ["3.13", "3.12", "3.11", "3.10", "3.9", "3.8", "3.7", "3.6"]
-        environment: ['3.8', '3.13', '3.12', '3.11', '3.10', '3.9', '3.7', '3.6', 'interpreter']
+        os: [ubuntu-24.04, windows-2022]
+        python-version: ["3.13", "3.12", "3.11", "3.10", "3.9", "3.8"]
+        environment: ['3.8', '3.13', '3.12', '3.11', '3.10', '3.9', 'interpreter']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
           JEDI_TEST_ENVIRONMENT: ${{ matrix.environment }}
 
   code-quality:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           python -m mypy jedi sith.py setup.py
 
   coverage:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code

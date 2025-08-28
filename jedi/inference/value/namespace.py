@@ -38,7 +38,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     def get_qualified_names(self):
         return ()
 
-    @property  # type: ignore[misc]
+    @property
     @inference_state_method_cache()
     def name(self):
         string_name = self.py__package__()[-1]

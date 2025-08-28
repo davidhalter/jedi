@@ -16,13 +16,13 @@ def test_on_code():
     assert i.infer()
 
 
-def test_generics_without_definition():
+def test_generics_without_definition() -> None:
     # Used to raise a recursion error
     T = TypeVar('T')
 
     class Stack(Generic[T]):
-        def __init__(self):
-            self.items = []  # type: List[T]
+        def __init__(self) -> None:
+            self.items: List[T] = []
 
         def push(self, item):
             self.items.append(item)

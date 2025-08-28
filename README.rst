@@ -2,6 +2,9 @@
 Jedi - an awesome autocompletion, static analysis and refactoring library for Python
 ####################################################################################
 
+**I released the successor to Jedi: A
+Mypy-Compatible Python Language Server Built in Rust** - `ZubanLS <https://zubanls.com>`_
+
 .. image:: http://isitmaintained.com/badge/open/davidhalter/jedi.svg
     :target: https://github.com/davidhalter/jedi/issues
     :alt: The percentage of open issues and pull requests
@@ -10,7 +13,7 @@ Jedi - an awesome autocompletion, static analysis and refactoring library for Py
     :target: https://github.com/davidhalter/jedi/issues
     :alt: The resolution time is the median time an issue or pull request stays open.
 
-.. image:: https://github.com/davidhalter/jedi/workflows/ci/badge.svg?branch=master
+.. image:: https://github.com/davidhalter/jedi/actions/workflows/ci.yml/badge.svg?branch=master
     :target: https://github.com/davidhalter/jedi/actions
     :alt: Tests
 
@@ -99,7 +102,7 @@ Features and Limitations
 Jedi's features are listed here:
 `Features <https://jedi.readthedocs.org/en/latest/docs/features.html>`_.
 
-You can run Jedi on Python 3.6+ but it should also
+You can run Jedi on Python 3.8+ but it should also
 understand code that is older than those versions. Additionally you should be
 able to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
 very well.
