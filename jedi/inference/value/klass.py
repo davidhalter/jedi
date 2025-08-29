@@ -36,6 +36,8 @@ py__doc__()                            Returns the docstring for a value.
 ====================================== ========================================
 
 """
+from __future__ import annotations
+
 from typing import List, Optional, Tuple
 
 from jedi import debug
@@ -156,7 +158,7 @@ def init_param_value(arg_nodes) -> Optional[bool]:
     return None
 
 
-def get_dataclass_param_names(cls) -> List["DataclassParamName"]:
+def get_dataclass_param_names(cls) -> List[DataclassParamName]:
     """
     ``cls`` is a :class:`ClassMixin`. The type is only documented as mypy would
     complain that some fields are missing.
@@ -300,7 +302,7 @@ class ClassMixin:
 
         return False, None
 
-    def _get_dataclass_transform_signatures(self) -> List["DataclassSignature"]:
+    def _get_dataclass_transform_signatures(self) -> List[DataclassSignature]:
         """
         Returns: A non-empty list if the class has dataclass semantics else an
         empty list.
