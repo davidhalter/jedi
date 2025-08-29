@@ -174,9 +174,6 @@ def get_dataclass_param_names(cls) -> List[DataclassParamName]:
     """
     param_names = []
     filter_ = cls.as_context().get_global_filter()
-    # .values ordering is not guaranteed, at least not in
-    # Python < 3.6, when dicts where not ordered, which is an
-    # implementation detail anyway.
     for name in sorted(filter_.values(), key=lambda name: name.start_pos):
         d = name.tree_name.get_definition()
         annassign = d.children[1]
@@ -464,13 +461,6 @@ class ClassMixin:
 class DataclassParamName(BaseTreeParamName):
     """
     Represent a field declaration on a class with dataclass semantics.
-
-    .. code:: python
-
-        class A:
-            a: int
-
-    ``a`` is a :class:`DataclassParamName`.
     """
 
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
@@ -547,7 +537,7 @@ class DataclassDecorator(ValueWrapper, FunctionMixin):
 
 class DataclassTransformer(ValueWrapper, ClassMixin):
     """
-    A class with ``dataclass_transform`` applies. dataclass-like semantics will
+    A class decorated with ``dataclass_transform``. dataclass-like semantics will
     be assumed for any class that directly or indirectly derives from the
     decorated class or uses the decorated class as a metaclass. Attributes on
     the decorated class and its base classes are not considered to be fields.
@@ -593,11 +583,14 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
 
     .. code:: python
 
-        @dataclass class A: ... # this
+        @dataclass
+        class A: ... # this
 
-        @dataclass_transform def create_model(): pass
+        @dataclass_transform
+        def create_model(): pass
 
-        @create_model() class B: ... # or this
+        @create_model()
+        class B: ... # or this
     """
 
     def __init__(
