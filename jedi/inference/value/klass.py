@@ -537,10 +537,11 @@ class DataclassDecorator(ValueWrapper, FunctionMixin):
 
 class DataclassTransformer(ValueWrapper, ClassMixin):
     """
-    A class decorated with ``dataclass_transform``. dataclass-like semantics will
-    be assumed for any class that directly or indirectly derives from the
-    decorated class or uses the decorated class as a metaclass. Attributes on
-    the decorated class and its base classes are not considered to be fields.
+    A class decorated with the ``dataclass_transform`` decorator. dataclass-like
+    semantics will be assumed for any class that directly or indirectly derives
+    from the decorated class or uses the decorated class as a metaclass.
+    Attributes on the decorated class and its base classes are not considered to
+    be fields.
     """
     def __init__(self, wrapped_value):
         super().__init__(wrapped_value)
