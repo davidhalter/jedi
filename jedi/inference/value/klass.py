@@ -295,7 +295,7 @@ class ClassMixin:
                 # Internal leakage :|
                 and isinstance(meta._wrapped_value, DataclassTransformer)
             ):
-                return True, meta._wrapped_value.init_mode_from_new
+                return True, meta._wrapped_value.init_mode_from_new()
 
         return False, None
 
@@ -342,8 +342,8 @@ class ClassMixin:
                 is_dataclass_transform
                 and isinstance(cls, ClassValue)
                 and (
-                    cls.init_param_mode
-                    or (cls.init_param_mode is None and default_init_mode)
+                    cls.init_param_mode()
+                    or (cls.init_param_mode() is None and default_init_mode)
                 )
             ):
                 param_names.extend(
@@ -545,7 +545,6 @@ class DataclassTransformer(ValueWrapper, ClassMixin):
     def __init__(self, wrapped_value):
         super().__init__(wrapped_value)
 
-    @property
     def init_mode_from_new(self) -> bool:
         """Default value if missing is ``True``"""
         new_methods = self._wrapped_value.py__getattribute__("__new__")
@@ -676,7 +675,6 @@ class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
                         return values
         return NO_VALUES
 
-    @property
     def init_param_mode(self) -> Optional[bool]:
         """
         It returns ``True`` if ``class X(init=False):`` else ``False``.
