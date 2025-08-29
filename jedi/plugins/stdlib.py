@@ -596,16 +596,49 @@ def _random_choice(sequences):
 
 def _dataclass(value, arguments, callback):
     """
-    Decorator entry points for dataclass, dataclass_transform and attrs.
+    Decorator entry points for dataclass.
 
-    1. dataclass-like decorator instantiation from a dataclass_transform decorator
-    2. dataclass_transform decorator declaration with parameters
-    3. dataclass(-like) decorator declaration with parameters
-    4. dataclass(-like) semantics on a class from a dataclass(-like) decorator
+    1. dataclass decorator declaration with parameters
+    2. dataclass semantics on a class from a dataclass(-like) decorator
     """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
+            # Declare dataclass semantics on a class from a dataclass decorator
+            should_generate_init = (
+                # Customized decorator, init may be disabled
+                value.init_param_mode
+                if isinstance(value, DataclassDecorator)
+                # Bare dataclass decorator, always with init mode
+                else True
+            )
+            return ValueSet([DataclassWrapper(c, should_generate_init)])
+        else:
+            # @dataclass(init=False)
+            # dataclass decorator customization
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                        default_init=True,
+                    )
+                ]
+            )
 
+    return NO_VALUES
+
+
+def _dataclass_transform(value, arguments, callback):
+    """
+    Decorator entry points for dataclass_transform.
+
+    1. dataclass-like decorator instantiation from a dataclass_transform decorator
+    2. dataclass_transform decorator declaration with parameters
+    3. dataclass-like decorator declaration with parameters
+    4. dataclass-like semantics on a class from a dataclass-like decorator
+    """
+    for c in _follow_param(value.inference_state, arguments, 0):
+        if c.is_class():
             is_dataclass_transform = (
                 value.name.string_name == "dataclass_transform"
                 # The decorator function from dataclass_transform acting as the
@@ -620,15 +653,9 @@ def _dataclass(value, arguments, callback):
                 # Declare base class
                 return ValueSet([DataclassTransformer(c)])
             else:
-                # Declare dataclass(-like) semantics on a class from a
-                # dataclass(-like) decorator
-                should_generate_init = (
-                    # Customized decorator, init may be disabled
-                    value.init_param_mode
-                    if isinstance(value, DataclassDecorator)
-                    # Bare dataclass decorator, always with init mode
-                    else True
-                )
+                # Declare dataclass-like semantics on a class from a
+                # dataclass-like decorator
+                should_generate_init = value.init_param_mode
                 return ValueSet([DataclassWrapper(c, should_generate_init)])
         elif c.is_function():
             # dataclass-like decorator instantiation:
@@ -644,12 +671,10 @@ def _dataclass(value, arguments, callback):
                 ]
             )
         elif (
-            # @dataclass(init=False)
-            value.name.string_name != "dataclass_transform"
             # @dataclass_transform
             # def create_model(): pass
             # @create_model(init=...)
-            or isinstance(value, Decoratee)
+            isinstance(value, Decoratee)
         ):
             # dataclass (or like) decorator customization
             return ValueSet(
@@ -657,11 +682,7 @@ def _dataclass(value, arguments, callback):
                     DataclassDecorator(
                         value,
                         arguments=arguments,
-                        default_init=(
-                            value._wrapped_value.init_param_mode
-                            if isinstance(value, Decoratee)
-                            else True
-                        ),
+                        default_init=value._wrapped_value.init_param_mode,
                     )
                 ]
             )
@@ -820,11 +841,11 @@ _implemented = {
         # adding logs for infering stuff, so we can safely ignore it.
         'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
         # Python 3.11+
-        'dataclass_transform': _dataclass,
+        'dataclass_transform': _dataclass_transform,
     },
     'typing_extensions': {
         # Python <3.11
-        'dataclass_transform': _dataclass,
+        'dataclass_transform': _dataclass_transform,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
