@@ -771,6 +771,23 @@ def test_extensions_dataclass_transform_signature(
         assert price.name == price_type_infer
 
 
+def test_dataclass_transform_complete(Script):
+    script = Script('''\
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+
+        class X(Y):
+            name: str
+            foo = 3
+
+        def f(x: X):
+            x.na''')
+    completion, = script.complete()
+    assert completion.description == 'name: str'
+
+
 @pytest.mark.parametrize(
     "start, start_params, include_params", dataclass_transform_cases, ids=ids
 )
