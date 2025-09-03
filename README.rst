@@ -3,7 +3,7 @@ Jedi - an awesome autocompletion, static analysis and refactoring library for Py
 ####################################################################################
 
 **I released the successor to Jedi: A
-Mypy-Compatible Python Language Server Built in Rust** - `ZubanLS <https://zubanls.com>`_
+Mypy-Compatible Python Language Server Built in Rust** - `Zuban <https://github.com/zubanls/zuban>`_
 
 .. image:: http://isitmaintained.com/badge/open/davidhalter/jedi.svg
     :target: https://github.com/davidhalter/jedi/issues
