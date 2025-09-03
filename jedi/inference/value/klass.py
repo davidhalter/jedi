@@ -36,6 +36,10 @@ py__doc__()                            Returns the docstring for a value.
 ====================================== ========================================
 
 """
+from __future__ import annotations
+
+from typing import List, Optional, Tuple
+
 from jedi import debug
 from jedi.parser_utils import get_cached_parent_scope, expr_is_dotted, \
     function_is_property
@@ -47,11 +51,15 @@ from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ValueName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
-    NO_VALUES
+    NO_VALUES, ValueWrapper
 from jedi.inference.context import ClassContext
-from jedi.inference.value.function import FunctionAndClassBase
+from jedi.inference.value.function import FunctionAndClassBase, FunctionMixin
+from jedi.inference.value.decorator import Decoratee
 from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
+from inspect import Parameter
+from jedi.inference.names import BaseTreeParamName
+from jedi.inference.signature import AbstractSignature
 
 
 class ClassName(TreeNameDefinition):
@@ -127,6 +135,65 @@ class ClassFilter(ParserTreeFilter):
     def _filter(self, names):
         names = super()._filter(names)
         return [name for name in names if self._access_possible(name)]
+
+
+def init_param_value(arg_nodes) -> Optional[bool]:
+    """
+    Returns:
+
+    - ``True`` if ``@dataclass(init=True)``
+    - ``False`` if ``@dataclass(init=False)``
+    - ``None`` if not specified ``@dataclass()``
+    """
+    for arg_node in arg_nodes:
+        if (
+            arg_node.type == "argument"
+            and arg_node.children[0].value == "init"
+        ):
+            if arg_node.children[2].value == "False":
+                return False
+            elif arg_node.children[2].value == "True":
+                return True
+
+    return None
+
+
+def get_dataclass_param_names(cls) -> List[DataclassParamName]:
+    """
+    ``cls`` is a :class:`ClassMixin`. The type is only documented as mypy would
+    complain that some fields are missing.
+
+    .. code:: python
+
+        @dataclass
+        class A:
+            a: int
+            b: str = "toto"
+
+    For the previous example, the param names would be ``a`` and ``b``.
+    """
+    param_names = []
+    filter_ = cls.as_context().get_global_filter()
+    for name in sorted(filter_.values(), key=lambda name: name.start_pos):
+        d = name.tree_name.get_definition()
+        annassign = d.children[1]
+        if d.type == 'expr_stmt' and annassign.type == 'annassign':
+            node = annassign.children[1]
+            if node.type == "atom_expr" and node.children[0].value == "ClassVar":
+                continue
+
+            if len(annassign.children) < 4:
+                default = None
+            else:
+                default = annassign.children[3]
+
+            param_names.append(DataclassParamName(
+                parent_context=cls.parent_context,
+                tree_name=name.tree_name,
+                annotation_node=annassign.children[1],
+                default_node=default,
+            ))
+    return param_names
 
 
 class ClassMixin:
@@ -221,6 +288,73 @@ class ClassMixin:
                     assert x is not None
                     yield x
 
+    def _has_dataclass_transform_metaclasses(self) -> Tuple[bool, Optional[bool]]:
+        for meta in self.get_metaclasses():  # type: ignore[attr-defined]
+            if (
+                isinstance(meta, Decoratee)
+                # Internal leakage :|
+                and isinstance(meta._wrapped_value, DataclassTransformer)
+            ):
+                return True, meta._wrapped_value.init_mode_from_new()
+
+        return False, None
+
+    def _get_dataclass_transform_signatures(self) -> List[DataclassSignature]:
+        """
+        Returns: A non-empty list if the class has dataclass semantics else an
+        empty list.
+
+        The dataclass-like semantics will be assumed for any class that directly
+        or indirectly derives from the decorated class or uses the decorated
+        class as a metaclass.
+        """
+        param_names = []
+        is_dataclass_transform = False
+        default_init_mode: Optional[bool] = None
+        for cls in reversed(list(self.py__mro__())):
+            if not is_dataclass_transform:
+
+                # If dataclass_transform is applied to a class, dataclass-like semantics
+                # will be assumed for any class that directly or indirectly derives from
+                # the decorated class or uses the decorated class as a metaclass.
+                if (
+                    isinstance(cls, DataclassTransformer)
+                    and cls.init_mode_from_init_subclass
+                ):
+                    is_dataclass_transform = True
+                    default_init_mode = cls.init_mode_from_init_subclass
+
+                elif (
+                    # Some object like CompiledValues would not be compatible
+                    isinstance(cls, ClassMixin)
+                ):
+                    is_dataclass_transform, default_init_mode = (
+                        cls._has_dataclass_transform_metaclasses()
+                    )
+
+                # Attributes on the decorated class and its base classes are not
+                # considered to be fields.
+                if is_dataclass_transform:
+                    continue
+
+            # All inherited classes behave like dataclass semantics
+            if (
+                is_dataclass_transform
+                and isinstance(cls, ClassValue)
+                and (
+                    cls.init_param_mode()
+                    or (cls.init_param_mode() is None and default_init_mode)
+                )
+            ):
+                param_names.extend(
+                    get_dataclass_param_names(cls)
+                )
+
+        if is_dataclass_transform:
+            return [DataclassSignature(cls, param_names)]
+        else:
+            return []
+
     def get_signatures(self):
         # Since calling staticmethod without a function is illegal, the Jedi
         # plugin doesn't return anything. Therefore call directly and get what
@@ -232,7 +366,12 @@ class ClassMixin:
                 return sigs
         args = ValuesArguments([])
         init_funcs = self.py__call__(args).py__getattribute__('__init__')
-        return [sig.bind(self) for sig in init_funcs.get_signatures()]
+
+        dataclass_sigs = self._get_dataclass_transform_signatures()
+        if dataclass_sigs:
+            return dataclass_sigs
+        else:
+            return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def _as_context(self):
         return ClassContext(self)
@@ -319,6 +458,158 @@ class ClassMixin:
         return ValueSet({self})
 
 
+class DataclassParamName(BaseTreeParamName):
+    """
+    Represent a field declaration on a class with dataclass semantics.
+    """
+
+    def __init__(self, parent_context, tree_name, annotation_node, default_node):
+        super().__init__(parent_context, tree_name)
+        self.annotation_node = annotation_node
+        self.default_node = default_node
+
+    def get_kind(self):
+        return Parameter.POSITIONAL_OR_KEYWORD
+
+    def infer(self):
+        if self.annotation_node is None:
+            return NO_VALUES
+        else:
+            return self.parent_context.infer_node(self.annotation_node)
+
+
+class DataclassSignature(AbstractSignature):
+    """
+    It represents the ``__init__`` signature of a class with dataclass semantics.
+
+    .. code:: python
+
+    """
+    def __init__(self, value, param_names):
+        super().__init__(value)
+        self._param_names = param_names
+
+    def get_param_names(self, resolve_stars=False):
+        return self._param_names
+
+
+class DataclassDecorator(ValueWrapper, FunctionMixin):
+    """
+    A dataclass(-like) decorator with custom parameters.
+
+    .. code:: python
+
+        @dataclass(init=True) # this
+        class A: ...
+
+        @dataclass_transform
+        def create_model(*, init=False): pass
+
+        @create_model(init=False) # or this
+        class B: ...
+    """
+
+    def __init__(self, function, arguments, default_init: bool = True):
+        """
+        Args:
+            function: Decoratee | function
+            arguments: The parameters to the dataclass function decorator
+            default_init: Boolean to indicate the default init value
+        """
+        super().__init__(function)
+        argument_init = self._init_param_value(arguments)
+        self.init_param_mode = (
+            argument_init if argument_init is not None else default_init
+        )
+
+    def _init_param_value(self, arguments) -> Optional[bool]:
+        if not arguments.argument_node:
+            return None
+
+        arg_nodes = (
+            arguments.argument_node.children
+            if arguments.argument_node.type == "arglist"
+            else [arguments.argument_node]
+        )
+
+        return init_param_value(arg_nodes)
+
+
+class DataclassTransformer(ValueWrapper, ClassMixin):
+    """
+    A class decorated with the ``dataclass_transform`` decorator. dataclass-like
+    semantics will be assumed for any class that directly or indirectly derives
+    from the decorated class or uses the decorated class as a metaclass.
+    Attributes on the decorated class and its base classes are not considered to
+    be fields.
+    """
+    def __init__(self, wrapped_value):
+        super().__init__(wrapped_value)
+
+    def init_mode_from_new(self) -> bool:
+        """Default value if missing is ``True``"""
+        new_methods = self._wrapped_value.py__getattribute__("__new__")
+
+        if not new_methods:
+            return True
+
+        new_method = list(new_methods)[0]
+
+        for param in new_method.get_param_names():
+            if (
+                param.string_name == "init"
+                and param.default_node
+                and param.default_node.type == "keyword"
+            ):
+                if param.default_node.value == "False":
+                    return False
+                elif param.default_node.value == "True":
+                    return True
+
+        return True
+
+    @property
+    def init_mode_from_init_subclass(self) -> Optional[bool]:
+        # def __init_subclass__(cls) -> None: ... is hardcoded in the typeshed
+        # so the extra parameters can not be inferred.
+        return True
+
+
+class DataclassWrapper(ValueWrapper, ClassMixin):
+    """
+    A class with dataclass semantics from a decorator. The init parameters are
+    only from the current class and parent classes decorated where the ``init``
+    parameter was ``True``.
+
+    .. code:: python
+
+        @dataclass
+        class A: ... # this
+
+        @dataclass_transform
+        def create_model(): pass
+
+        @create_model()
+        class B: ... # or this
+    """
+
+    def __init__(
+        self, wrapped_value, should_generate_init: bool
+    ):
+        super().__init__(wrapped_value)
+        self.should_generate_init = should_generate_init
+
+    def get_signatures(self):
+        param_names = []
+        for cls in reversed(list(self.py__mro__())):
+            if (
+                isinstance(cls, DataclassWrapper)
+                and cls.should_generate_init
+            ):
+                param_names.extend(get_dataclass_param_names(cls))
+        return [DataclassSignature(cls, param_names)]
+
+
 class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
     api_type = 'class'
 
@@ -384,6 +675,19 @@ class ClassValue(ClassMixin, FunctionAndClassBase, metaclass=CachedMetaClass):
                     if values:
                         return values
         return NO_VALUES
+
+    def init_param_mode(self) -> Optional[bool]:
+        """
+        It returns ``True`` if ``class X(init=False):`` else ``False``.
+        """
+        bases_arguments = self._get_bases_arguments()
+
+        if bases_arguments.argument_node.type != "arglist":
+            # If it is not inheriting from the base model and having
+            # extra parameters, then init behavior is not changed.
+            return None
+
+        return init_param_value(bases_arguments.argument_node.children)
 
     @plugin_manager.decorate()
     def get_metaclass_signatures(self, metaclasses):

@@ -318,40 +318,511 @@ def test_wraps_signature(Script, code, signature):
 
 
 @pytest.mark.parametrize(
-    'start, start_params', [
-        ['@dataclass\nclass X:', []],
-        ['@dataclass(eq=True)\nclass X:', []],
-        [dedent('''
+    "start, start_params, include_params",
+    [
+        ["@dataclass\nclass X:", [], True],
+        ["@dataclass(eq=True)\nclass X:", [], True],
+        [
+            dedent(
+                """
          class Y():
              y: int
          @dataclass
-         class X(Y):'''), []],
-        [dedent('''
+         class X(Y):"""
+            ),
+            [],
+            True,
+        ],
+        [
+            dedent(
+                """
          @dataclass
          class Y():
              y: int
              z = 5
          @dataclass
-         class X(Y):'''), ['y']],
-    ]
+         class X(Y):"""
+            ),
+            ["y"],
+            True,
+        ],
+        [
+            dedent(
+                """
+         @dataclass
+         class Y():
+             y: int
+         class Z(Y): # Not included
+             z = 5
+         @dataclass
+         class X(Z):"""
+            ),
+            ["y"],
+            True,
+        ],
+        # init=False
+        [
+            dedent(
+                """
+            @dataclass(init=False)
+            class X:"""
+            ),
+            [],
+            False,
+        ],
+        [
+            dedent(
+                """
+            @dataclass(eq=True, init=False)
+            class X:"""
+            ),
+            [],
+            False,
+        ],
+        # custom init
+        [
+            dedent(
+                """
+        @dataclass()
+        class X:
+            def __init__(self, toto: str):
+                pass
+            """
+            ),
+            ["toto"],
+            False,
+        ],
+    ],
+    ids=[
+        "direct_transformed",
+        "transformed_with_params",
+        "subclass_transformed",
+        "both_transformed",
+        "intermediate_not_transformed",
+        "init_false",
+        "init_false_multiple",
+        "custom_init",
+    ],
 )
-def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
+def test_dataclass_signature(
+    Script, skip_pre_python37, start, start_params, include_params, environment
+):
+    if environment.version_info < (3, 8):
+        # Final is not yet supported
+        price_type = "float"
+        price_type_infer = "float"
+    else:
+        price_type = "Final[float]"
+        price_type_infer = "object"
+
+    code = dedent(
+        f"""
+            name: str
+            foo = 3
+            blob: ClassVar[str]
+            price: {price_type}
+            quantity: int = 0.0
+
+        X("""
+    )
+
+    code = (
+        "from dataclasses import dataclass\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
+
+    sig, = Script(code).get_signatures()
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == price_type_infer
+
+
+dataclass_transform_cases = [
+    # Attributes on the decorated class and its base classes
+    # are not considered to be fields.
+    # 1/ Declare dataclass transformer
+    # Base Class
+    ['@dataclass_transform\nclass X:', [], False],
+    # Base Class with params
+    ['@dataclass_transform(eq_default=True)\nclass X:', [], False],
+    # Subclass
+    [dedent('''
+        class Y():
+            y: int
+        @dataclass_transform
+        class X(Y):'''), [], False],
+    # 2/ Declare dataclass transformed
+    # Class based
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], True],
+    # Class based with params
+    [dedent('''
+        @dataclass_transform(eq_default=True)
+        class Y():
+            y: int
+            z = 5
+        class X(Y):'''), [], True],
+    # Decorator based
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class X:'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        class Y:
+            y: int
+        @create_model
+        class X(Y):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class Y:
+            y: int
+        @create_model
+        class X(Y):'''), ["y"], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model
+        class Y:
+            y: int
+        class Z(Y):
+            z: int
+        @create_model
+        class X(Z):'''), ["y"], True],
+    # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase):'''), [], True],
+    # 3/ Init custom init
+    [dedent('''
+    @dataclass_transform()
+    class Y():
+        y: int
+        z = 5
+    class X(Y):
+        def __init__(self, toto: str):
+            pass
+        '''), ["toto"], False],
+    # 4/ init=false
+    # Class based
+    # WARNING: Unsupported
+    # [dedent('''
+    #     @dataclass_transform
+    #     class Y():
+    #         y: int
+    #         z = 5
+    #         def __init_subclass__(
+    #             cls,
+    #             *,
+    #             init: bool = False,
+    #         )
+    #     class X(Y):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+            def __init_subclass__(
+                cls,
+                *,
+                init: bool = False,
+            )
+        class X(Y, init=True):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+            def __init_subclass__(
+                cls,
+                *,
+                init: bool = False,
+            )
+        class X(Y, init=False):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y, init=False):'''), [], False],
+    # Decorator based
+    [dedent('''
+        @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model()
+        class X:'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model(init=True)
+        class X:'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        def create_model(init=False):
+            pass
+        @create_model(init=False)
+        class X:'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model(init=False)
+        class X:'''), [], False],
+    # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=True):'''), [], True],
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+            def __new__(
+                cls,
+                name,
+                bases,
+                namespace,
+                *,
+                init: bool = False,
+            ):
+                ...
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=False):'''), [], False],
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, init=False):'''), [], False],
+    # 4/ Other parameters
+    # Class based
+    [dedent('''
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+        class X(Y, eq=True):'''), [], True],
+    # Decorator based
+    [dedent('''
+        @dataclass_transform
+        def create_model():
+            pass
+        @create_model(eq=True)
+        class X:'''), [], True],
+    # Metaclass based
+    [dedent('''
+        @dataclass_transform
+        class ModelMeta():
+            y: int
+            z = 5
+        class ModelBase(metaclass=ModelMeta):
+            t: int
+            p = 5
+        class X(ModelBase, eq=True):'''), [], True],
+]
+
+ids = [
+    "direct_transformer",
+    "transformer_with_params",
+    "subclass_transformer",
+    "base_transformed",
+    "base_transformed_with_params",
+    "decorator_transformed_direct",
+    "decorator_transformed_subclass",
+    "decorator_transformed_both",
+    "decorator_transformed_intermediate_not",
+    "metaclass_transformed",
+    "custom_init",
+    # "base_transformed_init_false_dataclass_init_default",
+    "base_transformed_init_false_dataclass_init_true",
+    "base_transformed_init_false_dataclass_init_false",
+    "base_transformed_init_default_dataclass_init_false",
+    "decorator_transformed_init_false_dataclass_init_default",
+    "decorator_transformed_init_false_dataclass_init_true",
+    "decorator_transformed_init_false_dataclass_init_false",
+    "decorator_transformed_init_default_dataclass_init_false",
+    "metaclass_transformed_init_false_dataclass_init_default",
+    "metaclass_transformed_init_false_dataclass_init_true",
+    "metaclass_transformed_init_false_dataclass_init_false",
+    "metaclass_transformed_init_default_dataclass_init_false",
+    "base_transformed_other_parameters",
+    "decorator_transformed_other_parameters",
+    "metaclass_transformed_other_parameters",
+]
+
+
+@pytest.mark.parametrize(
+    'start, start_params, include_params', dataclass_transform_cases, ids=ids
+)
+def test_extensions_dataclass_transform_signature(
+    Script, skip_pre_python37, start, start_params, include_params, environment
+):
+    has_typing_ext = bool(Script('import typing_extensions').infer())
+    if not has_typing_ext:
+        raise pytest.skip("typing_extensions needed in target environment to run this test")
+
+    if environment.version_info < (3, 8):
+        # Final is not yet supported
+        price_type = "float"
+        price_type_infer = "float"
+    else:
+        price_type = "Final[float]"
+        price_type_infer = "object"
+
+    code = dedent(
+        f"""
+            name: str
+            foo = 3
+            blob: ClassVar[str]
+            price: {price_type}
+            quantity: int = 0.0
+
+        X("""
+    )
+
+    code = (
+        "from typing_extensions import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
+
+    (sig,) = Script(code).get_signatures()
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == price_type_infer
+
+
+def test_dataclass_transform_complete(Script):
+    script = Script('''\
+        @dataclass_transform
+        class Y():
+            y: int
+            z = 5
+
+        class X(Y):
+            name: str
+            foo = 3
+
+        def f(x: X):
+            x.na''')
+    completion, = script.complete()
+    assert completion.description == 'name: str'
+
+
+@pytest.mark.parametrize(
+    "start, start_params, include_params", dataclass_transform_cases, ids=ids
+)
+def test_dataclass_transform_signature(
+    Script, skip_pre_python311, start, start_params, include_params
+):
     code = dedent('''
             name: str
             foo = 3
-            price: float
+            blob: ClassVar[str]
+            price: Final[float]
             quantity: int = 0.0
 
         X(''')
 
-    code = 'from dataclasses import dataclass\n' + start + code
+    code = (
+        "from typing import dataclass_transform\n"
+        + "from typing import ClassVar, Final\n"
+        + start
+        + code
+    )
 
     sig, = Script(code).get_signatures()
-    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
-    quantity, = sig.params[-1].infer()
-    assert quantity.name == 'int'
-    price, = sig.params[-2].infer()
-    assert price.name == 'float'
+    expected_params = (
+        [*start_params, "name", "price", "quantity"]
+        if include_params
+        else [*start_params]
+    )
+    assert [p.name for p in sig.params] == expected_params
+
+    if include_params:
+        quantity, = sig.params[-1].infer()
+        assert quantity.name == 'int'
+        price, = sig.params[-2].infer()
+        assert price.name == 'object'
 
 
 @pytest.mark.parametrize(
@@ -371,7 +842,8 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
              z = 5
          @define
          class X(Y):'''), ['y']],
-    ]
+    ],
+    ids=["define", "frozen", "define_customized", "define_subclass", "define_both"]
 )
 def test_attrs_signature(Script, skip_pre_python37, start, start_params):
     has_attrs = bool(Script('import attrs').infer())

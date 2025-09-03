@@ -11,7 +11,6 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 import os
-from inspect import Parameter
 
 from jedi import debug
 from jedi.inference.utils import safe_property
@@ -25,15 +24,20 @@ from jedi.inference.value.instance import \
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
-from jedi.inference.value.klass import ClassMixin
+from jedi.inference.value.decorator import Decoratee
+from jedi.inference.value.klass import (
+    DataclassWrapper,
+    DataclassDecorator,
+    DataclassTransformer,
+)
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
     LazyKnownValues
-from jedi.inference.names import ValueName, BaseTreeParamName
+from jedi.inference.names import ValueName
 from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
-from jedi.inference.signature import AbstractSignature, SignatureWrapper
+from jedi.inference.signature import SignatureWrapper
 
 
 # Copied from Python 3.6's stdlib.
@@ -591,63 +595,101 @@ def _random_choice(sequences):
 
 
 def _dataclass(value, arguments, callback):
+    """
+    Decorator entry points for dataclass.
+
+    1. dataclass decorator declaration with parameters
+    2. dataclass semantics on a class from a dataclass(-like) decorator
+    """
     for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
-            return ValueSet([DataclassWrapper(c)])
+            # Declare dataclass semantics on a class from a dataclass decorator
+            should_generate_init = (
+                # Customized decorator, init may be disabled
+                value.init_param_mode
+                if isinstance(value, DataclassDecorator)
+                # Bare dataclass decorator, always with init mode
+                else True
+            )
+            return ValueSet([DataclassWrapper(c, should_generate_init)])
         else:
-            return ValueSet([value])
+            # @dataclass(init=False)
+            # dataclass decorator customization
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                        default_init=True,
+                    )
+                ]
+            )
+
     return NO_VALUES
 
 
-class DataclassWrapper(ValueWrapper, ClassMixin):
-    def get_signatures(self):
-        param_names = []
-        for cls in reversed(list(self.py__mro__())):
-            if isinstance(cls, DataclassWrapper):
-                filter_ = cls.as_context().get_global_filter()
-                # .values ordering is not guaranteed, at least not in
-                # Python < 3.6, when dicts where not ordered, which is an
-                # implementation detail anyway.
-                for name in sorted(filter_.values(), key=lambda name: name.start_pos):
-                    d = name.tree_name.get_definition()
-                    annassign = d.children[1]
-                    if d.type == 'expr_stmt' and annassign.type == 'annassign':
-                        if len(annassign.children) < 4:
-                            default = None
-                        else:
-                            default = annassign.children[3]
-                        param_names.append(DataclassParamName(
-                            parent_context=cls.parent_context,
-                            tree_name=name.tree_name,
-                            annotation_node=annassign.children[1],
-                            default_node=default,
-                        ))
-        return [DataclassSignature(cls, param_names)]
+def _dataclass_transform(value, arguments, callback):
+    """
+    Decorator entry points for dataclass_transform.
 
+    1. dataclass-like decorator instantiation from a dataclass_transform decorator
+    2. dataclass_transform decorator declaration with parameters
+    3. dataclass-like decorator declaration with parameters
+    4. dataclass-like semantics on a class from a dataclass-like decorator
+    """
+    for c in _follow_param(value.inference_state, arguments, 0):
+        if c.is_class():
+            is_dataclass_transform = (
+                value.name.string_name == "dataclass_transform"
+                # The decorator function from dataclass_transform acting as the
+                # dataclass decorator.
+                and not isinstance(value, Decoratee)
+                # The decorator function from dataclass_transform acting as the
+                # dataclass decorator with customized parameters
+                and not isinstance(value, DataclassDecorator)
+            )
 
-class DataclassSignature(AbstractSignature):
-    def __init__(self, value, param_names):
-        super().__init__(value)
-        self._param_names = param_names
-
-    def get_param_names(self, resolve_stars=False):
-        return self._param_names
-
-
-class DataclassParamName(BaseTreeParamName):
-    def __init__(self, parent_context, tree_name, annotation_node, default_node):
-        super().__init__(parent_context, tree_name)
-        self.annotation_node = annotation_node
-        self.default_node = default_node
-
-    def get_kind(self):
-        return Parameter.POSITIONAL_OR_KEYWORD
-
-    def infer(self):
-        if self.annotation_node is None:
-            return NO_VALUES
+            if is_dataclass_transform:
+                # Declare base class
+                return ValueSet([DataclassTransformer(c)])
+            else:
+                # Declare dataclass-like semantics on a class from a
+                # dataclass-like decorator
+                should_generate_init = value.init_param_mode
+                return ValueSet([DataclassWrapper(c, should_generate_init)])
+        elif c.is_function():
+            # dataclass-like decorator instantiation:
+            # @dataclass_transform
+            # def create_model()
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                        default_init=True,
+                    )
+                ]
+            )
+        elif (
+            # @dataclass_transform
+            # def create_model(): pass
+            # @create_model(init=...)
+            isinstance(value, Decoratee)
+        ):
+            # dataclass (or like) decorator customization
+            return ValueSet(
+                [
+                    DataclassDecorator(
+                        value,
+                        arguments=arguments,
+                        default_init=value._wrapped_value.init_param_mode,
+                    )
+                ]
+            )
         else:
-            return self.parent_context.infer_node(self.annotation_node)
+            # dataclass_transform decorator with parameters; nothing impactful
+            return ValueSet([value])
+    return NO_VALUES
 
 
 class ItemGetterCallable(ValueWrapper):
@@ -798,21 +840,16 @@ _implemented = {
         # runtime_checkable doesn't really change anything and is just
         # adding logs for infering stuff, so we can safely ignore it.
         'runtime_checkable': lambda value, arguments, callback: NO_VALUES,
+        # Python 3.11+
+        'dataclass_transform': _dataclass_transform,
+    },
+    'typing_extensions': {
+        # Python <3.11
+        'dataclass_transform': _dataclass_transform,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
         'dataclass': _dataclass
-    },
-    # attrs exposes declaration interface roughly compatible with dataclasses
-    # via attrs.define, attrs.frozen and attrs.mutable
-    # https://www.attrs.org/en/stable/names.html
-    'attr': {
-        'define': _dataclass,
-        'frozen': _dataclass,
-    },
-    'attrs': {
-        'define': _dataclass,
-        'frozen': _dataclass,
     },
     'os.path': {
         'dirname': _create_string_input_function(os.path.dirname),
