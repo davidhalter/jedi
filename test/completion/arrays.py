@@ -527,3 +527,11 @@ lc = [x for a, *x in [(1, '', 1.0)]]
 lc[0][0]
 #?
 lc[0][1]
+
+
+xy = (1,)
+x, y = *xy, None
+
+# whatever it is should not crash
+#?
+x
