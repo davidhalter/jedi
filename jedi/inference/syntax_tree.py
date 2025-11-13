@@ -251,6 +251,8 @@ def _infer_node(context, element):
         return NO_VALUES
     elif typ == 'namedexpr_test':
         return context.infer_node(element.children[2])
+    elif typ == 'star_expr':
+        return NO_VALUES
     else:
         return infer_or_test(context, element)
 
