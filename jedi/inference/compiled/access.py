@@ -184,7 +184,7 @@ class DirectObjectAccess:
     def py__file__(self) -> Optional[Path]:
         try:
             return Path(self._obj.__file__)
-        except AttributeError:
+        except (AttributeError, TypeError):
             return None
 
     def py__doc__(self):
