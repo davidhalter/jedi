@@ -37,7 +37,7 @@ setup(name='jedi',
       packages=find_packages(exclude=['test', 'test.*']),
       python_requires='>=3.8',
       # Python 3.13 grammars are added to parso in 0.8.4
-      install_requires=['parso>=0.8.4,<0.9.0'],
+      install_requires=['parso>=0.8.5,<0.9.0'],
       extras_require={
           'testing': [
               'pytest<9.0.0',
