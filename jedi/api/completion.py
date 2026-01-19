@@ -4,7 +4,7 @@ from inspect import Parameter
 
 from parso.python.token import PythonTokenTypes
 from parso.python import tree
-from parso.tree import search_ancestor, Leaf
+from parso.tree import Leaf
 from parso import split_lines
 
 from jedi import debug
@@ -244,8 +244,8 @@ class Completion:
             if previous_leaf is not None:
                 stmt = previous_leaf
                 while True:
-                    stmt = search_ancestor(
-                        stmt, 'if_stmt', 'for_stmt', 'while_stmt', 'try_stmt',
+                    stmt = stmt.search_ancestor(
+                        'if_stmt', 'for_stmt', 'while_stmt', 'try_stmt',
                         'error_node',
                     )
                     if stmt is None:
@@ -356,7 +356,7 @@ class Completion:
             stack_node = self.stack[-3]
         if stack_node.nonterminal == 'funcdef':
             context = get_user_context(self._module_context, self._position)
-            node = search_ancestor(leaf, 'error_node', 'funcdef')
+            node = leaf.search_ancestor('error_node', 'funcdef')
             if node is not None:
                 if node.type == 'error_node':
                     n = node.children[0]
@@ -426,7 +426,7 @@ class Completion:
         Autocomplete inherited methods when overriding in child class.
         """
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        cls = tree.search_ancestor(leaf, 'classdef')
+        cls = leaf.search_ancestor('classdef')
         if cls is None:
             return
 

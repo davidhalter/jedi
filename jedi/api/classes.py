@@ -17,8 +17,6 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from parso.tree import search_ancestor
-
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
@@ -509,7 +507,7 @@ class BaseName:
             # - param: The parent_context of a param is not its function but
             #   e.g. the outer class or module.
             cls_or_func_node = self._name.tree_name.get_definition()
-            parent = search_ancestor(cls_or_func_node, 'funcdef', 'classdef', 'file_input')
+            parent = cls_or_func_node.search_ancestor('funcdef', 'classdef', 'file_input')
             context = self._get_module_context().create_value(parent).as_context()
         else:
             context = self._name.parent_context

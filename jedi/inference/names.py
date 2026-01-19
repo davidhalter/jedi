@@ -2,8 +2,6 @@ from abc import abstractmethod
 from inspect import Parameter
 from typing import Optional, Tuple
 
-from parso.tree import search_ancestor
-
 from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
@@ -112,7 +110,7 @@ class AbstractTreeName(AbstractNameDefinition):
         self.tree_name = tree_name
 
     def get_qualified_names(self, include_module_names=False):
-        import_node = search_ancestor(self.tree_name, 'import_name', 'import_from')
+        import_node = self.tree_name.search_ancestor('import_name', 'import_from')
         # For import nodes we cannot just have names, because it's very unclear
         # how they would look like. For now we just ignore them in most cases.
         # In case of level == 1, it works always, because it's like a submodule
@@ -205,15 +203,13 @@ class AbstractTreeName(AbstractNameDefinition):
             values = infer_call_of_leaf(context, name, cut_own_trailer=True)
             return values.goto(name, name_context=context)
         else:
-            stmt = search_ancestor(
-                name, 'expr_stmt', 'lambdef'
-            ) or name
+            stmt = name.search_ancestor('expr_stmt', 'lambdef') or name
             if stmt.type == 'lambdef':
                 stmt = name
             return context.goto(name, position=stmt.start_pos)
 
     def is_import(self):
-        imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
+        imp = self.tree_name.search_ancestor('import_from', 'import_name')
         return imp is not None
 
     @property
@@ -451,7 +447,7 @@ class _ActualTreeParamName(BaseTreeParamName):
         self.function_value = function_value
 
     def _get_param_node(self):
-        return search_ancestor(self.tree_name, 'param')
+        return self.tree_name.search_ancestor('param')
 
     @property
     def annotation_node(self):

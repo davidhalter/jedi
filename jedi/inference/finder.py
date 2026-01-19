@@ -15,7 +15,6 @@ Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
 
-from parso.tree import search_ancestor
 from parso.python.tree import Name
 
 from jedi import settings
@@ -76,7 +75,7 @@ def check_flow_information(value, flow, search_name, pos):
         ])
 
         for name in names:
-            ass = search_ancestor(name, 'assert_stmt')
+            ass = name.search_ancestor('assert_stmt')
             if ass is not None:
                 result = _check_isinstance_type(value, ass.assertion, search_name)
                 if result is not None:

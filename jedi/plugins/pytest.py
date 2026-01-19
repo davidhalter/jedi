@@ -2,7 +2,6 @@ import sys
 from typing import List
 from pathlib import Path
 
-from parso.tree import search_ancestor
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.imports import goto_import, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
@@ -120,7 +119,7 @@ def _is_a_pytest_param_and_inherited(param_name):
 
     This is a heuristic and will work in most cases.
     """
-    funcdef = search_ancestor(param_name.tree_name, 'funcdef')
+    funcdef = param_name.tree_name.search_ancestor('funcdef')
     if funcdef is None:  # A lambda
         return False, False
     decorators = funcdef.get_decorators()

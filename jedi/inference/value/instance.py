@@ -1,7 +1,5 @@
 from abc import abstractproperty
 
-from parso.tree import search_ancestor
-
 from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
@@ -229,7 +227,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
         new = node
         while True:
             func_node = new
-            new = search_ancestor(new, 'funcdef', 'classdef')
+            new = new.search_ancestor('funcdef', 'classdef')
             if class_context.tree_node is new:
                 func = FunctionValue.from_context(class_context, func_node)
                 bound_method = BoundMethod(self, class_context, func)
@@ -498,7 +496,7 @@ class SelfName(TreeNameDefinition):
         return self._instance
 
     def infer(self):
-        stmt = search_ancestor(self.tree_name, 'expr_stmt')
+        stmt = self.tree_name.search_ancestor('expr_stmt')
         if stmt is not None:
             if stmt.children[1].type == "annassign":
                 from jedi.inference.gradual.annotation import infer_annotation

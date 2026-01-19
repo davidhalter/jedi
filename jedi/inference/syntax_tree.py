@@ -290,7 +290,7 @@ def infer_atom(context, atom):
     state = context.inference_state
     if atom.type == 'name':
         # This is the first global lookup.
-        stmt = tree.search_ancestor(atom, 'expr_stmt', 'lambdef', 'if_stmt') or atom
+        stmt = atom.search_ancestor('expr_stmt', 'lambdef', 'if_stmt') or atom
         if stmt.type == 'if_stmt':
             if not any(n.start_pos <= atom.start_pos < n.end_pos for n in stmt.get_test_nodes()):
                 stmt = atom
@@ -436,7 +436,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
         else:
             operator = copy.copy(first_operator)
             operator.value = operator.value[:-1]
-            for_stmt = tree.search_ancestor(stmt, 'for_stmt')
+            for_stmt = stmt.search_ancestor('for_stmt')
             if for_stmt is not None and for_stmt.type == 'for_stmt' and value_set \
                     and parser_utils.for_stmt_defines_one_name(for_stmt):
                 # Iterate through result and add the values, that's possible
@@ -549,7 +549,7 @@ def _infer_comparison(context, left_values, operator, right_values):
 
 
 def _is_annotation_name(name):
-    ancestor = tree.search_ancestor(name, 'param', 'funcdef', 'expr_stmt')
+    ancestor = name.search_ancestor('param', 'funcdef', 'expr_stmt')
     if ancestor is None:
         return False
 

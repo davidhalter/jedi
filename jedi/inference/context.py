@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
-from parso.tree import search_ancestor
 from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
@@ -290,7 +289,7 @@ class TreeContextMixin:
     def create_name(self, tree_name):
         definition = tree_name.get_definition()
         if definition and definition.type == 'param' and definition.name == tree_name:
-            funcdef = search_ancestor(definition, 'funcdef', 'lambdef')
+            funcdef = definition.search_ancestor('funcdef', 'lambdef')
             func = self.create_value(funcdef)
             return AnonymousParamName(func, tree_name)
         else:
@@ -416,13 +415,13 @@ def _get_global_filters_for_name(context, name_or_none, position):
     # function and get inferred in the value before the function. So
     # make sure to exclude the function/class name.
     if name_or_none is not None:
-        ancestor = search_ancestor(name_or_none, 'funcdef', 'classdef', 'lambdef')
+        ancestor = name_or_none.search_ancestor('funcdef', 'classdef', 'lambdef')
         lambdef = None
         if ancestor == 'lambdef':
             # For lambdas it's even more complicated since parts will
             # be inferred later.
             lambdef = ancestor
-            ancestor = search_ancestor(name_or_none, 'funcdef', 'classdef')
+            ancestor = name_or_none.search_ancestor('funcdef', 'classdef')
         if ancestor is not None:
             colon = ancestor.children[-2]
             if position is not None and position < colon.start_pos:

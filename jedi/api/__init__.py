@@ -483,7 +483,7 @@ class Script:
 
         module_context = self._get_module_context()
 
-        n = tree.search_ancestor(leaf, 'funcdef', 'classdef')
+        n = leaf.search_ancestor('funcdef', 'classdef')
         if n is not None and n.start_pos < pos <= n.children[-1].start_pos:
             # This is a bit of a special case. The context of a function/class
             # name/param/keyword is always it's parent context, not the

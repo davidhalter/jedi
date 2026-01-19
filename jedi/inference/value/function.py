@@ -262,8 +262,8 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
     @recursion.execution_recursion_decorator(default=iter([]))
     def get_yield_lazy_values(self, is_async=False):
         # TODO: if is_async, wrap yield statements in Awaitable/async_generator_asend
-        for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
-                                                'while_stmt', 'if_stmt'))
+        for_parents = [(y, y.search_ancestor('for_stmt', 'funcdef',
+                                             'while_stmt', 'if_stmt'))
                        for y in get_yield_exprs(self.inference_state, self.tree_node)]
 
         # Calculate if the yields are placed within the same for loop.

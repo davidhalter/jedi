@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 
 from parso.python import tree
-from parso.tree import search_ancestor
 
 from jedi import debug
 from jedi import settings
@@ -95,7 +94,7 @@ def goto_import(context, tree_name):
 
 
 def _prepare_infer_import(module_context, tree_name):
-    import_node = search_ancestor(tree_name, 'import_name', 'import_from')
+    import_node = tree_name.search_ancestor('import_name', 'import_from')
     import_path = import_node.get_path_for_name(tree_name)
     from_import_name = None
     try:
@@ -549,7 +548,7 @@ def load_namespace_from_path(inference_state, folder_io):
 
 
 def follow_error_node_imports_if_possible(context, name):
-    error_node = tree.search_ancestor(name, 'error_node')
+    error_node = name.search_ancestor('error_node')
     if error_node is not None:
         # Get the first command start of a started simple_stmt. The error
         # node is sometimes a small_stmt and sometimes a simple_stmt. Check

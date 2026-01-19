@@ -6,7 +6,6 @@ from abc import abstractmethod
 from typing import List, MutableMapping, Type
 import weakref
 
-from parso.tree import search_ancestor
 from parso.python.tree import Name, UsedNamesMapping
 
 from jedi.inference import flow_analysis
@@ -181,7 +180,7 @@ class _FunctionExecutionFilter(ParserTreeFilter):
     @to_list
     def _convert_names(self, names):
         for name in names:
-            param = search_ancestor(name, 'param')
+            param = name.search_ancestor('param')
             # Here we don't need to check if the param is a default/annotation,
             # because those are not definitions and never make it to this
             # point.
