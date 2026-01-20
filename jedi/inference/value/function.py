@@ -1,5 +1,3 @@
-from parso.python import tree
-
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache, CachedMetaClass
 from jedi.inference import compiled
