@@ -26,6 +26,7 @@ The architecture here is briefly:
 
 import collections
 import os
+import pickle
 import sys
 import queue
 import subprocess
@@ -316,7 +317,7 @@ class CompiledSubprocess:
 
         try:
             is_exception, traceback, result = pickle_load(self._get_process().stdout)
-        except EOFError as eof_error:
+        except (EOFError, pickle.UnpicklingError) as error:
             try:
                 stderr = self._get_process().stderr.read().decode('utf-8', 'replace')
             except Exception as exc:
@@ -326,7 +327,7 @@ class CompiledSubprocess:
             raise InternalError(
                 "The subprocess %s has crashed (%r, stderr=%s)." % (
                     self._executable,
-                    eof_error,
+                    error,
                     stderr,
                 ))
 
@@ -440,12 +441,21 @@ class Listener:
             return function(inference_state, *args, **kwargs)
 
     def listen(self):
-        stdout = sys.stdout
-        # Mute stdout. Nobody should actually be able to write to it,
-        # because stdout is used for IPC.
+        # Redirect the actual stdout file descriptor (fd 1) to /dev/null.
+        # This is necessary because compiled C extensions can write directly
+        # to fd 1, bypassing Python's sys.stdout. Such writes would corrupt
+        # the pickle stream used for IPC, causing UnpicklingError.
+        # We must do this before anything else to capture the original fd.
+        saved_stdout_fd = os.dup(1)
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull_fd, 1)
+        os.close(devnull_fd)
+        stdout = os.fdopen(saved_stdout_fd, 'wb')
+
+        # Also mute sys.stdout for pure Python code that uses print().
         sys.stdout = open(os.devnull, 'w')
+
         stdin = sys.stdin
-        stdout = stdout.buffer
         stdin = stdin.buffer
 
         while True:
