@@ -3,7 +3,7 @@
 Using Jedi
 ==========
 
-|jedi| is can be used with a variety of :ref:`plugins <editor-plugins>`,
+|jedi| can be used with a variety of :ref:`plugins <editor-plugins>`,
 :ref:`language servers <language-servers>` and other software.
 It is also possible to use |jedi| in the :ref:`Python shell or with IPython
 <repl-completion>`.
@@ -97,7 +97,7 @@ Web Debugger
 xonsh shell
 ~~~~~~~~~~~
 
-Jedi is a preinstalled extension in `xonsh shell <https://xon.sh/contents.html>`_. 
+Jedi is a preinstalled extension in `xonsh shell <https://xon.sh/contents.html>`_.
 Run the following command to enable:
 
 ::
