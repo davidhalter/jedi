@@ -16,6 +16,8 @@ from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
 from jedi.inference.helpers import is_big_annoying_library
 
+_processing_params = set()
+
 
 def _iter_nodes_for_param(param_name):
     from jedi.inference.arguments import TreeArguments
@@ -26,6 +28,22 @@ def _iter_nodes_for_param(param_name):
     # the specific scope we're evaluating within (i.e: module or function,
     # etc.).
     function_node = param_name.tree_name.search_ancestor('funcdef', 'lambdef')
+
+    # Guard against infinite recursion when a function passes *args/**kwargs
+    # to itself (e.g., ``def f(*args): return f(1, *args)``).
+    key = (id(function_node), param_name.string_name)
+    if key in _processing_params:
+        return
+    _processing_params.add(key)
+    try:
+        yield from _iter_nodes_for_param_impl(param_name, execution_context, function_node)
+    finally:
+        _processing_params.discard(key)
+
+
+def _iter_nodes_for_param_impl(param_name, execution_context, function_node):
+    from jedi.inference.arguments import TreeArguments
+
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
     end = function_node.children[-1].end_pos
