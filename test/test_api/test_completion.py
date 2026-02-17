@@ -461,3 +461,8 @@ def test_module_completions(Script, module):
 
 def test_whitespace_at_end_after_dot(Script):
     assert 'strip' in [c.name for c in Script('str. ').complete()]
+
+
+def test_whitespace_and_newline_after_dot(Script):
+    """Regression test for issue #1954."""
+    assert 'mro' in [c.name for c in Script('object. \n').complete(1, 8)]
