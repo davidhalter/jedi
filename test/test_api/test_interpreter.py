@@ -859,3 +859,11 @@ def test_custom__getitem__(class_is_findable, allow_unsafe_getattr):
     else:
         expected = ['upper']
     _assert_interpreter_complete('c["a"].up', namespace, expected)
+
+
+def test_star_import_completions():
+    """Star imports should work in Interpreter, not just Script. See #2087."""
+    completions = jedi.Interpreter('from json import *\ndum', []).complete(2, 3)
+    names = [c.name for c in completions]
+    assert 'dump' in names
+    assert 'dumps' in names

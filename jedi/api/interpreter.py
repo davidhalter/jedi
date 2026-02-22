@@ -61,6 +61,9 @@ class MixedModuleContext(ModuleContext):
         )
 
     def get_filters(self, until_position=None, origin_scope=None):
+        filters = self._value.get_filters(origin_scope)
+        # Skip the first filter and replace it with our mixed version.
+        next(filters, None)
         yield MergedFilter(
             MixedParserTreeFilter(
                 parent_context=self,
@@ -69,6 +72,7 @@ class MixedModuleContext(ModuleContext):
             ),
             self.get_global_filter(),
         )
+        yield from filters
 
         for mixed_object in self.mixed_values:
             yield from mixed_object.get_filters(until_position, origin_scope)
