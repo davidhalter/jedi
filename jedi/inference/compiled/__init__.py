@@ -14,8 +14,9 @@ def builtin_from_name(inference_state, string):
     else:
         filter_ = next(typing_builtins_module.get_filters())
     name, = filter_.get(string)
-    value, = name.infer()
-    return value
+    # Most of the time there is only symbol, but sometimes there are different
+    # sys.version_infos, where there are multiple ones, just use the first one.
+    return next(iter(name.infer()))
 
 
 class ExactValue(LazyValueWrapper):
