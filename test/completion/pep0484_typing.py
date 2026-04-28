@@ -555,15 +555,3 @@ def typed_dict_test_foo(arg: Bar):
     arg['an_int']
     #? int()
     arg['another_variable']
-
-# -------------------------
-# Final
-# -------------------------
-
-x: Final[str] = 1
-y: Final = 1
-#? str()
-x
-# TODO
-#?
-y

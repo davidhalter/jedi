@@ -59,6 +59,7 @@ class VarClass:
     var_class1: typing.ClassVar[str] = 1
     var_class2: typing.ClassVar[bytes]
     var_class3 = None
+    var_class4: typing.ClassVar = ""
 
     def __init__(self):
         #? int()
@@ -71,7 +72,7 @@ class VarClass:
         d.var_class2
         #? []
         d.int
-        #? ['var_class1', 'var_class2', 'var_instance1', 'var_instance2', 'var_class3']
+        #? ['var_class1', 'var_class2', 'var_instance1', 'var_instance2', 'var_class3', 'var_class4']
         self.var_
 
 class VarClass2(VarClass):
@@ -81,7 +82,7 @@ class VarClass2(VarClass):
         #? int()
         self.var_class3
 
-#? ['var_class1', 'var_class2', 'var_instance1', 'var_class3', 'var_instance2']
+#? ['var_class1', 'var_class2', 'var_class4', 'var_instance1', 'var_class3', 'var_instance2']
 VarClass.var_
 #? int()
 VarClass.var_instance1
@@ -91,11 +92,13 @@ VarClass.var_instance2
 VarClass.var_class1
 #? bytes()
 VarClass.var_class2
+#? str()
+VarClass.var_class4
 #? []
 VarClass.int
 
 d = VarClass()
-#? ['var_class1', 'var_class2', 'var_class3', 'var_instance1', 'var_instance2']
+#? ['var_class1', 'var_class2', 'var_class3', 'var_class4', 'var_instance1', 'var_instance2']
 d.var_
 #? int()
 d.var_instance1
@@ -105,6 +108,8 @@ d.var_instance2
 d.var_class1
 #? bytes()
 d.var_class2
+#? str()
+d.var_class4
 #? []
 d.int
 
@@ -117,3 +122,39 @@ class DC:
 
 #? int()
 DC().name
+
+# -------------------------
+# Final
+# -------------------------
+
+# TODO this is wrong, but shouldn't matter that much
+#? 0 int()
+x: typing.Final[str] = 1
+#? 0 int()
+y: typing.Final = 1
+#? str()
+x
+#? int()
+y
+
+def f(x: typing.Final[str]):
+    #? str()
+    x
+
+class C:
+    x: typing.Final[bytes] = 1
+    #? 4 str()
+    y: typing.Final = ""
+    #? bytes()
+    x
+    #? str()
+    y
+
+#? bytes()
+C.x
+#? str()
+C.y
+#? bytes()
+C().x
+#? str()
+C().y

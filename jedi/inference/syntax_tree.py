@@ -30,6 +30,7 @@ from jedi.inference.names import TreeNameDefinition
 from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
+from jedi.inference.gradual.typing import ProxyTypingValue, IGNORE_ANNOTATION_PARTS
 
 operator_to_magic_method = {
     '+': '__add__',
@@ -701,16 +702,24 @@ def tree_name_to_values(inference_state, context, tree_name):
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 ann_assign = expr_stmt.children[1]
                 if correct_scope:
-                    found_annotation = True
                     if (
                         (ann_assign.children[1].type == 'name')
                         and (ann_assign.children[1].value == tree_name.value)
                         and context.parent_context
                     ):
                         context = context.parent_context
-                    value_set |= annotation.infer_annotation(
+                    found = annotation.infer_annotation(
                         context, expr_stmt.children[1].children[1]
-                    ).execute_annotation()
+                    )
+                    set_found_annotation = True
+                    if len(found) == 1:
+                        first = next(iter(found))
+                        set_found_annotation = not (
+                            isinstance(first, ProxyTypingValue)
+                            and first.name.string_name in IGNORE_ANNOTATION_PARTS
+                        )
+                    found_annotation = set_found_annotation
+                    value_set |= found.execute_annotation()
         if found_annotation:
             return value_set
 
