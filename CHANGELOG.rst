@@ -8,6 +8,9 @@ Unreleased
 
 - Python 3.14 support
 - Removed support for Python 3.8 and 3.9
+- Upgraded Typeshed
+- Better support for Final/ClassVar
+- ``__new__`` is now also recognized as a signature
 
 0.19.2 (2024-11-10)
 +++++++++++++++++++
