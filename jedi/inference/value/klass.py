@@ -378,6 +378,18 @@ class ClassMixin:
                 return sigs
         args = ValuesArguments([])
         init_funcs = self.py__call__(args).py__getattribute__('__init__')
+        if len(init_funcs) == 1:
+            init = next(iter(init_funcs))
+            try:
+                class_context = init.class_context
+            except AttributeError:
+                pass
+            else:
+                # In the case where we are on object.__init__, we try to use
+                # __new__.
+                if class_context.get_root_context().is_builtins_module() \
+                        and init.class_context.name.string_name == "object":
+                    init_funcs = self.py__call__(args).py__getattribute__('__new__')
 
         dataclass_sigs = self._get_dataclass_transform_signatures()
         if dataclass_sigs:

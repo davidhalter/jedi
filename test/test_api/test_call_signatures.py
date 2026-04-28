@@ -27,6 +27,17 @@ def test_valid_call(Script):
     assert_signature(Script, 'bool()', 'bool', column=5)
 
 
+def test_dunder_new(Script):
+    # From #2073
+    s = dedent("""\
+    from typing import Self
+    class C:
+        def __new__(cls, b) -> Self:
+            pass
+    C( )""")
+    assert_signature(Script, s, 'C', 0, line=5, column=2)
+
+
 class TestSignatures(TestCase):
     @pytest.fixture(autouse=True)
     def init(self, Script):
