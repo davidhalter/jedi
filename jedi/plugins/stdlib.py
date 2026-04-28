@@ -789,6 +789,13 @@ def _os_path_join(args_set, callback):
     return callback()
 
 
+_path_overrides = {
+    'dirname': _create_string_input_function(os.path.dirname),
+    'abspath': _create_string_input_function(os.path.abspath),
+    'relpath': _create_string_input_function(os.path.relpath),
+    'join': _os_path_join,
+}
+
 _implemented = {
     'builtins': {
         'getattr': builtins_getattr,
@@ -851,12 +858,8 @@ _implemented = {
         # For now this works at least better than Jedi trying to understand it.
         'dataclass': _dataclass
     },
-    'os.path': {
-        'dirname': _create_string_input_function(os.path.dirname),
-        'abspath': _create_string_input_function(os.path.abspath),
-        'relpath': _create_string_input_function(os.path.relpath),
-        'join': _os_path_join,
-    }
+    'posixpath': _path_overrides,
+    'ntpath': _path_overrides,
 }
 
 
@@ -908,7 +911,8 @@ class EnumInstance(LazyValueWrapper):
 
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
-        if tree_name.value == 'sep' and context.is_module() and context.py__name__() == 'os.path':
+        if tree_name.value == 'sep' \
+                and context.is_module() and context.py__name__() in ('posixpath', 'ntpath'):
             return ValueSet({
                 compiled.create_simple_object(inference_state, os.path.sep),
             })

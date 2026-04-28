@@ -210,9 +210,10 @@ def test_chained_calls(Script):
 def test_return(Script):
     source = dedent('''
     def foo():
-        return '.'.join()''')
+        return (1).conjugate()''')
 
-    assert_signature(Script, source, 'join', 0, column=len("    return '.'.join("))
+    assert_signature(
+        Script, source, 'conjugate', expected_index=None, column=len("    return (1).conjugate("))
 
 
 def test_find_signature_on_module(Script):
@@ -249,9 +250,9 @@ def test_complex(Script, environment):
     # Do these checks just for Python 3, I'm too lazy to deal with this
     # legacy stuff. ~ dave.
     assert get_signature(func1.tree_node) \
-        == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
+        == 'compile(pattern: AnyStr, flags: _FlagsType = 0) -> Pattern[AnyStr]'
     assert get_signature(func2.tree_node) \
-        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
+        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = 0) ->\nPattern[AnyStr]'
 
     # jedi-vim #70
     s = """def foo("""
