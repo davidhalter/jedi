@@ -33,7 +33,8 @@ _TYPE_ALIAS_TYPES = {
     'DefaultDict': 'collections.defaultdict',
     'Deque': 'collections.deque',
 }
-_PROXY_TYPES = 'Optional Union ClassVar Annotated'.split()
+_PROXY_TYPES = ['Optional', 'Union', 'ClassVar', 'Annotated', 'Final']
+_IGNORE_ANNOTATION_PARTS = ['ClassVar', 'Annotated', 'Final']
 
 
 class TypingModuleName(NameWrapper):
@@ -114,7 +115,7 @@ class ProxyWithGenerics(BaseTypingClassWithGenerics):
         elif string_name == 'Type':
             # The type is actually already given in the index_value
             return self._generics_manager[0]
-        elif string_name in ['ClassVar', 'Annotated']:
+        elif string_name in _IGNORE_ANNOTATION_PARTS:
             # For now don't do anything here, ClassVars are always used.
             return self._generics_manager[0].execute_annotation()
 

@@ -3,7 +3,7 @@ Test the typing library, with docstrings and annotations
 """
 import typing
 from typing import Sequence, MutableSequence, List, Iterable, Iterator, \
-    AbstractSet, Tuple, Mapping, Dict, Union, Optional
+    AbstractSet, Tuple, Mapping, Dict, Union, Optional, Final
 
 class B:
     pass
@@ -555,3 +555,15 @@ def typed_dict_test_foo(arg: Bar):
     arg['an_int']
     #? int()
     arg['another_variable']
+
+# -------------------------
+# Final
+# -------------------------
+
+x: Final[str] = 1
+y: Final = 1
+#? str()
+x
+# TODO
+#?
+y
