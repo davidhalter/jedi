@@ -506,7 +506,7 @@ class SelfName(TreeNameDefinition):
                 from jedi.inference.gradual.annotation import infer_annotation
                 values = infer_annotation(
                     self.parent_context, stmt.children[1].children[1]
-                ).execute_annotation()
+                ).execute_annotation(None)
                 if values:
                     return values
         return super().infer()

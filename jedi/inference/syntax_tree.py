@@ -239,7 +239,7 @@ def _infer_node(context, element):
         return context.infer_node(element.children[0])
     elif typ == 'annassign':
         return annotation.infer_annotation(context, element.children[1]) \
-            .execute_annotation()
+            .execute_annotation(context)
     elif typ == 'yield_expr':
         if len(element.children) and element.children[1].type == 'yield_arg':
             # Implies that it's a yield from.
@@ -497,7 +497,7 @@ def infer_factor(value_set, operator):
             b = value.py__bool__()
             if b is None:  # Uncertainty.
                 yield list(value.inference_state.builtins_module.py__getattribute__('bool')
-                           .execute_annotation()).pop()
+                           .execute_annotation(None)).pop()
             else:
                 yield compiled.create_simple_object(value.inference_state, not b)
         else:
@@ -650,7 +650,9 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             _bool_to_value(inference_state, False)
         ])
     elif str_operator in ('in', 'not in'):
-        return inference_state.builtins_module.py__getattribute__('bool').execute_annotation()
+        return inference_state.builtins_module.py__getattribute__('bool').execute_annotation(
+            context
+        )
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
@@ -719,7 +721,7 @@ def tree_name_to_values(inference_state, context, tree_name):
                             and first.name.string_name in IGNORE_ANNOTATION_PARTS
                         )
                     found_annotation = set_found_annotation
-                    value_set |= found.execute_annotation()
+                    value_set |= found.execute_annotation(context)
         if found_annotation:
             return value_set
 

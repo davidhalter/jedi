@@ -54,7 +54,7 @@ class CompiledValue(Value):
             return create_from_access_path(
                 self.inference_state,
                 return_annotation
-            ).execute_annotation()
+            ).execute_annotation(arguments.context)
 
         try:
             self.access_handle.getattr_paths('__call__')
@@ -241,7 +241,7 @@ class CompiledValue(Value):
         except TypeError:
             return NO_VALUES
 
-    def execute_annotation(self):
+    def execute_annotation(self, context):
         if self.access_handle.get_repr() == 'None':
             # None as an annotation doesn't need to be executed.
             return ValueSet([self])
@@ -252,7 +252,9 @@ class CompiledValue(Value):
             for path in args
         ]
         if name == 'Union':
-            return ValueSet.from_sets(arg.execute_annotation() for arg in arguments)
+            return ValueSet.from_sets(
+                arg.execute_annotation(context)
+                for arg in arguments)
         elif name:
             # While with_generics only exists on very specific objects, we
             # should probably be fine, because we control all the typing
@@ -260,8 +262,8 @@ class CompiledValue(Value):
             return ValueSet([
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
-            ]).execute_annotation()
-        return super().execute_annotation()
+            ]).execute_annotation(context)
+        return super().execute_annotation(context)
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
@@ -459,7 +461,7 @@ class CompiledValueFilter(AbstractFilter):
             values = create_from_access_path(
                 self._inference_state,
                 property_return_annotation
-            ).execute_annotation()
+            ).execute_annotation(None)
             if values:
                 return [CompiledValueName(v, name) for v in values]
 

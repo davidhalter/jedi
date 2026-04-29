@@ -466,7 +466,7 @@ class _ActualTreeParamName(BaseTreeParamName):
             self.function_value, self._get_param_node(),
             ignore_stars=ignore_stars)
         if execute_annotation:
-            values = values.execute_annotation()
+            values = values.execute_annotation(self.function_value.get_default_param_context())
         return values
 
     def infer_default(self):

@@ -59,7 +59,7 @@ class HelperValueMixin:
         arguments = ValuesArguments([ValueSet([value]) for value in value_list])
         return self.inference_state.execute(self, arguments)
 
-    def execute_annotation(self):
+    def execute_annotation(self, context):
         return self.execute_with_values()
 
     def gather_annotation_classes(self):

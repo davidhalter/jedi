@@ -3,7 +3,7 @@ Test the typing library, with docstrings and annotations
 """
 import typing
 from typing import Sequence, MutableSequence, List, Iterable, Iterator, \
-    AbstractSet, Tuple, Mapping, Dict, Union, Optional, Final
+    AbstractSet, Tuple, Mapping, Dict, Union, Optional, Final, Self
 
 class B:
     pass
@@ -555,3 +555,32 @@ def typed_dict_test_foo(arg: Bar):
     arg['an_int']
     #? int()
     arg['another_variable']
+
+# -----------------
+# Self
+# -----------------
+
+# From #2023, #2068
+class Builder:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+    def add_x(self: Self, x: int) -> Self:
+        self.x = x
+        return self
+
+    def add_y(self: Self, y: int) -> Self:
+        self.y = y
+        return self
+
+    def add_not_implemented(self: Self, y: int) -> Self:
+        raise NotImplementedError
+
+b = Builder()
+#? Builder()
+b.add_x(2)
+#? Builder()
+b.add_x(2).add_y(5)
+#? Builder()
+b.add_x(2).add_not_implemented(5)

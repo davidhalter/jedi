@@ -35,7 +35,7 @@ class _AbstractGenericManager:
 
     def get_index_and_execute(self, index):
         try:
-            return self[index].execute_annotation()
+            return self[index].execute_annotation(None)
         except IndexError:
             debug.warning('No param #%s found for annotation %s', index, self)
             return NO_VALUES
