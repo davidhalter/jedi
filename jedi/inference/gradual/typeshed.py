@@ -282,7 +282,7 @@ def parse_stub_module(inference_state, file_io):
 
 def create_stub_module(inference_state, grammar, python_value_set,
                        stub_module_node, file_io, import_names):
-    if import_names == ('typing',):
+    if import_names in [('typing',), ('typing_extensions',)]:
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleValue

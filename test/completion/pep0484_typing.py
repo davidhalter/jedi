@@ -560,6 +560,8 @@ def typed_dict_test_foo(arg: Bar):
 # Self
 # -----------------
 
+import typing_extensions
+
 # From #2023, #2068
 class Builder:
     def __init__(self):
@@ -577,6 +579,9 @@ class Builder:
     def add_not_implemented(self: Self, y: int) -> Self:
         raise NotImplementedError
 
+    def add_not_implemented_typing_extensions(self: Self, y: int) -> typing_extensions.Self:
+        raise NotImplementedError
+
 b = Builder()
 #? Builder()
 b.add_x(2)
@@ -584,3 +589,5 @@ b.add_x(2)
 b.add_x(2).add_y(5)
 #? Builder()
 b.add_x(2).add_not_implemented(5)
+#? Builder()
+b.add_x(2).add_not_implemented_typing_extensions(5)
