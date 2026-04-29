@@ -909,6 +909,15 @@ class EnumInstance(LazyValueWrapper):
             yield f
 
 
+# Make sure tuple[...] behaves like Tuple[...]
+class TupleClassWrapper(ValueWrapper):
+    def py__getitem__(self, index_value_set, contextualized_node):
+        return self.inference_state.typing_tuple().py__getitem__(
+            index_value_set,
+            contextualized_node,
+        )
+
+
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
         if tree_name.value == 'sep' \
@@ -916,5 +925,9 @@ def tree_name_to_values(func):
             return ValueSet({
                 compiled.create_simple_object(inference_state, os.path.sep),
             })
+        if tree_name.value == 'tuple' \
+                and context.is_module() and context.py__name__() == 'builtins':
+            tup, = func(inference_state, context, tree_name)
+            return ValueSet([TupleClassWrapper(tup)])
         return func(inference_state, context, tree_name)
     return wrapper
