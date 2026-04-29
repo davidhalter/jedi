@@ -86,7 +86,7 @@ def test_time_docstring():
     import time
     comp, = jedi.Script('import time\ntime.sleep').complete()
     assert comp.docstring(raw=True) == time.sleep.__doc__
-    expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
+    expected = 'sleep(seconds: _SupportsFloatOrIndex, /) -> None\n\n' + time.sleep.__doc__
     assert comp.docstring() == expected
 
 

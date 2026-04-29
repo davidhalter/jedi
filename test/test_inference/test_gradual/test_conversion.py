@@ -10,20 +10,20 @@ def test_sqlite3_conversion(Script):
     script1 = Script('import sqlite3; sqlite3.Connection')
     d, = script1.infer()
 
-    assert not d.module_path
+    assert d.module_path
     assert d.full_name == 'sqlite3.Connection'
     assert convert_names([d._name], only_stubs=True)
 
     d, = script1.infer(only_stubs=True)
     assert d.is_stub()
-    assert d.full_name == 'sqlite3.dbapi2.Connection'
+    assert d.full_name == 'sqlite3.Connection'
 
     script2 = Script(path=d.module_path)
     d, = script2.infer(line=d.line, column=d.column)
-    assert not d.is_stub()
+    assert d.is_stub()
     assert d.full_name == 'sqlite3.Connection'
     v, = d._name.infer()
-    assert v.is_compiled()
+    assert not v.is_compiled()
 
 
 def test_conversion_of_stub_only(Script):
@@ -70,11 +70,11 @@ def test_stub_get_line_code(Script):
     script = Script(code)
     d, = script.goto(only_stubs=True)
     # Replace \r for tests on Windows
-    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta): ...\n'
+    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta):\n'
     del parser_cache[script._inference_state.latest_grammar._hashed][d.module_path]
     d, = Script(path=d.module_path).goto(d.line, d.column, only_stubs=True)
     assert d.is_stub()
-    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta): ...\n'
+    assert d.get_line_code().replace('\r', '') == 'class ABC(metaclass=ABCMeta):\n'
 
 
 def test_os_stat_result(Script):

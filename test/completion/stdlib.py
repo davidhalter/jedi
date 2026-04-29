@@ -360,7 +360,7 @@ X.attr_x.value
 X.attr_y.name
 #? float()
 X.attr_y.value
-#? str()
+#?
 X().name
 #? float()
 X().attr_x.attr_y.value

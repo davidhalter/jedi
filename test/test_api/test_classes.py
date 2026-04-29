@@ -192,7 +192,7 @@ def test_hashlib_params(Script):
     script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
-    assert [p.name for p in sig.params] == ['string']
+    assert [p.name for p in sig.params] == ['data', 'usedforsecurity', 'string']
 
 
 def test_signature_params(Script):
@@ -465,7 +465,7 @@ def test_import(get_names):
     nms = nms[2].goto()
     assert nms
     assert all(n.type == 'module' for n in nms)
-    assert 'posixpath' in {n.name for n in nms}
+    assert 'path' in {n.name for n in nms}
 
     nms = get_names('import os.path', references=True)
     n = nms[0].goto()[0]
@@ -616,7 +616,7 @@ def test_definition_goto_follow_imports(Script):
 
         ('n = next; n', 'Union[next(__i: Iterator[_T]) -> _T, '
          'next(__i: Iterator[_T], default: _VT) -> Union[_T, _VT]]'),
-        ('abs', 'abs(__x: SupportsAbs[_T]) -> _T'),
+        ('abs', 'abs(x: SupportsAbs[_T], /) -> _T'),
         ('def foo(x, y): return x if xxxx else y\nfoo(str(), 1)\nfoo',
          'foo(x: str, y: int) -> Union[int, str]'),
         ('def foo(x, y = None): return x if xxxx else y\nfoo(str(), 1)\nfoo',

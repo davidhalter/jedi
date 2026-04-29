@@ -114,27 +114,27 @@ x(1, bar=2, ba)
 x(1, ba, baz=3)
 #? 14 ['baz=']
 x(1, bar=2, baz=3)
-#? 7 ['BaseException']
+#? 7 ['BaseException', 'BaseExceptionGroup']
 x(basee)
 #? 22 ['bar=', 'baz=']
 x(1, 2, 3, 4, 5, 6, bar=2)
 
 #? 14 ['baz=']
 y(1, bar=2, ba)
-#? 7 ['bar=', 'BaseException', 'baz=']
+#? 7 ['bar=', 'BaseException', 'BaseExceptionGroup', 'baz=']
 y(1, ba, baz=3)
 #? 14 ['baz=']
 y(1, bar=2, baz=3)
-#? 7 ['BaseException']
+#? 7 ['BaseException', 'BaseExceptionGroup']
 y(basee)
-#? 22 ['bar=', 'BaseException', 'baz=']
+#? 22 ['bar=', 'BaseException', 'BaseExceptionGroup', 'baz=']
 y(1, 2, 3, 4, 5, 6, bar=2)
 
 #? 11 ['bar=', 'bas=']
 z(bam=1, bar=2, bas=3)
-#? 8 ['BaseException', 'bas=']
+#? 8 ['BaseException', 'BaseExceptionGroup', 'bas=']
 z(1, bas=2)
-#? 12 ['BaseException']
+#? 12 ['BaseException', 'BaseExceptionGroup']
 z(1, bas=bas)
 
 #? 19 ['dict']

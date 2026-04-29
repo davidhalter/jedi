@@ -233,12 +233,12 @@ def a():
 # str literals in comment """ upper
 
 def completion_in_comment():
-    #? ['Exception']
+    #? ['Exception', 'ExceptionGroup']
     # might fail because the comment is not a leaf: Exception
     pass
 
 some_word
-#? ['Exception']
+#? ['Exception', 'ExceptionGroup']
 # Very simple comment completion: Exception
 # Commment after it
 
