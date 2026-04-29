@@ -203,3 +203,17 @@ class NotCalledClass:
         self.w: float
         #? float()
         self.w
+
+def tuple_func() -> tuple[int, str]:
+    return 1, ""
+
+x = tuple_func()
+a, b = x
+#? int()
+a
+#? str()
+b
+#? int()
+x[0]
+#? str()
+x[1]

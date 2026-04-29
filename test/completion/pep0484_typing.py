@@ -76,7 +76,7 @@ def sets(p: AbstractSet[int], q: typing.MutableSet[float]):
     #? ["add"]
     q.a
 
-def tuple(p: Tuple[int], q: Tuple[int, str, float], r: Tuple[B, ...]):
+def tupletest(p: Tuple[int], q: Tuple[int, str, float], r: Tuple[B, ...]):
     #? int()
     p[0]
     #? ['index']
