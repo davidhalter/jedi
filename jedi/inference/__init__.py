@@ -139,6 +139,12 @@ class InferenceState:
         typing_module, = self.import_module(('typing',))
         return typing_module
 
+    @property
+    @inference_state_function_cache()
+    def types_module(self):
+        typing_module, = self.import_module(('types',))
+        return typing_module
+
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)

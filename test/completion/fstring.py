@@ -13,7 +13,7 @@ Fr'{Foo.bar'
 Fr'{Foo.bar
 #? ['bar']
 Fr'{Foo.bar
-#? ['Exception']
+#? ['Exception', 'ExceptionGroup']
 F"{Excepti
 
 #? 8 Foo

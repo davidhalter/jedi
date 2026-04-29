@@ -48,7 +48,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
         return instance
 
     def _get_cls(self):
-        generator, = self.inference_state.typing_module.py__getattribute__('Generator')
+        generator, = self.inference_state.types_module.py__getattribute__('GeneratorType')
         return generator
 
     def py__bool__(self):

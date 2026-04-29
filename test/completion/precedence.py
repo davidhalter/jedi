@@ -167,7 +167,7 @@ from datetime import datetime, timedelta
 (datetime - timedelta)
 #? datetime()
 (datetime() - timedelta())
-#? timedelta()
+#? timedelta() datetime()
 (datetime() - datetime())
 #? timedelta()
 (timedelta() - datetime())

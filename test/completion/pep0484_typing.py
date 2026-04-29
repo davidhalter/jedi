@@ -49,11 +49,7 @@ def iterators(ps: Iterable[int], qs: Iterator[str], rs:
     a, b = ps
     #? int()
     a
-    ##? int()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    # test below is just to make sure that in case it gets fixed by accident
-    # these tests will be fixed as well the way they should be
-    #?
+    #? int()
     b
 
     for q in qs:
