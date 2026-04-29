@@ -388,7 +388,8 @@ with open('') as f:
     #? ['closed']
     f.closed
     for line in f:
-        #? str() bytes()
+        # TODO this is wrong
+        #? bytes()
         line
 
 with open('') as f1, open('') as f2:

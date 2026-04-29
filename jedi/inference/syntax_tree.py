@@ -779,7 +779,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             coro = enter_methods.execute_with_values()
             return coro.py__await__().py__stop_iteration_returns()
         enter_methods = value_managers.py__getattribute__('__enter__')
-        return enter_methods.execute_with_values()
+        return enter_methods.execute_annotation(context)
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
