@@ -34,7 +34,7 @@ def we_can_has_sequence(p: Sequence[int], q: Sequence[B], r: Sequence[int],
     t[1]
     #? ["append"]
     u.a
-    #? float()
+    #? float() list()
     u[1.0]
     #? float()
     u[1]
