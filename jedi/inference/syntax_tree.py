@@ -865,10 +865,16 @@ def check_tuple_assignments(name, value_set):
             # For no star unpacking is not possible.
             return NO_VALUES
         i = 0
+        lazy_value = None
         while i <= index:
             try:
                 lazy_value = next(iterated)
             except StopIteration:
+                # A desperate attempt to fix inference for tuples from an
+                # iterator.
+                if lazy_value is not None:
+                    return lazy_value.infer()
+
                 # We could do this with the default param in next. But this
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is

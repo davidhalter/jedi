@@ -155,8 +155,9 @@ class AbstractInstanceValue(Value):
             return super().py__iter__(contextualized_node)
 
         def iterate():
-            for generator in self.execute_function_slots(iter_slot_names):
-                yield from generator.py__next__(contextualized_node)
+            yield LazyKnownValues(
+                self.execute_function_slots(iter_slot_names).py__next__(contextualized_node).infer()
+            )
         return iterate()
 
     def __repr__(self):
