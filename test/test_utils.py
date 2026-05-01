@@ -1,3 +1,4 @@
+import sys
 from typing import Any
 
 try:
@@ -36,7 +37,10 @@ class TestSetupReadline(unittest.TestCase):
         assert self.complete('list') == ['list']
         assert self.complete('importerror') == ['ImportError']
         s = "print(BaseE"
-        assert self.complete(s) == [s + 'xception', s + 'xceptionGroup']
+        if sys.version_info >= (3, 11):
+            assert self.complete(s) == [s + 'xception', s + 'xceptionGroup']
+        else:
+            assert self.complete(s) == [s + 'xception']
 
     def test_nested(self):
         assert self.complete('list.Insert') == ['list.insert']
