@@ -32,9 +32,9 @@ def infer_annotation(context, annotation):
     Also checks for forward references (strings)
     """
     value_set = context.infer_node(annotation)
-    if len(value_set) != 1:
-        debug.warning("Inferred typing index %s should lead to 1 object, "
-                      " not %s" % (annotation, value_set))
+    if len(value_set) == 0:
+        debug.warning(
+            "Inferred typing index %s should lead to 1 object, not %s" % (annotation, value_set))
         return value_set
 
     inferred_value = list(value_set)[0]
