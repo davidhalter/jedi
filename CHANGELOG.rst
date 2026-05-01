@@ -6,6 +6,9 @@ Changelog
 Unreleased
 ++++++++++
 
+0.20.0 (2026-05-02)
++++++++++++++++++++
+
 - Python 3.14 support
 - Removed support for Python 3.8 and 3.9
 - Upgraded Typeshed
