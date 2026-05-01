@@ -1,5 +1,4 @@
 import os
-import re
 from functools import wraps
 from collections import namedtuple
 from typing import Dict, Mapping, Tuple
