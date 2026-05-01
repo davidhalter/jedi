@@ -31,6 +31,7 @@ from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 from jedi.inference.gradual.typing import ProxyTypingValue, IGNORE_ANNOTATION_PARTS
+from jedi.inference.gradual.type_var import TypeVar
 
 operator_to_magic_method = {
     '+': '__add__',
@@ -530,7 +531,7 @@ def _infer_comparison(context, left_values, operator, right_values):
         result = (left_values or NO_VALUES) | (right_values or NO_VALUES)
         return _literals_to_types(state, result)
     elif operator_str == "|" and all(
-        value.is_class() or value.is_compiled()
+        value.is_class() or value.is_compiled() or isinstance(value, TypeVar)
         for value in itertools.chain(left_values, right_values)
     ):
         # ^^^ A naive hack for PEP 604

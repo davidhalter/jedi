@@ -387,3 +387,11 @@ first(custom_partial2_unbound_instance)
 
 #? str()
 values(custom_partial2_unbound_instance)[0]
+
+def generic_func1(arg: T) -> int | str | T: pass
+def generic_func2(arg: T) -> Union[int, str, T]: pass
+
+#? int() str() bytes()
+generic_func1(b"hello")
+#? int() str() bytes()
+generic_func2(b"hello")
