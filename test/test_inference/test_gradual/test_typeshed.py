@@ -75,7 +75,7 @@ def test_sys_exc_info(Script):
     # It's an optional.
     assert def_.name == 'BaseException'
     assert def_.module_path == typeshed.TYPESHED_PATH.joinpath(
-        'stdlib', '3', 'builtins.pyi'
+        'stdlib', 'builtins.pyi'
     )
     assert def_.type == 'instance'
     assert none.name == 'NoneType'

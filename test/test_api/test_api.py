@@ -134,7 +134,7 @@ def test_infer_on_non_name(Script):
 def test_infer_on_generator(Script, environment):
     script = Script('def x(): yield 1\ny=x()\ny')
     def_, = script.infer()
-    assert def_.name == 'Generator'
+    assert def_.name == 'GeneratorType'
     def_, = script.infer(only_stubs=True)
     assert def_.name == 'Generator'
 
