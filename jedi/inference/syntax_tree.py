@@ -703,9 +703,12 @@ def tree_name_to_values(inference_state, context, tree_name):
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 ann_assign = expr_stmt.children[1]
-                if correct_scope:
+                first = ann_assign.children[1]
+                code = first.get_code()
+                if correct_scope and not (code.endswith(".TypeAlias")
+                                          or code.strip() == "TypeAlias"):
                     if (
-                        (ann_assign.children[1].type == 'name')
+                        (first.type == 'name')
                         and (ann_assign.children[1].value == tree_name.value)
                         and context.parent_context
                     ):

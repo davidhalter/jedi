@@ -587,3 +587,20 @@ b.add_x(2).add_y(5)
 b.add_x(2).add_not_implemented(5)
 #? Builder()
 b.add_x(2).add_not_implemented_typing_extensions(5)
+
+# -----------------
+# TypeAlias (see also #1969)
+# -----------------
+
+from typing import TypeAlias
+
+IntX: typing.TypeAlias = int
+IntY: TypeAlias = int
+
+#? int
+IntX
+def f(x: IntX, y: IntY):
+    #? int()
+    x
+    #? int()
+    y
