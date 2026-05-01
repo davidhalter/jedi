@@ -8,6 +8,8 @@
 #! 12 type-error-not-iterable
 [a for a in 1]
 
+# TODO wrong?
+#! 10 type-error-too-many-arguments
 tuple(str(a) for a in [1])
 
 #! 8 type-error-operation

@@ -5,7 +5,7 @@
 #? ['imag']
 int.imag
 
-#? []
+#? ['is_integer']
 int.is_integer
 
 #? ['is_integer']
