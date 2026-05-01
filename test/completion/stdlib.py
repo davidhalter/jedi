@@ -25,7 +25,7 @@ next(reversed(yielder()))
 #?
 next(reversed())
 
-#? str() bytes()
+#? str()
 next(open(''))
 
 #? int()
@@ -91,7 +91,7 @@ os._T
 
 with open('foo') as f:
     for line in f.readlines():
-        #? str() bytes()
+        #? bytes()
         line
 # -----------------
 # enumerate

@@ -614,8 +614,8 @@ def test_definition_goto_follow_imports(Script):
         ('n = {1: ""}; n', 'Dict[int, str]'),
         ('n = {1: "", 1.0: b""}; n', 'Dict[Union[float, int], Union[bytes, str]]'),
 
-        ('n = next; n', 'Union[next(__i: Iterator[_T]) -> _T, '
-         'next(__i: Iterator[_T], default: _VT) -> Union[_T, _VT]]'),
+        ('n = next; n', 'Union[next(i: SupportsNext[_T], /) -> _T, '
+         'next(i: SupportsNext[_T], default: _VT, /) -> _T | _VT]'),
         ('abs', 'abs(x: SupportsAbs[_T], /) -> _T'),
         ('def foo(x, y): return x if xxxx else y\nfoo(str(), 1)\nfoo',
          'foo(x: str, y: int) -> Union[int, str]'),
