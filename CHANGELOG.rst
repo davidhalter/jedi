@@ -10,7 +10,9 @@ Unreleased
 - Removed support for Python 3.8 and 3.9
 - Upgraded Typeshed
 - Better support for Final/ClassVar
-- ``__new__`` is now also recognized as a signature
+- ``__new__`` is now also recognized as a signature and TypeVar inference
+- Support for ``Self``
+- Support for ``TypeAlias``, generics for ``type[...]`` and ``tuple[...]``
 
 0.19.2 (2024-11-10)
 +++++++++++++++++++

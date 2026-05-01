@@ -435,9 +435,9 @@ list(set(list(set(a))))[1]
 list(set(set(a)))[1]
 
 # frozenset
-##? int() str()
+#? int() str()
 list(frozenset(a))[1]
-##? int() str()
+#? int() str()
 list(set(frozenset(a)))[1]
 
 # iter

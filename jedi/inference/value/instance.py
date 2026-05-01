@@ -17,7 +17,7 @@ from jedi.inference.arguments import ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
     BaseFunctionExecutionContext, FunctionExecutionContext, FunctionNameInClass
-from jedi.inference.value.klass import ClassFilter
+from jedi.inference.value.klass import ClassFilter, init_or_new_func
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
 from jedi.parser_utils import function_is_staticmethod, function_is_classmethod
 
@@ -327,7 +327,7 @@ class TreeInstance(_BaseTreeInstance):
             infer_type_vars_for_execution
 
         args = InstanceArguments(self, self._arguments)
-        for signature in self.class_value.py__getattribute__('__init__').get_signatures():
+        for signature in init_or_new_func(self.class_value).get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
             funcdef = signature.value.tree_node
