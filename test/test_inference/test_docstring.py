@@ -60,7 +60,7 @@ def test_instance_doc(Script):
         '''Docstring of `TestClass`.'''
     tc = TestClass()
     tc""").infer()
-    assert defs[0].docstring() == 'Docstring of `TestClass`.'
+    assert defs[0].docstring() == 'TestClass()\n\nDocstring of `TestClass`.'
 
 
 def test_multiple_docstrings(Script):

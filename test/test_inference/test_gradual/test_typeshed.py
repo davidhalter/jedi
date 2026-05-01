@@ -1,35 +1,18 @@
 import os
 
 import pytest
-from parso.utils import PythonVersionInfo
 
 from jedi.inference.gradual import typeshed
 from jedi.inference.value import TreeInstance, BoundMethod, FunctionValue, \
     MethodValue, ClassValue
 from jedi.inference.names import StubName
 
-TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
-
-
-def test_get_typeshed_directories():
-    def get_dirs(version_info):
-        return {
-            p.path.replace(str(typeshed.TYPESHED_PATH), '').lstrip(os.path.sep)
-            for p in typeshed._get_typeshed_directories(version_info)
-        }
-
-    def transform(set_):
-        return {x.replace('/', os.path.sep) for x in set_}
-
-    dirs = get_dirs(PythonVersionInfo(3, 7))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.7',
-                              'third_party/2and3',
-                              'third_party/3', 'third_party/3.7'})
+TYPESHED_PYTHON = os.path.join(typeshed.TYPESHED_PATH, 'stdlib')
 
 
 def test_get_stub_files():
-    map_ = typeshed._create_stub_map(typeshed.PathInfo(TYPESHED_PYTHON3, is_third_party=False))
-    assert map_['functools'].path == os.path.join(TYPESHED_PYTHON3, 'functools.pyi')
+    map_ = typeshed._create_stub_map(typeshed.PathInfo(TYPESHED_PYTHON, is_third_party=False))
+    assert map_['functools'].path == os.path.join(TYPESHED_PYTHON, 'functools.pyi')
 
 
 def test_function(Script, environment):
@@ -92,7 +75,7 @@ def test_sys_exc_info(Script):
     # It's an optional.
     assert def_.name == 'BaseException'
     assert def_.module_path == typeshed.TYPESHED_PATH.joinpath(
-        'stdlib', '3', 'builtins.pyi'
+        'stdlib', 'builtins.pyi'
     )
     assert def_.type == 'instance'
     assert none.name == 'NoneType'
@@ -142,7 +125,7 @@ def test_type_var(Script):
 def test_math_is_stub(Script, code, full_name):
     s = Script(code)
     cos, = s.infer()
-    wanted = ('typeshed', 'stdlib', '2and3', 'math.pyi')
+    wanted = ('third_party', 'typeshed', 'stdlib', 'math.pyi')
     assert cos.module_path.parts[-4:] == wanted
     assert cos.is_stub() is True
     assert cos.goto(only_stubs=True) == [cos]
@@ -222,14 +205,14 @@ def test_goto_stubs_on_itself(Script, code, type_):
 
 def test_module_exists_only_as_stub(Script):
     try:
-        import redis  # type: ignore[import-untyped]  # noqa: F401
+        import six  # type: ignore[import-untyped]  # noqa: F401
     except ImportError:
         pass
     else:
-        pytest.skip('redis is already installed, it should only exist as a stub for this test')
-    redis_path = os.path.join(typeshed.TYPESHED_PATH, 'third_party', '2and3', 'redis')
-    assert os.path.isdir(redis_path)
-    assert not Script('import redis').infer()
+        pytest.skip('six is already installed, it should only exist as a stub for this test')
+    six_path = os.path.join(typeshed.TYPESHED_PATH, 'stubs', 'six')
+    assert os.path.isdir(six_path)
+    assert not Script('import six').infer()
 
 
 def test_django_exists_only_as_stub(Script):

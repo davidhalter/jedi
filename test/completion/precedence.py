@@ -54,7 +54,7 @@ a
 
 #? int()
 (3 ** 3)
-#? int()
+#? int() float()
 (3 ** 'a')
 #? int()
 (3 + 'a')
@@ -167,7 +167,7 @@ from datetime import datetime, timedelta
 (datetime - timedelta)
 #? datetime()
 (datetime() - timedelta())
-#? timedelta()
+#? timedelta() datetime()
 (datetime() - datetime())
 #? timedelta()
 (timedelta() - datetime())

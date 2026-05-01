@@ -68,4 +68,4 @@ def test_param_kind_and_name(code, index, param_code, kind, Script):
 
 def test_staticmethod(Script):
     s, = Script('staticmethod(').get_signatures()
-    assert s.to_string() == 'staticmethod(f: Callable[..., Any])'
+    assert s.to_string() == 'staticmethod(f: Callable[_P, _R_co], /)'

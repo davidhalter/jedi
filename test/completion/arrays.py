@@ -207,16 +207,16 @@ C().a
 (f, g) = (1,)
 #? int()
 f
-#? []
-g.
+#? int()
+g
 
 (f, g, h) = (1,'')
 #? int()
 f
 #? str()
 g
-#? []
-h.
+#? str()
+h
 
 (f1, g1) = 1
 #? []
@@ -311,9 +311,13 @@ for x in {1: 3.0, '': 1j}:
 dict().values().__iter__
 
 d = dict(a=3, b='')
-x, = d.values()
+x, y, z = d.values()
 #? int() str()
 x
+#? int() str()
+y
+#? int() str()
+z
 #? int()
 d['a']
 #? int() str() None

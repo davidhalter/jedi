@@ -779,8 +779,7 @@ def preload_module(*modules):
     :param modules: different module names, list of string.
     """
     for m in modules:
-        s = "import %s as x; x." % m
-        Script(s).complete(1, len(s))
+        Script(f"import {m}").infer()
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

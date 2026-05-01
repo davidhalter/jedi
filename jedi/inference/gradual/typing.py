@@ -33,7 +33,8 @@ _TYPE_ALIAS_TYPES = {
     'DefaultDict': 'collections.defaultdict',
     'Deque': 'collections.deque',
 }
-_PROXY_TYPES = 'Optional Union ClassVar Annotated'.split()
+_PROXY_TYPES = ['Optional', 'Union', 'ClassVar', 'Annotated', 'Final']
+IGNORE_ANNOTATION_PARTS = ['ClassVar', 'Annotated', 'Final']
 
 
 class TypingModuleName(NameWrapper):
@@ -82,6 +83,9 @@ class TypingModuleName(NameWrapper):
         elif name == 'cast':
             cast_fn, = self._wrapped_name.infer()
             yield CastFunction.create_cached(inference_state, cast_fn)
+        elif name == 'Self':
+            yield SelfClass.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -99,24 +103,24 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class ProxyWithGenerics(BaseTypingClassWithGenerics):
-    def execute_annotation(self):
+    def execute_annotation(self, context):
         string_name = self._tree_name.value
 
         if string_name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
             # ValueSets).
-            return self.gather_annotation_classes().execute_annotation()
+            return self.gather_annotation_classes().execute_annotation(context)
         elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
-            return self.gather_annotation_classes().execute_annotation() \
+            return self.gather_annotation_classes().execute_annotation(context) \
                 | ValueSet([builtin_from_name(self.inference_state, 'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
             return self._generics_manager[0]
-        elif string_name in ['ClassVar', 'Annotated']:
+        elif string_name in IGNORE_ANNOTATION_PARTS:
             # For now don't do anything here, ClassVars are always used.
-            return self._generics_manager[0].execute_annotation()
+            return self._generics_manager[0].execute_annotation(context)
 
         mapped = {
             'Tuple': Tuple,
@@ -216,17 +220,17 @@ class TypingClassWithGenerics(ProxyWithGenerics, _TypingClassMixin):
                 # This is basically a trick to avoid extra code: We execute the
                 # incoming classes to be able to use the normal code for type
                 # var inference.
-                value_set.execute_annotation(),
+                value_set.execute_annotation(None),
             )
 
         elif annotation_name == 'Callable':
             if len(annotation_generics) == 2:
                 return annotation_generics[1].infer_type_vars(
-                    value_set.execute_annotation(),
+                    value_set.execute_annotation(None),
                 )
 
         elif annotation_name == 'Tuple':
-            tuple_annotation, = self.execute_annotation()
+            tuple_annotation, = self.execute_annotation(None)
             return tuple_annotation.infer_type_vars(value_set)
 
         return type_var_dict
@@ -322,7 +326,7 @@ class Tuple(BaseTypingInstance):
             yield LazyKnownValues(self._generics_manager.get_index_and_execute(0))
         else:
             for v in self._generics_manager.to_tuple():
-                yield LazyKnownValues(v.execute_annotation())
+                yield LazyKnownValues(v.execute_annotation(None))
 
     def py__getitem__(self, index_value_set, contextualized_node):
         if self._is_homogenous():
@@ -330,11 +334,11 @@ class Tuple(BaseTypingInstance):
 
         return ValueSet.from_sets(
             self._generics_manager.to_tuple()
-        ).execute_annotation()
+        ).execute_annotation(None)
 
     def _get_wrapped_value(self):
         tuple_, = self.inference_state.builtins_module \
-            .py__getattribute__('tuple').execute_annotation()
+            .py__getattribute__('tuple').execute_annotation(None)
         return tuple_
 
     @property
@@ -391,8 +395,17 @@ class Protocol(BaseTypingInstance):
 
 
 class AnyClass(BaseTypingValue):
-    def execute_annotation(self):
+    def execute_annotation(self, context):
         debug.warning('Used Any - returned no results')
+        return NO_VALUES
+
+
+class SelfClass(BaseTypingValue):
+    def execute_annotation(self, context):
+        debug.warning('Used Self')
+        if context is not None:
+            # Execute the class of Self
+            return context.get_value().execute_annotation(None)
         return NO_VALUES
 
 
@@ -430,7 +443,7 @@ class NewType(Value):
         return c
 
     def py__call__(self, arguments):
-        return self._type_value_set.execute_annotation()
+        return self._type_value_set.execute_annotation(arguments.context)
 
     @property
     def name(self):
@@ -444,7 +457,7 @@ class NewType(Value):
 class CastFunction(ValueWrapper):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
-        return type_value_set.execute_annotation()
+        return type_value_set.execute_annotation(None)
 
 
 class TypedDictClass(BaseTypingValue):

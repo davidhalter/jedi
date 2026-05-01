@@ -44,11 +44,11 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     array_type = None
 
     def _get_wrapped_value(self):
-        instance, = self._get_cls().execute_annotation()
+        instance, = self._get_cls().execute_annotation(None)
         return instance
 
     def _get_cls(self):
-        generator, = self.inference_state.typing_module.py__getattribute__('Generator')
+        generator, = self.inference_state.types_module.py__getattribute__('GeneratorType')
         return generator
 
     def py__bool__(self):
@@ -214,7 +214,7 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
         c, = GenericClass(
             klass,
             TupleGenericManager(self._cached_generics())
-        ).execute_annotation()
+        ).execute_annotation(None)
         return c
 
     def py__bool__(self):

@@ -100,8 +100,8 @@ class TypeVar(BaseTypingValue):
                 return found
         return ValueSet({self})
 
-    def execute_annotation(self):
-        return self._get_classes().execute_annotation()
+    def execute_annotation(self, context):
+        return self._get_classes().execute_annotation(context)
 
     def infer_type_vars(self, value_set):
         def iterate():
@@ -123,5 +123,5 @@ class TypeWrapper(ValueWrapper):
         super().__init__(wrapped_value)
         self._original_value = original_value
 
-    def execute_annotation(self):
+    def execute_annotation(self, context):
         return ValueSet({self._original_value})

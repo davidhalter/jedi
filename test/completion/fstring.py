@@ -1,3 +1,4 @@
+# python >= 3.11
 class Foo:
     bar = 1
 
@@ -13,7 +14,7 @@ Fr'{Foo.bar'
 Fr'{Foo.bar
 #? ['bar']
 Fr'{Foo.bar
-#? ['Exception']
+#? ['Exception', 'ExceptionGroup']
 F"{Excepti
 
 #? 8 Foo

@@ -134,7 +134,7 @@ def test_infer_on_non_name(Script):
 def test_infer_on_generator(Script, environment):
     script = Script('def x(): yield 1\ny=x()\ny')
     def_, = script.infer()
-    assert def_.name == 'Generator'
+    assert def_.name == 'GeneratorType'
     def_, = script.infer(only_stubs=True)
     assert def_.name == 'Generator'
 
@@ -173,7 +173,7 @@ def test_get_line_code(Script):
         return Script(source).complete(line=line)[0].get_line_code(**kwargs).replace('\r', '')
 
     # On builtin
-    assert get_line_code('abs') == 'def abs(__x: SupportsAbs[_T]) -> _T: ...\n'
+    assert get_line_code('abs') == 'def abs(x: SupportsAbs[_T], /) -> _T: ...\n'
 
     # On custom code
     first_line = 'def foo():\n'

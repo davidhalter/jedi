@@ -37,7 +37,7 @@ def infer_anonymous_param(func):
                    == ('typing', 'Generator')
                    for v in result):
                 return ValueSet.from_sets(
-                    v.py__getattribute__('__next__').execute_annotation()
+                    v.py__getattribute__('__next__').execute_annotation(None)
                     for v in result
                 )
             return result

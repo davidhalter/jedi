@@ -1,5 +1,4 @@
 import os
-import re
 from functools import wraps
 from collections import namedtuple
 from typing import Dict, Mapping, Tuple
@@ -58,19 +57,8 @@ def _create_stub_map(directory_path_info):
 
 
 def _get_typeshed_directories(version_info):
-    check_version_list = ['2and3', '3']
-    for base in ['stdlib', 'third_party']:
-        base_path = TYPESHED_PATH.joinpath(base)
-        base_list = os.listdir(base_path)
-        for base_list_entry in base_list:
-            match = re.match(r'(\d+)\.(\d+)$', base_list_entry)
-            if match is not None:
-                if match.group(1) == '3' and int(match.group(2)) <= version_info.minor:
-                    check_version_list.append(base_list_entry)
-
-        for check_version in check_version_list:
-            is_third_party = base != 'stdlib'
-            yield PathInfo(str(base_path.joinpath(check_version)), is_third_party)
+    yield PathInfo(str(TYPESHED_PATH.joinpath("stdlib")), False)
+    yield PathInfo(str(TYPESHED_PATH.joinpath("stubs")), True)
 
 
 _version_cache: Dict[Tuple[int, int], Mapping[str, PathInfo]] = {}
@@ -293,7 +281,7 @@ def parse_stub_module(inference_state, file_io):
 
 def create_stub_module(inference_state, grammar, python_value_set,
                        stub_module_node, file_io, import_names):
-    if import_names == ('typing',):
+    if import_names in [('typing',), ('typing_extensions',)]:
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleValue

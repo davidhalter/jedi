@@ -46,7 +46,7 @@ _FILTER_LIKE_METHODS = ('create', 'filter', 'exclude', 'update', 'get',
 def _get_deferred_attributes(inference_state):
     return inference_state.import_module(
         ('django', 'db', 'models', 'query_utils')
-    ).py__getattribute__('DeferredAttribute').execute_annotation()
+    ).py__getattribute__('DeferredAttribute').execute_annotation(None)
 
 
 def _infer_scalar_field(inference_state, field_name, field_tree_instance, is_instance):
@@ -130,7 +130,7 @@ def _create_manager_for(cls, manager_cls='BaseManager'):
     for m in managers:
         if m.is_class_mixin():
             generics_manager = TupleGenericManager((ValueSet([cls]),))
-            for c in GenericClass(m, generics_manager).execute_annotation():
+            for c in GenericClass(m, generics_manager).execute_annotation(None):
                 return c
     return None
 

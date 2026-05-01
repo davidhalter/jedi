@@ -11,6 +11,7 @@ from typing import (
     TypeVar,
     Union,
     Sequence,
+    Self,
 )
 
 K = TypeVar('K')
@@ -387,3 +388,19 @@ first(custom_partial2_unbound_instance)
 
 #? str()
 values(custom_partial2_unbound_instance)[0]
+
+def generic_func1(arg: T) -> int | str | T: pass
+def generic_func2(arg: T) -> Union[int, str, T]: pass
+
+#? int() str() bytes()
+generic_func1(b"hello")
+#? int() str() bytes()
+generic_func2(b"hello")
+
+class CustomGeneric2(Generic[T_co]):
+    val: T_co
+    def __init__(cls, val: T_co) -> Self:
+        raise NotImplementedError
+
+#? int()
+CustomGeneric2(1).val

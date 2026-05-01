@@ -32,17 +32,20 @@ def infer_annotation(context, annotation):
     Also checks for forward references (strings)
     """
     value_set = context.infer_node(annotation)
-    if len(value_set) != 1:
-        debug.warning("Inferred typing index %s should lead to 1 object, "
-                      " not %s" % (annotation, value_set))
+    if len(value_set) == 0:
+        debug.warning(
+            "Inferred typing index %s should lead to 1 object, not %s" % (annotation, value_set))
         return value_set
 
-    inferred_value = list(value_set)[0]
-    if is_string(inferred_value):
-        result = _get_forward_reference_node(context, inferred_value.get_safe_value())
-        if result is not None:
-            return context.infer_node(result)
-    return value_set
+    strings_removed = NO_VALUES
+    for part in value_set:
+        if is_string(part):
+            result = _get_forward_reference_node(context, part.get_safe_value())
+            if result is not None:
+                strings_removed |= context.infer_node(result)
+                continue
+        strings_removed |= ValueSet([part])
+    return strings_removed
 
 
 def _infer_annotation_string(context, string, index=None):
@@ -249,12 +252,12 @@ def infer_return_types(function, arguments):
         return _infer_annotation_string(
             context,
             match.group(1).strip()
-        ).execute_annotation()
+        ).execute_annotation(context)
 
     unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
-        return annotation_values.execute_annotation()
+        return annotation_values.execute_annotation(context)
 
     type_var_dict = infer_type_vars_for_execution(function, arguments, all_annotations)
 
@@ -262,7 +265,7 @@ def infer_return_types(function, arguments):
         ann.define_generics(type_var_dict)
         if isinstance(ann, (DefineGenericBaseClass, TypeVar)) else ValueSet({ann})
         for ann in annotation_values
-    ).execute_annotation()
+    ).execute_annotation(context)
 
 
 def infer_type_vars_for_execution(function, arguments, annotation_dict):
@@ -315,7 +318,7 @@ def infer_return_for_callable(arguments, param_values, result_values):
         if isinstance(v, (DefineGenericBaseClass, TypeVar))
         else ValueSet({v})
         for v in result_values
-    ).execute_annotation()
+    ).execute_annotation(arguments.context)
 
 
 def _infer_type_vars_for_callable(arguments, lazy_params):
@@ -391,7 +394,7 @@ def merge_pairwise_generics(annotation_value, annotated_argument_class):
     for annotation_generics_set, actual_generic_set in zip(annotation_generics, actual_generics):
         merge_type_var_dicts(
             type_var_dict,
-            annotation_generics_set.infer_type_vars(actual_generic_set.execute_annotation()),
+            annotation_generics_set.infer_type_vars(actual_generic_set.execute_annotation(None)),
         )
 
     return type_var_dict
@@ -438,7 +441,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
         return []
     return _infer_annotation_string(
         context, match.group(1).strip(), index
-    ).execute_annotation()
+    ).execute_annotation(context)
 
 
 def find_unknown_type_vars(context, node):

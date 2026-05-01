@@ -389,6 +389,6 @@ if False:
 # -----------------
 
 import socket
-#< (1, 21), (0, 7), ('socket', ..., 6), ('stub:socket', ..., 4), ('imports', ..., 7)
+#< (1, 21), (0, 7), ('socket', ..., 6), ('stub:socket', ..., 6), ('imports', ..., 7)
 socket.SocketIO
 some_socket = socket.SocketIO()

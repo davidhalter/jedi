@@ -203,3 +203,38 @@ class NotCalledClass:
         self.w: float
         #? float()
         self.w
+
+def tuple_func() -> tuple[int, str]:
+    return 1, ""
+
+x = tuple_func()
+a, b = x
+#? int()
+a
+#? str()
+b
+#? int()
+x[0]
+#? str()
+x[1]
+
+def check_newstyle_unions(u1: int | str, u2: list[int] | list[str]):
+    #? int() str()
+    u1
+    #? list()
+    u2
+    #? int() str()
+    u2[1]
+
+def use_type_with_annotation() -> type[int]: ...
+
+#? int
+use_type_with_annotation()
+
+def union_with_forward_references(x: int | "str", y: "int" | str, z: "int | str"):
+    #? int() str()
+    x
+    #? int() str()
+    y
+    #? int() str()
+    z

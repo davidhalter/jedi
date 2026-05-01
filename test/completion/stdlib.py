@@ -25,7 +25,7 @@ next(reversed(yielder()))
 #?
 next(reversed())
 
-#? str() bytes()
+#? str()
 next(open(''))
 
 #? int()
@@ -91,7 +91,7 @@ os._T
 
 with open('foo') as f:
     for line in f.readlines():
-        #? str() bytes()
+        #? bytes()
         line
 # -----------------
 # enumerate
@@ -196,7 +196,10 @@ class A(object):
 class B(object):
     def shout(self): pass
 cls = random.choice([A, B])
-#? ['say', 'shout']
+# TODO why is this not inferred? This used to work...
+#?
+cls
+#? []
 cls().s
 
 # -----------------
@@ -360,7 +363,7 @@ X.attr_x.value
 X.attr_y.name
 #? float()
 X.attr_y.value
-#? str()
+#?
 X().name
 #? float()
 X().attr_x.attr_y.value

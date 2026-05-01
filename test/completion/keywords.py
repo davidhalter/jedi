@@ -2,7 +2,8 @@
 #? ['raise']
 raise
 
-#? ['Exception']
+# python >= 3.11
+#? ['Exception', 'ExceptionGroup']
 except
 
 #? []

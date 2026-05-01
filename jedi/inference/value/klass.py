@@ -285,7 +285,6 @@ class ClassMixin:
         if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
             type_ = builtin_from_name(self.inference_state, 'type')
-            assert isinstance(type_, ClassValue)
             if type_ != self:
                 # We are not using execute_with_values here, because the
                 # plugin function for type would get executed instead of an
@@ -377,7 +376,8 @@ class ClassMixin:
             if sigs:
                 return sigs
         args = ValuesArguments([])
-        init_funcs = self.py__call__(args).py__getattribute__('__init__')
+        instance = self.py__call__(args)
+        init_funcs = init_or_new_func(instance)
 
         dataclass_sigs = self._get_dataclass_transform_signatures()
         if dataclass_sigs:
@@ -468,6 +468,23 @@ class ClassMixin:
                 TupleGenericManager(tuple(remap_type_vars()))
             )])
         return ValueSet({self})
+
+
+def init_or_new_func(value):
+    init_funcs = value.py__getattribute__('__init__')
+    if len(init_funcs) == 1:
+        init = next(iter(init_funcs))
+        try:
+            class_context = init.class_context
+        except AttributeError:
+            pass
+        else:
+            # In the case where we are on object.__init__, we try to use
+            # __new__.
+            if class_context.get_root_context().is_builtins_module() \
+                    and init.class_context.name.string_name == "object":
+                return value.py__getattribute__('__new__')
+    return init_funcs
 
 
 class DataclassParamName(BaseTreeParamName):

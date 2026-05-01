@@ -31,14 +31,15 @@ if x:
 #? ['else']
 else
 
+# python >= 3.11
 try:
     pass
-#? ['except', 'Exception']
+#? ['except', 'Exception', 'ExceptionGroup']
 except
 
 try:
     pass
-#? 6 ['except', 'Exception']
+#? 6 ['except', 'Exception', 'ExceptionGroup']
 except AttributeError:
     pass
 #? ['finally']

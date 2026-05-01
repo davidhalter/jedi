@@ -188,11 +188,15 @@ def test_functions_should_have_params(Script):
                 assert c.get_signatures()
 
 
-def test_hashlib_params(Script):
+def test_hashlib_params(Script, environment):
     script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
-    assert [p.name for p in sig.params] == ['string']
+    if environment.version_info >= (3, 13):
+        wanted = ['data', 'usedforsecurity', 'string']
+    else:
+        wanted = ['string', 'usedforsecurity']
+    assert [p.name for p in sig.params] == wanted
 
 
 def test_signature_params(Script):
@@ -465,7 +469,7 @@ def test_import(get_names):
     nms = nms[2].goto()
     assert nms
     assert all(n.type == 'module' for n in nms)
-    assert 'posixpath' in {n.name for n in nms}
+    assert 'path' in {n.name for n in nms}
 
     nms = get_names('import os.path', references=True)
     n = nms[0].goto()[0]
@@ -614,9 +618,9 @@ def test_definition_goto_follow_imports(Script):
         ('n = {1: ""}; n', 'Dict[int, str]'),
         ('n = {1: "", 1.0: b""}; n', 'Dict[Union[float, int], Union[bytes, str]]'),
 
-        ('n = next; n', 'Union[next(__i: Iterator[_T]) -> _T, '
-         'next(__i: Iterator[_T], default: _VT) -> Union[_T, _VT]]'),
-        ('abs', 'abs(__x: SupportsAbs[_T]) -> _T'),
+        ('n = next; n', 'Union[next(i: SupportsNext[_T], /) -> _T, '
+         'next(i: SupportsNext[_T], default: _VT, /) -> _T | _VT]'),
+        ('abs', 'abs(x: SupportsAbs[_T], /) -> _T'),
         ('def foo(x, y): return x if xxxx else y\nfoo(str(), 1)\nfoo',
          'foo(x: str, y: int) -> Union[int, str]'),
         ('def foo(x, y = None): return x if xxxx else y\nfoo(str(), 1)\nfoo',

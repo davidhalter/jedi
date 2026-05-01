@@ -306,7 +306,7 @@ class _GenericInstanceWrapper(ValueWrapper):
             if cls.py__name__() == 'Generator':
                 generics = cls.get_generics()
                 try:
-                    return generics[2].execute_annotation()
+                    return generics[2].execute_annotation(None)
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':
@@ -427,7 +427,7 @@ class BaseTypingInstance(LazyValueWrapper):
         return ValueName(self, self._tree_name)
 
     def _get_wrapped_value(self):
-        object_, = builtin_from_name(self.inference_state, 'object').execute_annotation()
+        object_, = builtin_from_name(self.inference_state, 'object').execute_annotation(None)
         return object_
 
     def __repr__(self):

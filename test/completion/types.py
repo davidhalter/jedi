@@ -2,10 +2,11 @@
 # non array
 # -----------------
 
+# python >= 3.12
 #? ['imag']
 int.imag
 
-#? []
+#? ['is_integer']
 int.is_integer
 
 #? ['is_integer']

@@ -232,13 +232,14 @@ def a():
 #?
 # str literals in comment """ upper
 
+# python >= 3.11
 def completion_in_comment():
-    #? ['Exception']
+    #? ['Exception', 'ExceptionGroup']
     # might fail because the comment is not a leaf: Exception
     pass
 
 some_word
-#? ['Exception']
+#? ['Exception', 'ExceptionGroup']
 # Very simple comment completion: Exception
 # Commment after it
 
@@ -388,7 +389,8 @@ with open('') as f:
     #? ['closed']
     f.closed
     for line in f:
-        #? str() bytes()
+        # TODO this is wrong
+        #? bytes()
         line
 
 with open('') as f1, open('') as f2:

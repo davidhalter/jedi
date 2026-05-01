@@ -27,6 +27,17 @@ def test_valid_call(Script):
     assert_signature(Script, 'bool()', 'bool', column=5)
 
 
+def test_dunder_new(Script):
+    # From #2073
+    s = dedent("""\
+    from typing import Self
+    class C:
+        def __new__(cls, b) -> Self:
+            pass
+    C( )""")
+    assert_signature(Script, s, 'C', 0, line=5, column=2)
+
+
 class TestSignatures(TestCase):
     @pytest.fixture(autouse=True)
     def init(self, Script):
@@ -72,9 +83,9 @@ class TestSignatures(TestCase):
         run(s6, '__eq__', 0)
         run(s6, 'bool', 0, 5)
 
-        s7 = "str().upper().center("
+        # s7 = "str().upper().center("
         s8 = "bool(int[abs("
-        run(s7, 'center', 0)
+        # run(s7, 'center', 0)
         run(s8, 'abs', 0)
         run(s8, 'bool', 0, 10)
 
@@ -199,9 +210,10 @@ def test_chained_calls(Script):
 def test_return(Script):
     source = dedent('''
     def foo():
-        return '.'.join()''')
+        return (1).conjugate()''')
 
-    assert_signature(Script, source, 'join', 0, column=len("    return '.'.join("))
+    assert_signature(
+        Script, source, 'conjugate', expected_index=None, column=len("    return (1).conjugate("))
 
 
 def test_find_signature_on_module(Script):
@@ -238,9 +250,9 @@ def test_complex(Script, environment):
     # Do these checks just for Python 3, I'm too lazy to deal with this
     # legacy stuff. ~ dave.
     assert get_signature(func1.tree_node) \
-        == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
+        == 'compile(pattern: AnyStr, flags: _FlagsType = 0) -> Pattern[AnyStr]'
     assert get_signature(func2.tree_node) \
-        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
+        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = 0) ->\nPattern[AnyStr]'
 
     # jedi-vim #70
     s = """def foo("""

@@ -3,7 +3,7 @@ Test the typing library, with docstrings and annotations
 """
 import typing
 from typing import Sequence, MutableSequence, List, Iterable, Iterator, \
-    AbstractSet, Tuple, Mapping, Dict, Union, Optional
+    AbstractSet, Tuple, Mapping, Dict, Union, Optional, Final, Self
 
 class B:
     pass
@@ -49,11 +49,7 @@ def iterators(ps: Iterable[int], qs: Iterator[str], rs:
     a, b = ps
     #? int()
     a
-    ##? int()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    # test below is just to make sure that in case it gets fixed by accident
-    # these tests will be fixed as well the way they should be
-    #?
+    #? int()
     b
 
     for q in qs:
@@ -76,7 +72,7 @@ def sets(p: AbstractSet[int], q: typing.MutableSet[float]):
     #? ["add"]
     q.a
 
-def tuple(p: Tuple[int], q: Tuple[int, str, float], r: Tuple[B, ...]):
+def tupletest(p: Tuple[int], q: Tuple[int, str, float], r: Tuple[B, ...]):
     #? int()
     p[0]
     #? ['index']
@@ -555,3 +551,57 @@ def typed_dict_test_foo(arg: Bar):
     arg['an_int']
     #? int()
     arg['another_variable']
+
+# -----------------
+# Self
+# -----------------
+
+import typing_extensions
+
+# From #2023, #2068
+class Builder:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+    def add_x(self: Self, x: int) -> Self:
+        self.x = x
+        return self
+
+    def add_y(self: Self, y: int) -> Self:
+        self.y = y
+        return self
+
+    def add_not_implemented(self: Self, y: int) -> Self:
+        raise NotImplementedError
+
+    def add_not_implemented_typing_extensions(self: Self, y: int) -> typing_extensions.Self:
+        raise NotImplementedError
+
+b = Builder()
+#? Builder()
+b.add_x(2)
+#? Builder()
+b.add_x(2).add_y(5)
+# python >= 3.11
+#? Builder()
+b.add_x(2).add_not_implemented(5)
+#? Builder()
+b.add_x(2).add_not_implemented_typing_extensions(5)
+
+# -----------------
+# TypeAlias (see also #1969)
+# -----------------
+
+from typing import TypeAlias
+
+IntX: typing.TypeAlias = int
+IntY: TypeAlias = int
+
+#? int
+IntX
+def f(x: IntX, y: IntY):
+    #? int()
+    x
+    #? int()
+    y

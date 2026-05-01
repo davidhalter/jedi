@@ -338,15 +338,15 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 return ValueSet(
                     GenericClass(c, TupleGenericManager(generics))
                     for c in async_generator_classes
-                ).execute_annotation()
+                ).execute_annotation(None)
             else:
-                async_classes = inference_state.typing_module.py__getattribute__('Coroutine')
+                async_classes = inference_state.types_module.py__getattribute__('CoroutineType')
                 return_values = self.get_return_values()
                 # Only the first generic is relevant.
-                generics = (return_values.py__class__(), NO_VALUES, NO_VALUES)
+                generics = (NO_VALUES, NO_VALUES, return_values.py__class__())
                 return ValueSet(
                     GenericClass(c, TupleGenericManager(generics)) for c in async_classes
-                ).execute_annotation()
+                ).execute_annotation(None)
         else:
             # If there are annotations, prefer them over anything else.
             if self.is_generator() and not self.infer_annotations():

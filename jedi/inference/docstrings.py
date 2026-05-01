@@ -246,7 +246,7 @@ def _execute_array_values(inference_state, array):
         cls = FakeTuple if array.array_type == 'tuple' else FakeList
         return {cls(inference_state, values)}
     else:
-        return array.execute_annotation()
+        return array.execute_annotation(None)
 
 
 @inference_state_method_cache()
