@@ -217,3 +217,11 @@ b
 x[0]
 #? str()
 x[1]
+
+def check_newstyle_unions(u1: int | str, u2: list[int] | list[str]):
+    #? int() str()
+    u1
+    #? list()
+    u2
+    #? int() str()
+    u2[1]
