@@ -583,6 +583,7 @@ b = Builder()
 b.add_x(2)
 #? Builder()
 b.add_x(2).add_y(5)
+# python >= 3.11
 #? Builder()
 b.add_x(2).add_not_implemented(5)
 #? Builder()

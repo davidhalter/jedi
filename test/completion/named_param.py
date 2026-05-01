@@ -108,6 +108,8 @@ def z(bam, bar=2, *, bas=1):
 #? 7 ['bar=', 'baz=']
 x(1, ba)
 
+# python >= 3.11
+
 #? 14 ['baz=']
 x(1, bar=2, ba)
 #? 7 ['bar=', 'baz=']

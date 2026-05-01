@@ -31,6 +31,7 @@ if x:
 #? ['else']
 else
 
+# python >= 3.11
 try:
     pass
 #? ['except', 'Exception', 'ExceptionGroup']

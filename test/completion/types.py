@@ -2,6 +2,7 @@
 # non array
 # -----------------
 
+# python >= 3.12
 #? ['imag']
 int.imag
 

@@ -232,6 +232,7 @@ def a():
 #?
 # str literals in comment """ upper
 
+# python >= 3.11
 def completion_in_comment():
     #? ['Exception', 'ExceptionGroup']
     # might fail because the comment is not a leaf: Exception

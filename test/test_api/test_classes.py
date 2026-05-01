@@ -188,11 +188,15 @@ def test_functions_should_have_params(Script):
                 assert c.get_signatures()
 
 
-def test_hashlib_params(Script):
+def test_hashlib_params(Script, environment):
     script = Script('from hashlib import sha256')
     c, = script.complete()
     sig, = c.get_signatures()
-    assert [p.name for p in sig.params] == ['data', 'usedforsecurity', 'string']
+    if environment.version_info >= (3, 13):
+        wanted = ['data', 'usedforsecurity', 'string']
+    else:
+        wanted = ['string', 'usedforsecurity']
+    assert [p.name for p in sig.params] == wanted
 
 
 def test_signature_params(Script):

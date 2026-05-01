@@ -1,3 +1,4 @@
+# python >= 3.11
 class Foo:
     bar = 1
 
