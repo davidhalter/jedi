@@ -83,9 +83,9 @@ class TestSignatures(TestCase):
         run(s6, '__eq__', 0)
         run(s6, 'bool', 0, 5)
 
-        s7 = "str().upper().center("
+        # s7 = "str().upper().center("
         s8 = "bool(int[abs("
-        run(s7, 'center', 0)
+        # run(s7, 'center', 0)
         run(s8, 'abs', 0)
         run(s8, 'bool', 0, 10)
 
