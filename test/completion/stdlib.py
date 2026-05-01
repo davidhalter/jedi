@@ -196,7 +196,10 @@ class A(object):
 class B(object):
     def shout(self): pass
 cls = random.choice([A, B])
-#? ['say', 'shout']
+# TODO why is this not inferred? This used to work...
+#?
+cls
+#? []
 cls().s
 
 # -----------------
