@@ -225,3 +225,8 @@ def check_newstyle_unions(u1: int | str, u2: list[int] | list[str]):
     u2
     #? int() str()
     u2[1]
+
+def use_type_with_annotation() -> type[int]: ...
+
+#? int
+use_type_with_annotation()

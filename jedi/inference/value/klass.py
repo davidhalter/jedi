@@ -285,7 +285,6 @@ class ClassMixin:
         if not is_instance and include_type_when_class:
             from jedi.inference.compiled import builtin_from_name
             type_ = builtin_from_name(self.inference_state, 'type')
-            assert isinstance(type_, ClassValue)
             if type_ != self:
                 # We are not using execute_with_values here, because the
                 # plugin function for type would get executed instead of an

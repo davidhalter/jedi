@@ -918,6 +918,15 @@ class TupleClassWrapper(ValueWrapper):
         )
 
 
+# Make sure type[...] behaves like Type[...]
+class TypeClassWrapper(ValueWrapper):
+    def py__getitem__(self, index_value_set, contextualized_node):
+        return self.inference_state.typing_type().py__getitem__(
+            index_value_set,
+            contextualized_node,
+        )
+
+
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
         if tree_name.value == 'sep' \
@@ -929,5 +938,9 @@ def tree_name_to_values(func):
                 and context.is_module() and context.py__name__() == 'builtins':
             tup, = func(inference_state, context, tree_name)
             return ValueSet([TupleClassWrapper(tup)])
+        if tree_name.value == 'type' \
+                and context.is_module() and context.py__name__() == 'builtins':
+            tup, = func(inference_state, context, tree_name)
+            return ValueSet([TypeClassWrapper(tup)])
         return func(inference_state, context, tree_name)
     return wrapper
