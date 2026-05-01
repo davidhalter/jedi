@@ -230,3 +230,11 @@ def use_type_with_annotation() -> type[int]: ...
 
 #? int
 use_type_with_annotation()
+
+def union_with_forward_references(x: int | "str", y: "int" | str, z: "int | str"):
+    #? int() str()
+    x
+    #? int() str()
+    y
+    #? int() str()
+    z

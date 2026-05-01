@@ -37,12 +37,15 @@ def infer_annotation(context, annotation):
             "Inferred typing index %s should lead to 1 object, not %s" % (annotation, value_set))
         return value_set
 
-    inferred_value = list(value_set)[0]
-    if is_string(inferred_value):
-        result = _get_forward_reference_node(context, inferred_value.get_safe_value())
-        if result is not None:
-            return context.infer_node(result)
-    return value_set
+    strings_removed = NO_VALUES
+    for part in value_set:
+        if is_string(part):
+            result = _get_forward_reference_node(context, part.get_safe_value())
+            if result is not None:
+                strings_removed |= context.infer_node(result)
+                continue
+        strings_removed |= ValueSet([part])
+    return strings_removed
 
 
 def _infer_annotation_string(context, string, index=None):
