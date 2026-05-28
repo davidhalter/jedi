@@ -283,7 +283,7 @@ def possible_recursion_error(filename):
     # It seems like without the brackets there wouldn't be a RecursionError.
     elif type(filename) == str:
         return filename
-
+    return filename
 
 if NOT_DEFINED:
     s = str()
