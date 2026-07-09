@@ -224,7 +224,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
             elif isinstance(f, CompiledValueFilter):
                 yield CompiledInstanceClassFilter(self, f)
             else:
-                # Propably from the metaclass.
+                # Probably from the metaclass.
                 yield f
 
     @inference_state_method_cache()

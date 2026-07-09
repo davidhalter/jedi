@@ -110,7 +110,7 @@ def _check_for_setattr(instance):
 
 def add_attribute_error(name_context, lookup_value, name):
     message = ('AttributeError: %s has no attribute %s.' % (lookup_value, name))
-    # Check for __getattr__/__getattribute__ existance and issue a warning
+    # Check for __getattr__/__getattribute__ existence and issue a warning
     # instead of an error, if that happens.
     typ = Error
     if lookup_value.is_instance() and not lookup_value.is_compiled():
