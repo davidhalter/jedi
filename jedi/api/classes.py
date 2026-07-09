@@ -831,7 +831,7 @@ class Signature(BaseSignature):
     def index(self):
         """
         Returns the param index of the current cursor position.
-        Returns None if the index cannot be found in the curent call.
+        Returns None if the index cannot be found in the current call.
 
         :rtype: int
         """
