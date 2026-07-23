@@ -90,7 +90,7 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
                         text[:len(text) - c._like_name_length] + c.name_with_symbols
                         for c in completions
                     ]
-                except:
+                except Exception:
                     logging.error("REPL Completion error:\n" + traceback.format_exc())
                     raise
                 finally:
