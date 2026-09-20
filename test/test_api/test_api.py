@@ -231,6 +231,19 @@ def test_goto_follow_imports(Script):
     assert d.name == 'a'
 
 
+@pytest.mark.parametrize('prefix', ['', 'def foo(bar): pass\n', 'def f():\n    '])
+@pytest.mark.parametrize('call', ['foo(bar=1', 'foo(bar=1,', 'foo(foo(bar=1'])
+def test_goto_incomplete_named_argument(Script, prefix, call):
+    code = prefix + call
+    column = code.splitlines()[-1].index('bar')
+    assert Script(code).goto(column=column) == []
+
+
+def test_goto_named_argument_in_complete_inner_call(Script):
+    param, = Script('def foo(bar): pass\nfoo(foo(bar=1)').goto(2, 8)
+    assert (param.name, param.line, param.column) == ('bar', 1, 8)
+
+
 def test_goto_module(Script):
     def check(line, expected, follow_imports=False):
         script = Script(path=path)
