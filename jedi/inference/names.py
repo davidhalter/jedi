@@ -170,6 +170,8 @@ class AbstractTreeName(AbstractNameDefinition):
             trailer = par.parent
             if trailer.type == 'arglist':
                 trailer = trailer.parent
+            if trailer.type == 'error_node':
+                return []
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
                     value_set = context.infer_node(trailer.children[1])
