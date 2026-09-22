@@ -67,6 +67,7 @@ Code Contributors
 - TingJia Wu (@WutingjiaX) <wutingjia@bytedance.com>
 - Nguyễn Hồng Quân <ng.hong.quan@gmail.com>
 - haoran3160-afk (@haoran3160-afk)
+- Eric3-jp (@Eric3-jp) (with OpenAI Codex assistance)
 
 And a few more "anonymous" contributors.
 
