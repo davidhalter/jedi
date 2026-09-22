@@ -502,6 +502,8 @@ class Script:
             tree_name = name.tree_name
             if tree_name is not None:  # Happens with lambdas.
                 scope = tree_name.get_definition()
+                if scope.parent.type in ('async_stmt', 'async_funcdef'):
+                    scope = scope.parent
                 if scope.start_pos[1] < column:
                     break
             definition = definition.parent()

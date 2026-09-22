@@ -53,6 +53,21 @@ def x():
     ]
 '''
 
+async_code = '''\
+async def coro():
+    return None
+'''
+async_method = '''\
+class C:
+    async def coro(self):
+        return None
+'''
+async_nested = '''\
+async def outer():
+    async def inner():
+        return None
+'''
+
 
 @pytest.mark.parametrize(
     'code, line, column, full_name, expected_parents', [
@@ -106,6 +121,21 @@ def x():
         (with_brackets, 3, None, 'myfile', []),
         (with_brackets, 4, 4, 'myfile.x', ['x']),
         (with_brackets, 4, 5, 'myfile.x', ['x']),
+
+        (async_code, 2, 0, 'myfile', []),
+        (async_code, 2, 4, 'myfile.coro', ['coro']),
+        (async_code, 2, 5, 'myfile.coro', ['coro']),
+        (async_code, 2, None, 'myfile.coro', ['coro']),
+        ('@decorator\n' + async_code, 3, 0, 'myfile', []),
+        ('@decorator\n' + async_code, 3, 4, 'myfile.coro', ['coro']),
+        ('@decorator\n' + async_code, 3, 5, 'myfile.coro', ['coro']),
+        (async_method, 3, 4, 'myfile.C', ['C']),
+        (async_method, 3, 8, 'myfile.C.coro', ['C', 'coro']),
+        (async_method, 3, 9, 'myfile.C.coro', ['C', 'coro']),
+        (async_nested, 3, 0, 'myfile', []),
+        (async_nested, 3, 4, 'myfile.outer', ['outer']),
+        (async_nested, 3, 8, None, ['outer', 'inner']),
+        (async_nested, 3, 9, None, ['outer', 'inner']),
     ]
 )
 def test_context(Script, code, line, column, full_name, expected_parents):
