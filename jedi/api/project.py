@@ -63,6 +63,9 @@ class Project:
     Additionally there are functions to search a whole project.
     """
     _environment = None
+    # Set for projects loaded from a ``.jedi/project.json``. That file can be
+    # part of a checked out repository, so it is not trusted to run binaries.
+    _loaded_from_file = False
 
     @staticmethod
     def _get_config_folder_path(base_path):
@@ -86,7 +89,13 @@ class Project:
             version, data = json.load(f)
 
         if version == 1:
-            return cls(**data)
+            # A code base must not be able to enable the loading of its own
+            # extensions, see the docs about security.
+            if data.pop('load_unsafe_extensions', False):
+                debug.warning('load_unsafe_extensions is ignored for loaded projects')
+            project = cls(**data)
+            project._loaded_from_file = True
+            return project
         else:
             raise WrongVersion(
                 "The Jedi version of this project seems newer than what we can handle."
@@ -98,6 +107,7 @@ class Project:
         """
         data = dict(self.__dict__)
         data.pop('_environment', None)
+        data.pop('_loaded_from_file', None)
         data.pop('_django', None)  # TODO make django setting public?
         data = {k.lstrip('_'): v for k, v in data.items()}
         data['path'] = str(data['path'])
@@ -242,7 +252,10 @@ class Project:
     def get_environment(self):
         if self._environment is None:
             if self._environment_path is not None:
-                self._environment = create_environment(self._environment_path, safe=False)
+                # An environment path from a loaded project file is checked
+                # like a scanned virtualenv, see find_virtualenvs.
+                self._environment = create_environment(
+                    self._environment_path, safe=self._loaded_from_file)
             else:
                 self._environment = get_cached_default_environment()
         return self._environment
