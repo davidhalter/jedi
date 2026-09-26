@@ -68,6 +68,7 @@ Code Contributors
 - Nguyễn Hồng Quân <ng.hong.quan@gmail.com>
 - haoran3160-afk (@haoran3160-afk)
 - Eric3-jp (@Eric3-jp) (with OpenAI Codex assistance)
+- Dhanraj E (@Dhanu-dynamic) <dhanraj@labs.digiscrypt.com>
 
 And a few more "anonymous" contributors.
 
