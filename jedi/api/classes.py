@@ -551,7 +551,7 @@ class BaseName:
         return ''.join(lines[start_index:index + after + 1])
 
     def _get_signatures(self, for_docstring=False):
-        if self._name.api_type == 'property':
+        if self._name.api_type in ('property', 'param'):
             return []
         if for_docstring and self._name.api_type == 'statement' and not self.is_stub():
             # For docstrings we don't resolve signatures if they are simple

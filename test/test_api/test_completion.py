@@ -462,3 +462,21 @@ def test_module_completions(Script, module):
 
 def test_whitespace_at_end_after_dot(Script):
     assert 'strip' in [c.name for c in Script('str. ').complete()]
+
+
+def test_param_docstring_in_completion(Script):
+    # From Github #2063
+    code = '''\
+    from typing import Optional
+
+    def func(arg: Optional[int]):
+        pass
+
+    func(arg'''
+    script = Script(code=code)
+    completions = script.complete(
+        line=len(code.splitlines()),
+        column=len(code.splitlines()[-1])
+    )
+    c, = completions
+    assert c.docstring() == ''
