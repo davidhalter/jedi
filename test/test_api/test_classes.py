@@ -106,6 +106,20 @@ def test_param_docstring(get_names):
     assert param.docstring() == ''
 
 
+def test_optional_param_completion_docstring(Script):
+    """Regression test for #2063: Optional-annotated params should not show
+    NoneType() as their docstring signature."""
+    code = dedent('''\
+        from typing import Optional
+        def func(arg: Optional[int]):
+            pass
+        func(arg''')
+    completions = Script(code).complete()
+    assert len(completions) == 1
+    assert completions[0].name == 'arg='
+    assert completions[0].docstring() == ''
+
+
 def test_class_signature(Script):
     defs = Script("""
     class Foo:
