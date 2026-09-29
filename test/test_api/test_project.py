@@ -7,7 +7,6 @@ import pytest
 from ..helpers import get_example_dir, set_cwd, root_dir, test_dir
 from jedi import Interpreter
 from jedi.api import Project, get_default_project
-from jedi.api.environment import InvalidPythonEnvironment
 from jedi.api.project import _is_potential_project, _CONTAINS_POTENTIAL_PROJECT
 
 
@@ -56,11 +55,9 @@ def test_load_save_project(tmpdir):
     assert loaded.added_sys_path == ['/foo']
 
 
-def test_load_project_checks_environment_path(tmpdir, monkeypatch):
-    # The project file can be part of a checked out repository, so the binary
-    # it points to has to pass the same check as in find_virtualenvs.
-    monkeypatch.setattr('jedi.api.environment._is_safe', lambda executable_path: False)
-
+def test_load_project_ignores_environment_path(tmpdir, monkeypatch):
+    # The project file can be part of a checked out repository, so it must not
+    # be able to point Jedi at a binary to execute.
     def _get_subprocess(self):
         raise RuntimeError('Should not get called!')
 
@@ -68,14 +65,7 @@ def test_load_project_checks_environment_path(tmpdir, monkeypatch):
                         _get_subprocess)
 
     Project(tmpdir.strpath, environment_path=sys.executable).save()
-    with pytest.raises(InvalidPythonEnvironment):
-        Project.load(tmpdir.strpath).get_environment()
-
-
-def test_load_project_safe_environment_path(tmpdir):
-    Project(tmpdir.strpath, environment_path=sys.executable).save()
-    environment = Project.load(tmpdir.strpath).get_environment()
-    assert environment.executable == sys.executable
+    assert Project.load(tmpdir.strpath)._environment_path is None
 
 
 def test_load_project_ignores_unsafe_extensions(tmpdir):
