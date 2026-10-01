@@ -255,14 +255,18 @@ class CompiledValue(Value):
             return ValueSet.from_sets(
                 arg.execute_annotation(context)
                 for arg in arguments)
+        elif name == 'Literal':
+            # Literal arguments are values, not annotations to execute.
+            return ValueSet.from_sets(arguments)
         elif name:
-            # While with_generics only exists on very specific objects, we
-            # should probably be fine, because we control all the typing
-            # objects.
-            return ValueSet([
-                v.with_generics(arguments)
-                for v in self.inference_state.typing_module.py__getattribute__(name)
-            ]).execute_annotation(context)
+            values = []
+            for v in self.inference_state.typing_module.py__getattribute__(name):
+                try:
+                    with_generics = v.with_generics
+                except AttributeError:
+                    continue
+                values.append(with_generics(arguments))
+            return ValueSet(values).execute_annotation(context)
         return super().execute_annotation(context)
 
     def negate(self):

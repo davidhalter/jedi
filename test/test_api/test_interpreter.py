@@ -873,3 +873,77 @@ def test_whitespace_after_dot_completion(Script):
     # From #1954
     completions = jedi.Interpreter("object. \n", []).complete(1, 8)
     assert "mro" in [c.name for c in completions]
+
+
+@pytest.mark.parametrize('annotation, expected_names', [
+    (typing.Literal['a'], ['str']),
+    (typing.Literal[1], ['int']),
+    (typing.Literal[True], ['bool']),
+    (typing.Literal[None], ['NoneType']),
+    (typing.Literal['a', 1], ['int', 'str']),
+    (typing.Union[typing.Literal['a'], int], ['int', 'str']),
+])
+def test_runtime_literal_property_completion(annotation, expected_names):
+    class Example:
+        @property
+        def value(self):
+            raise AssertionError('Completion must not evaluate the property')
+
+    Example.value.fget.__annotations__ = {'return': annotation}
+    namespace = {'example': Example()}
+    completions = jedi.Interpreter('example.', [namespace]).complete()
+    assert 'value' in [completion.name for completion in completions]
+    inferred = jedi.Interpreter('example.value', [namespace]).infer()
+    assert sorted({definition.name for definition in inferred}) == expected_names
+
+
+def test_runtime_literal_value_completion():
+    class Example:
+        @property
+        def value(self) -> typing.Literal['a']:
+            raise AssertionError('Completion must not evaluate the property')
+
+    completions = jedi.Interpreter('example.value.up', [{'example': Example()}]).complete()
+    assert [completion.name for completion in completions] == ['upper']
+
+
+def test_runtime_unsupported_typing_property_does_not_break_completion():
+    class Example:
+        @property
+        def value(self) -> typing.Annotated[str, 'metadata']:
+            raise AssertionError('Completion must not evaluate the property')
+
+        def sibling(self):
+            pass
+
+    completions = jedi.Interpreter('example.', [{'example': Example()}]).complete()
+    assert {'sibling', 'value'} <= {completion.name for completion in completions}
+
+
+def test_runtime_annotation_without_generics_is_ignored():
+    from jedi.inference.compiled.value import CompiledValue
+    from jedi.inference.base_value import ValueSet
+
+    class UnsupportedAnnotation:
+        pass
+
+    class TypingModule:
+        def py__getattribute__(self, name):
+            assert name == 'Unsupported'
+            return ValueSet([UnsupportedAnnotation()])
+
+    class AccessHandle:
+        def get_repr(self):
+            return 'unsupported annotation'
+
+        def get_annotation_name_and_args(self):
+            return 'Unsupported', ()
+
+    class InferenceState:
+        typing_module = TypingModule()
+
+    class Annotation:
+        access_handle = AccessHandle()
+        inference_state = InferenceState()
+
+    assert not CompiledValue.execute_annotation(typing.cast(CompiledValue, Annotation()), None)
