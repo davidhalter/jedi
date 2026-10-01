@@ -60,8 +60,9 @@ def _GeneralizedPopen(*args, **kwargs):
             CREATE_NO_WINDOW = 0x08000000
         kwargs['creationflags'] = CREATE_NO_WINDOW
     # The child process doesn't need file descriptors except 0, 1, 2.
-    # This is unix only.
-    kwargs['close_fds'] = 'posix' in sys.builtin_module_names
+    # On Windows this restricts inheritance to the redirected standard
+    # handles (PROC_THREAD_ATTRIBUTE_HANDLE_LIST).
+    kwargs['close_fds'] = True
 
     return subprocess.Popen(*args, **kwargs)
 
