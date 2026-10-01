@@ -7,7 +7,6 @@ Alternatively, if you don't need a custom function and are happy with printing
 debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
 """
-import sys
 from pathlib import Path
 
 import parso
@@ -21,7 +20,7 @@ from jedi.file_io import KnownContentFileIO
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
-from jedi.api.helpers import validate_line_column
+from jedi.api.helpers import validate_line_column, recursion_limit
 from jedi.api.completion import Completion, search_in_module
 from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
@@ -42,10 +41,6 @@ from jedi.inference.value.iterable import unpack_tuple_to_dict
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.gradual.utils import load_proper_stub_module
 from jedi.inference.utils import to_list
-
-# Jedi uses lots and lots of recursion. By setting this a little bit higher, we
-# can remove some "maximum recursion depth" errors.
-sys.setrecursionlimit(3000)
 
 
 class Script:
@@ -191,6 +186,7 @@ class Script:
             self._inference_state.environment,
         )
 
+    @recursion_limit
     @validate_line_column
     def complete(self, line=None, column=None, *, fuzzy=False):
         """
@@ -214,6 +210,7 @@ class Script:
             )
             return completion.complete()
 
+    @recursion_limit
     @validate_line_column
     def infer(self, line=None, column=None, *, only_stubs=False, prefer_stubs=False):
         """
@@ -259,6 +256,7 @@ class Script:
         # the API.
         return helpers.sorted_definitions(set(defs))
 
+    @recursion_limit
     @validate_line_column
     def goto(self, line=None, column=None, *, follow_imports=False, follow_builtin_imports=False,
              only_stubs=False, prefer_stubs=False):
@@ -324,6 +322,7 @@ class Script:
         """
         return self._search_func(string, all_scopes=all_scopes)
 
+    @recursion_limit
     @to_list
     def _search_func(self, string, all_scopes=False, complete=False, fuzzy=False):
         names = self._names(all_scopes=all_scopes)
@@ -353,6 +352,7 @@ class Script:
         """
         return self._search_func(string, complete=True, **kwargs)
 
+    @recursion_limit
     @validate_line_column
     def help(self, line=None, column=None):
         """
@@ -397,6 +397,7 @@ class Script:
                 return [classes.Name(self._inference_state, name)]
         return []
 
+    @recursion_limit
     @validate_line_column
     def get_references(self, line=None, column=None, **kwargs):
         """
@@ -428,6 +429,7 @@ class Script:
             return helpers.sorted_definitions(definitions)
         return _references(**kwargs)
 
+    @recursion_limit
     @validate_line_column
     def get_signatures(self, line=None, column=None):
         """
@@ -466,6 +468,7 @@ class Script:
         return [classes.Signature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
+    @recursion_limit
     @validate_line_column
     def get_context(self, line=None, column=None):
         """
@@ -581,6 +584,7 @@ class Script:
         ]
         return sorted(defs, key=lambda x: x.start_pos)
 
+    @recursion_limit
     def rename(self, line=None, column=None, *, new_name):
         """
         Renames all references of the variable under the cursor.
@@ -593,6 +597,7 @@ class Script:
         definitions = self.get_references(line, column, include_builtins=False)
         return refactoring.rename(self._inference_state, definitions, new_name)
 
+    @recursion_limit
     @validate_line_column
     def extract_variable(self, line, column, *, new_name, until_line=None, until_column=None):
         """
@@ -632,6 +637,7 @@ class Script:
             new_name, (line, column), until_pos
         )
 
+    @recursion_limit
     @validate_line_column
     def extract_function(self, line, column, *, new_name, until_line=None, until_column=None):
         """
@@ -679,6 +685,7 @@ class Script:
             new_name, (line, column), until_pos
         )
 
+    @recursion_limit
     def inline(self, line=None, column=None):
         """
         Inlines a variable under the cursor. This is basically the opposite of
