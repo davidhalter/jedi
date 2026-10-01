@@ -50,6 +50,22 @@ def recursion_limit(func):
     return wrapper
 
 
+def recursion_limit_generator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with higher_recursion_limit():
+            iterator = iter(func(*args, **kwargs))
+        while True:
+            with higher_recursion_limit():
+                try:
+                    value = next(iterator)
+                except StopIteration:
+                    return
+            # Restore the caller's limit before yielding a result.
+            yield value
+    return wrapper
+
+
 def _start_match(string, like_name):
     return string.startswith(like_name)
 

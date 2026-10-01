@@ -92,6 +92,7 @@ class Script:
         references works well, because the right folder is searched. There are
         also ways to modify the sys path and other things.
     """
+    @recursion_limit
     def __init__(self, code=None, *, path=None, environment=None, project=None):
         self._orig_path = path
         if isinstance(path, str):
@@ -546,6 +547,7 @@ class Script:
         finally:
             self._inference_state.is_analysis = False
 
+    @recursion_limit
     def get_names(self, **kwargs):
         """
         Returns names defined in the current file.
