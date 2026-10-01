@@ -1,3 +1,7 @@
+import os
+import subprocess
+import sys
+
 import pytest
 
 
@@ -145,15 +149,119 @@ def test_context(Script, code, line, column, full_name, expected_parents):
     assert parent_names == ['myfile'] + expected_parents
 
 
-def test_additional_knowledge_beyond_module_root(Script, tmpdir):
-    # Regression test for #2077. The additional knowledge lookup walks the
-    # parent scopes of a name from an imported module and stops at the
-    # current module's scope. That scope is never on the imported module's
-    # chain, so the walk passes the module root and used to crash with
-    # AttributeError: 'NoneType' object has no attribute 'type'.
-    tmpdir.join('other.py').write('y = 1')
-    script = Script('x = 1\nx.', path=str(tmpdir.join('example.py')))
-    other_module, = script._inference_state.import_module(
-        ('other',), sys_path=[str(tmpdir)], prefer_stubs=False)
-    foreign_name = other_module.tree_node.get_used_names()['y'][0]
-    assert not script._get_module_context().py__getattribute__(foreign_name)
+_REPRO_CACHE_PY = """\
+import os
+
+
+def deco1(maxsize):
+    def func_wrapper(func):
+        def wrapper(*args, **kwargs):
+            print('deco1')
+            retval = func(*args, **kwargs)
+            return retval
+        return wrapper
+    return func_wrapper
+
+
+def deco2(func):
+    print('deco2')
+    return func
+
+
+if os.getenv('CHOICE') == "deco1":
+    deco = deco1(1000)
+else:
+    deco = deco2
+"""
+
+_REPRO_MAIN_PY = """\
+from cache import deco
+
+class Expr:
+    flag = True
+
+    __slots__ = []
+
+    def __new__(cls, expr, *args, **kwargs):
+        obj = object.__new__(cls)
+        obj.args = args
+        return obj
+
+    @property
+    def func(self):
+        return self.__class__
+
+    @deco
+    def contains(self, expr):
+        if expr.flag:
+            pass
+        obj = self.func(expr, *self.args[1:])
+        return self.contains(obj)
+
+    def __contains__(self, other):
+        result = self.contains(other)
+        return result
+"""
+
+_REPRO_RUNNER = """\
+import os
+import sys
+import tempfile
+
+import jedi
+
+jedi.settings.cache_directory = tempfile.mkdtemp()
+
+project_path = sys.argv[1]
+main_path = os.path.join(project_path, 'main.py')
+with open(main_path) as f:
+    code = f.read()
+project = jedi.Project(path=project_path, environment_path=None)
+script = jedi.Script(code=code, path=main_path, project=project)
+for _ in range(100):
+    try:
+        definitions = script.goto(19, 17, follow_imports=True)
+        definitions[0].full_name
+    except AttributeError:
+        raise
+    except Exception:
+        continue
+"""
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))
+
+
+@pytest.mark.skipif(sys.version_info >= (3, 13), reason=(
+    'this reproduction does not crash on the unfixed code on Python 3.13, '
+    'so it cannot catch the regression there'))
+def test_goto_does_not_walk_past_module_root(tmpdir):
+    # Regression test for #2077. Script.goto() on this decorated method used
+    # to crash with AttributeError: 'NoneType' object has no attribute
+    # 'type': while resolving dynamic parameters, a name inside one method
+    # gets evaluated from a sibling method's execution context, and the
+    # additional knowledge walk climbs past the module root.
+    #
+    # In a single process the crash cannot be triggered deterministically:
+    # which inference interleaving runs depends on hash randomization and on
+    # environment subprocess timing. The reproduction below only uses the
+    # public API (the exact script from the issue), so it is run in fresh
+    # subprocesses with fixed hash seeds. On the unfixed code most of them
+    # crash on Python 3.12 (measured roughly two out of three). A green run
+    # on a Python version where the reproduction is silent does not prove
+    # the bug is absent there.
+    tmpdir.join('cache.py').write(_REPRO_CACHE_PY)
+    tmpdir.join('main.py').write(_REPRO_MAIN_PY)
+    env = dict(os.environ)
+    pythonpath = [_REPO_ROOT]
+    if env.get('PYTHONPATH'):
+        pythonpath.append(env['PYTHONPATH'])
+    env['PYTHONPATH'] = os.pathsep.join(pythonpath)
+    for seed in range(10):
+        env['PYTHONHASHSEED'] = str(seed)
+        result = subprocess.run(
+            [sys.executable, '-c', _REPRO_RUNNER, str(tmpdir)],
+            env=env, capture_output=True, text=True)
+        assert result.returncode == 0, (
+            'reproduction crashed with PYTHONHASHSEED=%s:\n%s'
+            % (seed, result.stderr))
