@@ -100,6 +100,8 @@ class AbstractContext:
             from jedi.inference.finder import check_flow_information
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
+                if flow_scope is None:
+                    break
                 n = check_flow_information(name_context, flow_scope,
                                            name_or_str, position)
                 if n is not None:

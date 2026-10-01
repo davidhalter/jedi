@@ -143,3 +143,15 @@ def test_context(Script, code, line, column, full_name, expected_parents):
     assert context.full_name == full_name
     parent_names = [d.name for d in _iter_hierarchy(context)]
     assert parent_names == ['myfile'] + expected_parents
+
+
+def test_additional_knowledge_beyond_module_root(Script):
+    # Regression test for #2077. When the additional knowledge lookup walks
+    # the parent scopes of a name from another module, it never finds the
+    # current module's scope, passes the module root, and used to crash with
+    # AttributeError: 'NoneType' object has no attribute 'type'.
+    other = Script('y = 1', path='other.py')
+    script = Script('x = 1\nx.', path='example.py')
+    module_context = script._get_module_context()
+    foreign_name = other._module_node.get_used_names()['y'][0]
+    assert not module_context.py__getattribute__(foreign_name)
