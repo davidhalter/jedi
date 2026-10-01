@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Avoid changing the global recursion limit
+
 0.20.0 (2026-05-02)
 +++++++++++++++++++
 
