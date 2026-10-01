@@ -145,13 +145,15 @@ def test_context(Script, code, line, column, full_name, expected_parents):
     assert parent_names == ['myfile'] + expected_parents
 
 
-def test_additional_knowledge_beyond_module_root(Script):
-    # Regression test for #2077. When the additional knowledge lookup walks
-    # the parent scopes of a name from another module, it never finds the
-    # current module's scope, passes the module root, and used to crash with
+def test_additional_knowledge_beyond_module_root(Script, tmpdir):
+    # Regression test for #2077. The additional knowledge lookup walks the
+    # parent scopes of a name from an imported module and stops at the
+    # current module's scope. That scope is never on the imported module's
+    # chain, so the walk passes the module root and used to crash with
     # AttributeError: 'NoneType' object has no attribute 'type'.
-    other = Script('y = 1', path='other.py')
-    script = Script('x = 1\nx.', path='example.py')
-    module_context = script._get_module_context()
-    foreign_name = other._module_node.get_used_names()['y'][0]
-    assert not module_context.py__getattribute__(foreign_name)
+    tmpdir.join('other.py').write('y = 1')
+    script = Script('x = 1\nx.', path=str(tmpdir.join('example.py')))
+    other_module, = script._inference_state.import_module(
+        ('other',), sys_path=[str(tmpdir)], prefer_stubs=False)
+    foreign_name = other_module.tree_node.get_used_names()['y'][0]
+    assert not script._get_module_context().py__getattribute__(foreign_name)
