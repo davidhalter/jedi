@@ -2,7 +2,9 @@
 Helpers for the API
 """
 import re
+import sys
 from collections import namedtuple
+from contextlib import contextmanager
 from textwrap import dedent
 from itertools import chain
 from functools import wraps
@@ -20,6 +22,48 @@ from jedi.parser_utils import get_parent_scope
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
+
+RECURSION_LIMIT = 3000
+
+
+@contextmanager
+def higher_recursion_limit():
+    """Jedi needs a higher recursion limit for parsing and inference. Raise it
+    only temporarily, so importing Jedi does not change global interpreter
+    state and a user-defined higher limit is never lowered."""
+    old_limit = sys.getrecursionlimit()
+    if old_limit >= RECURSION_LIMIT:
+        yield
+    else:
+        sys.setrecursionlimit(RECURSION_LIMIT)
+        try:
+            yield
+        finally:
+            sys.setrecursionlimit(old_limit)
+
+
+def recursion_limit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with higher_recursion_limit():
+            return func(*args, **kwargs)
+    return wrapper
+
+
+def recursion_limit_generator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with higher_recursion_limit():
+            iterator = iter(func(*args, **kwargs))
+        while True:
+            with higher_recursion_limit():
+                try:
+                    value = next(iterator)
+                except StopIteration:
+                    return
+            # Restore the caller's limit before yielding a result.
+            yield value
+    return wrapper
 
 
 def _start_match(string, like_name):

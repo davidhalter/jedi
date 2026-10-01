@@ -3,6 +3,8 @@ Test all things related to the ``jedi.api`` module.
 """
 
 import os
+import subprocess
+import sys
 from textwrap import dedent
 
 import pytest
@@ -425,3 +427,90 @@ def test_infer_after_parentheses(Script, code, column, expected):
         assert completions == []
     else:
         assert [c.name for c in completions] == [expected]
+
+
+def test_import_does_not_change_recursion_limit():
+    # Regression test for #1925: importing jedi must not lower a higher
+    # user-defined limit, nor raise a lower one.
+    for limit in (1200, 5000):
+        code = ('import sys; sys.setrecursionlimit(%d); import jedi; '
+                'print(sys.getrecursionlimit())' % limit)
+        output = subprocess.check_output([sys.executable, '-c', code])
+        assert output.strip() == str(limit).encode()
+
+
+def test_recursion_limit_is_scoped_and_restored():
+    from jedi.api.helpers import higher_recursion_limit, RECURSION_LIMIT
+
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(1000)
+    try:
+        with higher_recursion_limit():
+            assert sys.getrecursionlimit() == RECURSION_LIMIT
+        assert sys.getrecursionlimit() == 1000
+        sys.setrecursionlimit(5000)
+        with higher_recursion_limit():
+            assert sys.getrecursionlimit() == 5000
+        assert sys.getrecursionlimit() == 5000
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+
+def test_deep_code_works_with_low_recursion_limit(Script):
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(1000)
+    try:
+        code = 'x = ' + '(' * 200 + '1' + ')' * 200 + '\nx.'
+        assert Script(code).complete(2, 2)
+        assert sys.getrecursionlimit() == 1000
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+
+@pytest.mark.parametrize('method', [
+    'infer', 'get_type_hint', 'get_signatures', 'execute', 'defined_names',
+])
+def test_name_inference_recursion_limit(Script, method):
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(1000)
+    try:
+        name = Script('x = ' + '(' * 200 + '1' + ')' * 200).get_names()[0]
+        getattr(name, method)()
+        assert sys.getrecursionlimit() == 1000
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+
+@pytest.mark.parametrize('method', ['search', 'complete_search'])
+def test_project_search_recursion_limit(tmp_path, method):
+    from jedi import Project
+
+    (tmp_path / 'sample.py').write_text('x = ' + '(' * 200 + '1' + ')' * 200)
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(1000)
+    try:
+        results = getattr(Project(tmp_path), method)('sample.x.real')
+        assert sys.getrecursionlimit() == 1000
+        assert next(results).name == 'real'
+        assert sys.getrecursionlimit() == 1000
+        results.close()
+        assert sys.getrecursionlimit() == 1000
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+
+def test_recursion_limit_restored_after_error():
+    from jedi.api.helpers import recursion_limit
+
+    @recursion_limit
+    def fail():
+        raise ValueError('test')
+
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(1000)
+    try:
+        with pytest.raises(ValueError, match='test'):
+            fail()
+        assert sys.getrecursionlimit() == 1000
+    finally:
+        sys.setrecursionlimit(old_limit)

@@ -15,7 +15,7 @@ from jedi import debug
 from jedi.api.environment import get_cached_default_environment, create_environment
 from jedi.api.exceptions import WrongVersion
 from jedi.api.completion import search_in_module
-from jedi.api.helpers import split_search_string, get_module_names
+from jedi.api.helpers import split_search_string, get_module_names, recursion_limit_generator
 from jedi.inference.imports import load_module_from_path, \
     load_namespace_from_path, iter_module_names
 from jedi.inference.sys_path import discover_buildout_paths
@@ -293,6 +293,7 @@ class Project:
         """
         return self._search_func(string, complete=True, **kwargs)
 
+    @recursion_limit_generator
     @_try_to_skip_duplicates
     def _search_func(self, string, complete=False, all_scopes=False):
         # Using a Script is they easiest way to get an empty module context.
