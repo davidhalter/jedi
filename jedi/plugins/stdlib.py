@@ -20,7 +20,7 @@ from jedi.inference.arguments import iterate_argument_clinic, ParamIssue, \
 from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.value.instance import \
-    AnonymousMethodExecutionContext, MethodExecutionContext
+    AnonymousMethodExecutionContext, MethodExecutionContext, BoundMethod
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
@@ -115,6 +115,10 @@ def execute(callback):
         except AttributeError:
             pass
         else:
+            if obj_name == '__get__' and isinstance(value, BoundMethod) \
+                    and value.get_qualified_names() == ('property', '__get__') \
+                    and value.get_root_context().py__name__() == 'builtins':
+                return builtins_property_get(value, arguments)
             p = value.parent_context
             if p is not None and p.is_builtins_module():
                 module_name = 'builtins'
@@ -404,6 +408,33 @@ class PropertyObject(AttributeOverwrite, ValueWrapper):
     @publish_method('setter')
     def _return_self(self, arguments):
         return ValueSet({self})
+
+
+class PropertyFGet(ValueWrapper):
+    def py__get__(self, instance, class_value):
+        if instance is None:
+            return ValueSet([self])
+        return _property_getter(instance)
+
+
+def _property_getter(instance):
+    if instance._arguments is None:
+        return NO_VALUES
+    # The stub cannot preserve the getter passed to property.
+    for key, lazy_value in instance._arguments.unpack():
+        if key is None or key == 'fget':
+            return lazy_value.infer()
+    return ValueSet([compiled.builtin_from_name(instance.inference_state, 'None')])
+
+
+def builtins_property_get(value, arguments):
+    result = NO_VALUES
+    for instance in _follow_param(value.inference_state, arguments, 0):
+        if instance.get_safe_value(default=False) is None:
+            result |= ValueSet([value.instance])
+        else:
+            result |= _property_getter(value.instance).execute_with_values(instance)
+    return result
 
 
 @argument_clinic('func, /', want_callback=True)
@@ -929,6 +960,12 @@ class TypeClassWrapper(ValueWrapper):
 
 def tree_name_to_values(func):
     def wrapper(inference_state, context, tree_name):
+        if tree_name.value == 'fget' and context.is_class() \
+                and context.py__name__() == 'property' \
+                and context.get_root_context().is_builtins_module():
+            return ValueSet(
+                PropertyFGet(value) for value in func(inference_state, context, tree_name)
+            )
         if tree_name.value == 'sep' \
                 and context.is_module() and context.py__name__() in ('posixpath', 'ntpath'):
             return ValueSet({
