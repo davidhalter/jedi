@@ -86,3 +86,28 @@ def broken_f1(value: Tuple[T]) -> Tuple[T]: ...
 tup: Tuple[float]
 #? float()
 broken_f1(broken_f1(tup))[0]
+
+# -------------------------
+# Typing Extensions
+# -------------------------
+
+import typing_extensions
+import typing
+
+@typing_extensions.overload
+def extensions(x: int) -> int: ...
+@typing_extensions.overload
+def extensions(x: str) -> str: ...
+#? int()
+extensions(1)
+#? str()
+extensions("")
+
+@typing.overload
+def typing_direct(x: int) -> int: ...
+@typing.overload
+def typing_direct(x: str) -> str: ...
+#? int()
+typing_direct(1)
+#? str()
+typing_direct("")

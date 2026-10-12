@@ -435,6 +435,10 @@ def _find_overload_functions(context, tree_node):
                 if dotted_name.type == 'name' and dotted_name.value == 'overload':
                     # TODO check with values if it's the right overload
                     return True
+                if dotted_name.type == 'atom_expr':
+                    trailer = dotted_name.children[-1]
+                    if trailer.children[0] == "." and trailer.children[1].value == "overload":
+                        return True
         return False
 
     if tree_node.type == 'lambdef':
