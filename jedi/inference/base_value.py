@@ -216,7 +216,7 @@ class Value(HelperValueMixin):
     def is_namespace(self):
         return False
 
-    def is_compiled(self):
+    def is_compiled(self) -> bool:
         return False
 
     def is_bound_method(self):
