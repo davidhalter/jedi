@@ -6,8 +6,12 @@ Changelog
 Unreleased
 ++++++++++
 
-- Complete, infer and navigate to asynchronous pytest fixtures
+0.20.1 (2026-10-12)
++++++++++++++++++++
+
+- Avoid loading an executable path from `project.json`
 - Avoid changing the global recursion limit
+- Support for async pytest fixtures
 
 0.20.0 (2026-05-02)
 +++++++++++++++++++
