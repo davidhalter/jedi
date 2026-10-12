@@ -6,6 +6,7 @@ Changelog
 Unreleased
 ++++++++++
 
+- Complete, infer and navigate to asynchronous pytest fixtures
 - Avoid changing the global recursion limit
 
 0.20.0 (2026-05-02)

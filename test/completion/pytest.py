@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import AsyncGenerator, Generator
 
 import pytest
 from pytest import fixture
@@ -208,3 +208,58 @@ def bla(admin_u
 def bla(admin_user):
     pass
 
+
+
+# -----------------
+# asynchronous fixtures
+# -----------------
+
+@pytest.fixture
+async def async_fixture():
+    return 1
+
+
+@pytest.fixture(scope='module')
+async def async_annotated_fixture() -> str:
+    return ''
+
+
+@fixture
+async def async_yield_fixture():
+    yield 1.0
+
+
+@pytest.fixture
+async def async_annotated_opaque() -> int:
+    return opaque_value
+
+
+@pytest.fixture
+async def async_generator_annotated() -> AsyncGenerator[str, None]:
+    yield opaque_value
+
+
+#? ['async_fixture']
+def test_async_fixture_completion(async_fixt
+    pass
+
+
+def test_async_fixture_inference(async_fixture, async_annotated_fixture, async_yield_fixture):
+    #? int()
+    async_fixture
+    #? str()
+    async_annotated_fixture
+    #? float()
+    async_yield_fixture
+
+
+def test_async_fixture_annotation(async_annotated_opaque, async_generator_annotated):
+    #? int()
+    async_annotated_opaque
+    #? str()
+    async_generator_annotated
+
+
+#! 30 ['def async_fixture']
+def test_async_fixture_goto(async_fixture):
+    pass

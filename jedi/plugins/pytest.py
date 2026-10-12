@@ -2,7 +2,9 @@ import sys
 from typing import List
 from pathlib import Path
 
+from jedi.inference.arguments import ValuesArguments
 from jedi.inference.cache import inference_state_method_cache
+from jedi.inference.gradual.annotation import infer_return_types
 from jedi.inference.imports import goto_import, load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
@@ -32,6 +34,19 @@ def execute(callback):
 def infer_anonymous_param(func):
     def get_returns(value):
         if value.tree_node.annotation is not None:
+            if value.tree_node.parent.type == 'async_funcdef':
+                # Async fixtures provide the awaited value, rather than a
+                # coroutine. The annotation of an async generator describes
+                # the iterator, so the value is what that iterator yields.
+                result = infer_return_types(value, ValuesArguments([]))
+                if value.as_context().is_generator():
+                    return ValueSet.from_sets(
+                        lazy_value.infer()
+                        for v in result
+                        for lazy_value in v.iterate(is_async=True)
+                    )
+                return result
+
             result = value.execute_with_values()
             if any(v.name.get_qualified_names(include_module_names=True)
                    == ('typing', 'Generator')
@@ -223,6 +238,8 @@ class FixtureFilter(ParserTreeFilter):
         if funcdef.type != "funcdef":
             return False
         decorated = funcdef.parent
+        if decorated.type == "async_funcdef":
+            decorated = decorated.parent
         if decorated.type != "decorated":
             return False
         decorators = decorated.children[0]
