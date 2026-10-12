@@ -9,6 +9,7 @@ from textwrap import dedent
 from itertools import chain
 from functools import wraps
 from inspect import Parameter
+from typing import Callable, TypeVar, Any, ParamSpec
 
 from parso.python.parser import Parser
 from parso.python import tree
@@ -20,6 +21,8 @@ from jedi.inference.compiled import get_string_value_set
 from jedi.cache import signature_time_cache, memoize_method
 from jedi.parser_utils import get_parent_scope
 
+T = TypeVar("T")
+P = ParamSpec("P")
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
@@ -42,7 +45,7 @@ def higher_recursion_limit():
             sys.setrecursionlimit(old_limit)
 
 
-def recursion_limit(func):
+def recursion_limit(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
     def wrapper(*args, **kwargs):
         with higher_recursion_limit():
@@ -509,9 +512,9 @@ def cache_signatures(inference_state, context, bracket_leaf, code_lines, user_po
     )
 
 
-def validate_line_column(func):
+def validate_line_column(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
-    def wrapper(self, line=None, column=None, *args, **kwargs):
+    def wrapper(self, line=None, column=None, *args, **kwargs) -> Any:
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -528,8 +531,8 @@ def validate_line_column(func):
             raise ValueError('`column` parameter (%d) is not in a valid range '
                              '(0-%d) for line %d (%r).' % (
                                  column, line_len, line, line_string))
-        return func(self, line, column, *args, **kwargs)
-    return wrapper
+        return func(self, line, column, *args, **kwargs)  # type: ignore[arg-type]
+    return wrapper  # type: ignore[return-value]
 
 
 def get_module_names(module, all_scopes, definitions=True, references=False):

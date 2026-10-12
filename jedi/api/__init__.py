@@ -189,7 +189,7 @@ class Script:
 
     @recursion_limit
     @validate_line_column
-    def complete(self, line=None, column=None, *, fuzzy=False):
+    def complete(self, line=None, column=None, *, fuzzy=False) -> list[classes.Completion]:
         """
         Completes objects under the cursor.
 
