@@ -110,7 +110,7 @@ class Project:
 
         # These are dropped anyway
         data.pop('_load_unsafe_extensions', None)
-        data.pop('environment_path', None)
+        data.pop('_environment_path', None)
 
         data = {k.lstrip('_'): v for k, v in data.items()}
         data['path'] = str(data['path'])
