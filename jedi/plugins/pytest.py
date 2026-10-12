@@ -31,7 +31,9 @@ def execute(callback):
 
 def infer_anonymous_param(func):
     def get_returns(value):
-        if value.tree_node.annotation is not None:
+        # Async fixtures provide the awaited value, rather than a coroutine.
+        if (value.tree_node.annotation is not None
+                and value.tree_node.parent.type != 'async_funcdef'):
             result = value.execute_with_values()
             if any(v.name.get_qualified_names(include_module_names=True)
                    == ('typing', 'Generator')
@@ -223,6 +225,8 @@ class FixtureFilter(ParserTreeFilter):
         if funcdef.type != "funcdef":
             return False
         decorated = funcdef.parent
+        if decorated.type == "async_funcdef":
+            decorated = decorated.parent
         if decorated.type != "decorated":
             return False
         decorators = decorated.children[0]
