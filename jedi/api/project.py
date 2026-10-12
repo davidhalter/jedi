@@ -107,6 +107,11 @@ class Project:
         data = dict(self.__dict__)
         data.pop('_environment', None)
         data.pop('_django', None)  # TODO make django setting public?
+
+        # These are dropped anyway
+        data.pop('_load_unsafe_extensions', None)
+        data.pop('environment_path', None)
+
         data = {k.lstrip('_'): v for k, v in data.items()}
         data['path'] = str(data['path'])
 
