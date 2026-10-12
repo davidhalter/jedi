@@ -873,3 +873,20 @@ def test_whitespace_after_dot_completion(Script):
     # From #1954
     completions = jedi.Interpreter("object. \n", []).complete(1, 8)
     assert "mro" in [c.name for c in completions]
+
+
+def test_interpreter_with_literals_no_crash():
+    # From #1990
+    class A:
+        @property
+        def value(self) -> typing.Literal["a"]:
+            return "a"
+
+    a = A()
+
+    interpreter = jedi.Interpreter("a.", [{"a": a}])
+    value = next(filter(lambda c: c.name == "value", interpreter.complete()))
+    assert value.name == "value"
+
+    interpreter = jedi.Interpreter("a.value.", [{"a": a}])
+    assert "upper" in [c.name for c in interpreter.complete()]

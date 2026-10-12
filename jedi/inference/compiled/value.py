@@ -256,12 +256,11 @@ class CompiledValue(Value):
                 arg.execute_annotation(context)
                 for arg in arguments)
         elif name:
-            # While with_generics only exists on very specific objects, we
-            # should probably be fine, because we control all the typing
-            # objects.
+            # These are typically typing module objects. Try to use that to create generics.
             return ValueSet([
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
+                if hasattr(v, "with_generics")
             ]).execute_annotation(context)
         return super().execute_annotation(context)
 
