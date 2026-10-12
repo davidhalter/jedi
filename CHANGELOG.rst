@@ -12,6 +12,7 @@ Unreleased
 - Avoid loading an executable path from `project.json`
 - Avoid changing the global recursion limit
 - Support for async pytest fixtures
+- Work better with PEP 695 type parameter syntax
 
 0.20.0 (2026-05-02)
 +++++++++++++++++++
