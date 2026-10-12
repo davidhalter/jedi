@@ -137,6 +137,10 @@ def _find_module(string, path=None, full_name=None, is_global_search=True):
     loader = None
 
     for finder in sys.meta_path:
+        # BuiltinImporter ignores the search path and would match a top-level
+        # builtin with the same name as the submodule we are looking for.
+        if not is_global_search and finder == importlib.machinery.BuiltinImporter:
+            continue
         if is_global_search and finder != importlib.machinery.PathFinder:
             p = None
         else:

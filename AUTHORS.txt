@@ -71,6 +71,7 @@ Code Contributors
 - Dhanraj E (@Dhanu-dynamic) <dhanraj@labs.digiscrypt.com>
 - Charan Rathore (@charan-rathore)
 - Abdullah Ahmed (@abdull-ah-med)
+- FanWu-ai (@FanWu-ai) (with OpenAI Codex assistance)
 
 And a few more "anonymous" contributors.
 

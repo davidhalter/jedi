@@ -6,6 +6,8 @@ Changelog
 Unreleased
 ++++++++++
 
+- Fix resolving package submodules whose names match top-level builtins.
+
 0.20.1 (2026-10-12)
 +++++++++++++++++++
 

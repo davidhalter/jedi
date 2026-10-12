@@ -84,7 +84,7 @@ def test_relative_import(Script, environment, tmpdir):
     # Need to copy the content in a directory where there's no __init__.py.
     py.path.local(directory).copy(tmpdir)
     file_path = join(tmpdir.strpath, "rel1.py")
-    script = Script(path=file_path)
+    script = Script(path=file_path, project=Project(tmpdir.strpath))
     d, = script.infer(line=1)
     assert d.name == 'int'
     d, = script.goto(line=1)

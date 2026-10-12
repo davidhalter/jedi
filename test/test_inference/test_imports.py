@@ -40,6 +40,36 @@ def test_find_module_not_package():
     assert is_package is False
 
 
+@pytest.mark.parametrize('module_name', ['_ast', 'sys'])
+@pytest.mark.parametrize('is_package', [False, True])
+@pytest.mark.parametrize('relative', [False, True])
+def test_package_module_named_like_builtin(Script, tmp_path, module_name, is_package, relative):
+    package = tmp_path / 'localpackage'
+    package.mkdir()
+    (package / '__init__.py').write_text('')
+    if is_package:
+        module = package / module_name
+        module.mkdir()
+        module = module / '__init__.py'
+    else:
+        module = package / (module_name + '.py')
+    module.write_text('class Foo:\n    pass\n')
+    prefix = '.' if relative else 'localpackage.'
+    code = 'from %s%s import Foo\nFoo' % (prefix, module_name)
+    script = Script(code, path=package / 'consumer.py', project=Project(tmp_path))
+
+    definition, = script.infer()
+    assert definition.name == 'Foo'
+    assert definition.module_path == module
+    definition, = script.goto(follow_imports=True)
+    assert definition.module_path == module
+    completion, = [c for c in script.complete(column=2) if c.name == 'Foo']
+    assert completion.infer()[0].module_path == module
+
+    # Top-level imports must still prefer builtins over same-named files.
+    assert _find_module(module_name, [str(package)]) == (None, False)
+
+
 pkg_zip_path = Path(get_example_dir('zipped_imports', 'pkg.zip'))
 
 
