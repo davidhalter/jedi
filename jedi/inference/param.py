@@ -254,4 +254,4 @@ def _error_argument_count(funcdef, actual_count):
     else:
         before = 'from %s to ' % (len(params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
-            % (funcdef.name, before, len(params), actual_count))
+            % (getattr(funcdef, "name", "<lambda>"), before, len(params), actual_count))
