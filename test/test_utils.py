@@ -1,4 +1,5 @@
 import sys
+import types
 from typing import Any
 
 try:
@@ -6,6 +7,7 @@ try:
 except ImportError:
     readline = False  # type: ignore[assignment]
 import unittest
+from unittest import mock
 
 from jedi import utils
 
@@ -136,3 +138,55 @@ class TestSetupReadline(unittest.TestCase):
 
 def test_version_info():
     assert utils.version_info()[:2] > (0, 7)
+
+
+def test_setup_readline_pyrepl():
+    namespace = types.SimpleNamespace()
+
+    class FakeReadline(types.ModuleType):
+        def __init__(self, name):
+            super().__init__(name)
+            self.completer = None
+            self.completer_delims = None
+            self.bindings = []
+            self._wrapper = types.SimpleNamespace(
+                config=types.SimpleNamespace(module_completer='original')
+            )
+            self._setup_calls = 0
+
+        def parse_and_bind(self, string):
+            self.bindings.append(string)
+
+        def set_completer(self, function=None):
+            self.completer = function
+
+        def get_completer(self):
+            return self.completer
+
+        def set_completer_delims(self, delimiters):
+            self.completer_delims = delimiters
+
+        def _setup(self, namespace):
+            self._setup_calls += 1
+            self._wrapper.config.module_completer = 'pyrepl'
+
+    fake_readline = FakeReadline('readline')
+    fake_pyrepl_readline = FakeReadline('_pyrepl.readline')
+    fake_pyrepl = types.ModuleType('_pyrepl')
+    fake_pyrepl.readline = fake_pyrepl_readline
+
+    with mock.patch.dict(sys.modules, {
+        'readline': fake_readline,
+        '_pyrepl': fake_pyrepl,
+        '_pyrepl.readline': fake_pyrepl_readline,
+    }):
+        utils.setup_readline(namespace)
+        fake_pyrepl_readline._setup({})
+
+    completer = fake_pyrepl_readline.get_completer()
+    assert completer is not None
+    assert completer('list.Insert', 0) == 'list.insert'
+    assert fake_pyrepl_readline.completer_delims == ''
+    assert fake_pyrepl_readline._wrapper.config.module_completer.get_completions(
+        'from os import a'
+    ) is None

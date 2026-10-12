@@ -126,6 +126,12 @@ Using ``PYTHONSTARTUP``
 
 .. automodule:: jedi.api.replstartup
 
+.. note::
+
+   Python 3.13+ uses the new ``_pyrepl`` shell by default. If you still need a
+   workaround for REPL completion, set ``PYTHON_BASIC_REPL=1`` to force the
+   classic shell or use IPython.
+
 Using a Custom ``$HOME/.pythonrc.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -16,6 +16,11 @@ from jedi import Interpreter
 READLINE_DEBUG = False
 
 
+class _NoPyreplModuleCompleter:
+    def get_completions(self, line, include_values=False):
+        return None
+
+
 def setup_readline(namespace_module=__main__, fuzzy=False):
     """
     This function sets up :mod:`readline` to use Jedi in a Python interactive
@@ -100,17 +105,10 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
             except IndexError:
                 return None
 
-    try:
-        # Need to import this one as well to make sure it's executed before
-        # this code. This didn't use to be an issue until 3.3. Starting with
-        # 3.4 this is different, it always overwrites the completer if it's not
-        # already imported here.
-        import rlcompleter  # noqa: F401
-        import readline
-    except ImportError:
-        print("Jedi: Module readline not available.")
-    else:
-        readline.set_completer(JediRL().complete)
+    jedi_rl = JediRL()
+
+    def configure_readline(readline):
+        readline.set_completer(jedi_rl.complete)
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
         readline.parse_and_bind("set completion-ignore-case on")
@@ -121,6 +119,44 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
         readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
+
+    def configure_pyrepl_readline(pyrepl_readline):
+        configure_readline(pyrepl_readline)
+        wrapper = getattr(pyrepl_readline, '_wrapper', None)
+        if wrapper is not None:
+            wrapper.config.module_completer = _NoPyreplModuleCompleter()
+
+    try:
+        import _pyrepl.readline as pyrepl_readline
+    except ImportError:
+        pyrepl_readline = None
+    else:
+        pyrepl_readline.__jedi_apply_readline__ = (
+            lambda: configure_pyrepl_readline(pyrepl_readline)
+        )
+        setup = getattr(pyrepl_readline, '_setup', None)
+        if setup is not None and not getattr(setup, '__jedi_wrapped__', False):
+            def _jedi_pyrepl_setup(namespace):
+                setup(namespace)
+                pyrepl_readline.__jedi_apply_readline__()
+
+            _jedi_pyrepl_setup.__jedi_wrapped__ = True
+            pyrepl_readline._setup = _jedi_pyrepl_setup
+
+        configure_pyrepl_readline(pyrepl_readline)
+
+    try:
+        # Need to import this one as well to make sure it's executed before
+        # this code. This didn't use to be an issue until 3.3. Starting with
+        # 3.4 this is different, it always overwrites the completer if it's not
+        # already imported here.
+        import rlcompleter  # noqa: F401
+        import readline
+    except ImportError:
+        if pyrepl_readline is None:
+            print("Jedi: Module readline not available.")
+    else:
+        configure_readline(readline)
 
 
 def version_info():
