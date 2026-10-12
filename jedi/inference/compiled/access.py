@@ -9,7 +9,7 @@ import re
 import builtins
 import typing
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 from jedi.inference.compiled.getattr_static import getattr_static
 
@@ -46,7 +46,7 @@ ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
 _sentinel = object()
 
 # Maps Python syntax to the operator module.
-COMPARISON_OPERATORS = {
+COMPARISON_OPERATORS: dict[str, Any] = {
     '==': op.eq,
     '!=': op.ne,
     'is': op.is_,
