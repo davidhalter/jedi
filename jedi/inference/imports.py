@@ -416,10 +416,18 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
         if is_pkg is None:
             return NO_VALUES
     else:
-        paths = parent_module_value.py__path__()
-        if paths is None:
-            # The module might not be a package.
+        try:
+            py__path__ = parent_module_value.py__path__
+        except AttributeError:
+            # Due to meta_path, the value can be pretty much any compiled value
+            # and we're not guaranteed that the attribute is available, see
+            # also https://github.com/davidhalter/jedi/issues/2118
             return NO_VALUES
+        else:
+            paths = py__path__()
+            if paths is None:
+                # The module might not be a package.
+                return NO_VALUES
 
         file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
             string=import_names[-1],
