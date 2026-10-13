@@ -94,8 +94,20 @@ def _remove_given_params(arguments, param_names):
         yield p
 
 
+class ParamNameFixedKind(ParamNameWrapper):
+    def __init__(self, param_name, new_kind):
+        super().__init__(param_name)
+        self._new_kind = new_kind
+
+    def get_kind(self):
+        return self._new_kind
+
+
 @to_list
-def process_params(param_names: Sequence[AnonymousParamName | ParamNameFixedKind], star_count=3, already_used=None):
+def process_params(
+        param_names: Sequence[AnonymousParamName | ParamNameFixedKind],
+        star_count=3,
+        already_used=None):
     # start_count=3 means both * and **
     if already_used is None:
         already_used = set()
@@ -219,12 +231,3 @@ def process_params(param_names: Sequence[AnonymousParamName | ParamNameFixedKind
         yield original_kwarg_name
     elif kwarg_names:
         yield kwarg_names[0]
-
-
-class ParamNameFixedKind(ParamNameWrapper):
-    def __init__(self, param_name, new_kind):
-        super().__init__(param_name)
-        self._new_kind = new_kind
-
-    def get_kind(self):
-        return self._new_kind

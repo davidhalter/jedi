@@ -165,7 +165,7 @@ def test_tree_signature(Script, environment, code, expected):
         ('two_kwargs_redirects(kw, kw)', '*args, a, b, c, **kwargs'),
         ('two_kwargs_redirects(simple, kw)', '*args, a, b, c, **kwargs'),
         ('two_kwargs_redirects(simple2, two_kwargs_redirects(simple, simple))',
-         '*args, x, a, b, c'),
+         '*args, x, **kwargs'),
 
         ('combined_redirect(simple, simple2)', 'a, b, /, *, x'),
         ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
@@ -180,11 +180,11 @@ def test_tree_signature(Script, environment, code, expected):
         ('combined_lot_of_args(simple4, kw)', '*, b, c, **kwargs'),
 
         ('combined_redirect(combined_redirect(simple2, simple4), combined_redirect(kw, simple5))',
-         'x, /, *, y'),
+         '*args, **kwargs'),
         ('combined_redirect(combined_redirect(simple4, simple2), combined_redirect(simple5, kw))',
-         'a, b, x: int, /, *, a, b, c, **kwargs'),
+         '*args, **kwargs'),
         ('combined_redirect(combined_redirect(a, kw), combined_redirect(kw, simple5))',
-         'a, b, /, *args, y'),
+         '*args, **kwargs'),
 
         ('no_redirect(kw)', '*args, **kwargs'),
         ('no_redirect(akw)', '*args, **kwargs'),
