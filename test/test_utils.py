@@ -1,4 +1,5 @@
 import sys
+import types
 from typing import Any
 
 try:
@@ -136,3 +137,29 @@ class TestSetupReadline(unittest.TestCase):
 
 def test_version_info():
     assert utils.version_info()[:2] > (0, 7)
+
+
+def test_pyrepl():
+    try:
+        from _pyrepl import readline  # zuban: ignore[import-not-found]
+    except ImportError:  # This is typical before Python 3.13
+        pass
+
+    utils.setup_readline(types.SimpleNamespace())
+    readline._setup({})
+
+    def complete(text):
+        completer = readline.get_completer()
+        i = 0
+        completions = []
+        while True:
+            completion = completer(text, i)
+            if completion is None:
+                break
+            completions.append(completion)
+            i += 1
+        return completions
+
+    assert complete("str") == ["str"]
+    assert complete("str().upp") == ["str().upper"]
+    assert complete("import multiproc") == ["import multiprocessing"]
