@@ -2,6 +2,7 @@
 import functools
 import re
 import os
+from typing import ParamSpec, TypeVar, Callable, Iterable
 
 
 _sep = os.path.sep
@@ -10,8 +11,11 @@ if os.path.altsep is not None:
 _path_re = re.compile(r'(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
+P = ParamSpec("P")
+T = TypeVar("T")
 
-def to_list(func):
+
+def to_list(func: Callable[P, Iterable[T]]) -> Callable[P, list[T]]:
     def wrapper(*args, **kwargs):
         return list(func(*args, **kwargs))
     return wrapper

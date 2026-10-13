@@ -11,9 +11,10 @@ This means for example in this case::
 The signature here for bar should be `bar(b, c)` instead of bar(*args).
 """
 from inspect import Parameter
+from typing import Sequence
 
 from jedi.inference.utils import to_list
-from jedi.inference.names import ParamNameWrapper
+from jedi.inference.names import ParamNameWrapper, AnonymousParamName
 from jedi.inference.helpers import is_big_annoying_library
 
 
@@ -94,7 +95,11 @@ def _remove_given_params(arguments, param_names):
 
 
 @to_list
-def process_params(param_names, star_count=3):  # default means both * and **
+def process_params(param_names: Sequence[AnonymousParamName | ParamNameFixedKind], star_count=3, already_used=None):
+    # start_count=3 means both * and **
+    if already_used is None:
+        already_used = set()
+
     if param_names:
         if is_big_annoying_library(param_names[0].parent_context):
             # At first this feature can look innocent, but it does a lot of
@@ -112,14 +117,22 @@ def process_params(param_names, star_count=3):  # default means both * and **
     original_arg_name = None
     original_kwarg_name = None
     for p in param_names:
+        def is_recursion():
+            is_recursion = p.tree_name in already_used
+            if not is_recursion:
+                already_used.add(p.tree_name)
+            return is_recursion
+
         kind = p.get_kind()
         if kind == Parameter.VAR_POSITIONAL:
             if star_count & 1:
-                arg_callables = _iter_nodes_for_param(p)
+                if not is_recursion():
+                    arg_callables = _iter_nodes_for_param(p)
                 original_arg_name = p
         elif p.get_kind() == Parameter.VAR_KEYWORD:
             if star_count & 2:
-                kwarg_callables = list(_iter_nodes_for_param(p))
+                if not is_recursion():
+                    kwarg_callables = list(_iter_nodes_for_param(p))
                 original_kwarg_name = p
         elif kind == Parameter.KEYWORD_ONLY:
             if star_count & 2:
@@ -157,7 +170,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
                     list(_remove_given_params(
                         arguments,
                         signature.get_param_names(resolve_stars=False)
-                    )), new_star_count):
+                    )), new_star_count, already_used):
                 if p.get_kind() == Parameter.VAR_KEYWORD:
                     kwarg_names.append(p)
                 elif p.get_kind() == Parameter.VAR_POSITIONAL:
@@ -190,7 +203,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
                     list(_remove_given_params(
                         arguments,
                         signature.get_param_names(resolve_stars=False)
-                    )), star_count=2):
+                    )), star_count=2, already_used=already_used):
                 if p.get_kind() == Parameter.VAR_KEYWORD:
                     kwarg_names.append(p)
                 elif p.get_kind() == Parameter.KEYWORD_ONLY:

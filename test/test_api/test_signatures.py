@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import pytest
 
 _tuple_code = 'from typing import Tuple\ndef f(x: Tuple[int]): ...\nf'
@@ -69,3 +71,28 @@ def test_param_kind_and_name(code, index, param_code, kind, Script):
 def test_staticmethod(Script):
     s, = Script('staticmethod(').get_signatures()
     assert s.to_string() == 'staticmethod(f: Callable[_P, _R_co], /)'
+
+
+def test_recursive_star_kwargs_do_not_recurse(Script):
+    # From #2085
+    code = dedent('''
+        def test(x, **kwargs):
+            if isinstance(x, int):
+                return test((x,), **kwargs)
+        test(
+        ''')
+    script = Script(code)
+    script.complete()
+    signature, = script.get_signatures()
+    assert signature.to_string() == 'test(x, **kwargs)'
+
+    code = dedent('''
+        def test(x, *args, **kwargs):
+            if isinstance(x, int):
+                return test((x,), *args, **kwargs)
+        test(
+        ''')
+    script = Script(code)
+    script.complete()
+    signature, = script.get_signatures()
+    assert signature.to_string() == 'test(x, *args, **kwargs)'

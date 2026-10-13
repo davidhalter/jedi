@@ -8,6 +8,7 @@ debug messages to stdout, simply call :func:`set_debug_function` without
 arguments.
 """
 from pathlib import Path
+from typing import Any
 
 import parso
 from parso.python import tree
@@ -338,7 +339,7 @@ class Script:
             fuzzy=fuzzy,
         )
 
-    def complete_search(self, string, **kwargs):
+    def complete_search(self, string, **kwargs) -> list[Any]:
         """
         Like :meth:`.Script.search`, but completes that string. If you want to
         have all possible definitions in a file you can also provide an empty
