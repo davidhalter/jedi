@@ -142,8 +142,8 @@ def test_version_info():
 def test_pyrepl():
     try:
         from _pyrepl import readline  # zuban: ignore[import-not-found]
-    except ImportError:  # This is typical before Python 3.13
-        pass
+    except ImportError:
+        return  # This is typical before Python 3.13
 
     utils.setup_readline(types.SimpleNamespace())
     readline._setup({})
