@@ -247,7 +247,8 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
         code_block = dedent(code_block)
         if not has_ending_return_stmt:
             output_var_str = ', '.join(return_variables)
-            code_block += 'return ' + output_var_str + '\n'
+            if return_variables:
+                code_block += 'return ' + output_var_str + '\n'
 
     # Check if we have to raise RefactoringError
     _check_for_non_extractables(nodes[:-1] if has_ending_return_stmt else nodes)
@@ -282,8 +283,10 @@ def extract_function(inference_state, path, module_context, name, pos, until_pos
     else:
         if has_ending_return_stmt:
             replacement = 'return ' + function_call + '\n'
-        else:
+        elif return_variables:
             replacement = output_var_str + ' = ' + function_call + '\n'
+        else:
+            replacement = function_call + '\n'
 
     replacement_dct = _replace(nodes, replacement, function_code, pos,
                                insert_before_leaf, remaining_prefix)
