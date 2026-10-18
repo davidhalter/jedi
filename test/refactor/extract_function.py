@@ -314,6 +314,22 @@ def x(v1):
     #bar
     return x
 x
+# -------------------------------------------------- with-range-func-no-output
+def x(v1):
+    #? 2 text {'new_name': 'func', 'until_line': 4}
+    print(v1)
+    print(v1 + 1)
+    return v1
+# ++++++++++++++++++++++++++++++++++++++++++++++++++
+def func(v1):
+    print(v1)
+    print(v1 + 1)
+
+
+def x(v1):
+    #? 2 text {'new_name': 'func', 'until_line': 4}
+    func(v1)
+    return v1
 # -------------------------------------------------- in-class-range-1
 class X1:
     #? 9 text {'new_name': 'f', 'until_line': 4}
