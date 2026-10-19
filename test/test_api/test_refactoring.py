@@ -101,6 +101,44 @@ def test_rename_none_path(Script):
     assert refactoring
 
 
+@pytest.mark.parametrize('encoding, text', [
+    ('utf-8', 'café 中文'),
+    ('utf-8-sig', 'café 中文'),
+    ('latin-1', 'café'),
+    ('cp1252', '€'),
+])
+@pytest.mark.parametrize('newline', ['\n', '\r\n'])
+def test_apply_preserves_source_encoding(Script, tmp_path, encoding, text, newline):
+    path = tmp_path / 'encoded.py'
+    code = f'# coding: {encoding}{newline}value = {text!r}{newline}print(value){newline}'
+    path.write_bytes(code.encode(encoding))
+
+    Script(path=path).rename(2, 0, new_name='renamed').apply()
+
+    assert path.read_bytes() == code.replace('value', 'renamed').encode(encoding)
+
+
+def test_apply_encoding_error_preserves_source(Script, tmp_path):
+    path = tmp_path / 'encoded.py'
+    original = b"# coding: latin-1\nvalue = 'caf\xe9'\n"
+    path.write_bytes(original)
+    refactoring = Script(path=path).rename(2, 0, new_name='变量')
+
+    with pytest.raises(UnicodeEncodeError):
+        refactoring.apply()
+
+    assert path.read_bytes() == original
+
+
+def test_apply_new_file_uses_utf8(Script, tmp_path):
+    path = tmp_path / 'new.py'
+    code = "value = '中文'\n"
+
+    Script(code, path=path).rename(1, 0, new_name='renamed').apply()
+
+    assert path.read_bytes() == code.replace('value', 'renamed').encode('utf-8')
+
+
 def test_diff_without_ending_newline(Script):
     refactoring = Script('a = 1\nb\na').rename(1, 0, new_name='c')
     assert refactoring.get_diff() == dedent('''\

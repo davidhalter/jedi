@@ -1,5 +1,7 @@
 import difflib
+from io import BytesIO
 from pathlib import Path
+from tokenize import detect_encoding
 from typing import Dict, Iterable, Tuple
 
 from parso import split_lines
@@ -72,8 +74,14 @@ class ChangedFile:
                 'Cannot apply a refactoring on a Script with path=None'
             )
 
-        with open(self._from_path, 'w', newline='') as f:
-            f.write(self.get_new_code())
+        code = self.get_new_code()
+        encoding, _ = detect_encoding(BytesIO(code.encode('utf-8')).readline)
+        if encoding == 'utf-8-sig':
+            code = code.removeprefix('\ufeff')
+        # Encode before opening the file so encoding errors cannot truncate it.
+        data = code.encode(encoding)
+        with open(self._from_path, 'wb') as f:
+            f.write(data)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._from_path)

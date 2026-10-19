@@ -6,6 +6,9 @@ Changelog
 Unreleased
 ++++++++++
 
+- Preserve Python source encodings when applying refactorings and avoid truncating
+  files when the result cannot be encoded.
+
 0.20.1 (2026-10-12)
 +++++++++++++++++++
 

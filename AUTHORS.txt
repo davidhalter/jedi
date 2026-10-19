@@ -73,6 +73,8 @@ Code Contributors
 - Abdullah Ahmed (@abdull-ah-med)
 - spicysharkco (@spicysharkco)
 
+- Alex0AI (@Alex0AI)
+
 And a few more "anonymous" contributors.
 
 Note: (@user) means a github user name.
