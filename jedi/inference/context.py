@@ -395,6 +395,12 @@ class CompForContext(TreeContextMixin, AbstractContext):
     def py__name__(self):
         return '<comprehension context>'
 
+    def get_qualified_names(self) -> Any:
+        names = self.parent_context.get_qualified_names()
+        if names is None:
+            return None
+        return names + ('<comprehension>',)
+
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.tree_node)
 
