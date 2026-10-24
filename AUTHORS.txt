@@ -72,6 +72,7 @@ Code Contributors
 - Charan Rathore (@charan-rathore)
 - Abdullah Ahmed (@abdull-ah-med)
 - spicysharkco (@spicysharkco)
+- Don Yin (@Don-Yin) <Don_Yin@outlook.com>
 
 And a few more "anonymous" contributors.
 
