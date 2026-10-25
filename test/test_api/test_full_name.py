@@ -128,3 +128,45 @@ def test_variable_in_func(Script):
     x = names[-1]
     assert x.name == 'x'
     assert x.full_name == '__main__.f.x'
+
+
+def test_comprehension_full_name_issue_1944(Script):
+    source = textwrap.dedent('''\
+        def pig_latin(text):
+            translated_words = [translate(word) for word in words]
+    ''')
+    names = Script(source).get_names(all_scopes=True, references=True)
+    word_names = [name for name in names if name.name == 'word']
+    assert len(word_names) == 2
+    assert {name.full_name for name in word_names} == {
+        '__main__.pig_latin.<comprehension>.word'
+    }
+
+
+@pytest.mark.parametrize('expression', [
+    '[word for word in words]',
+    '{word for word in words}',
+    '{word: word for word in words}',
+    '(word for word in words)',
+    '[word for row in rows for word in row]',
+    '[word for row in rows if row for word in row]',
+])
+def test_comprehension_full_name(Script, expression):
+    source = 'def f():\n    return ' + expression
+    names = Script(source).get_names(all_scopes=True, references=True)
+    word_names = [name for name in names if name.name == 'word']
+    assert len(word_names) >= 2
+    assert {name.full_name for name in word_names} == {'__main__.f.<comprehension>.word'}
+
+
+@pytest.mark.parametrize('source, expected', [
+    ('[word for word in words]', '__main__.<comprehension>.word'),
+    ('def f():\n    return [[word for word in words] for words in rows]',
+     '__main__.f.<comprehension>.<comprehension>.word'),
+    ('def outer():\n    def f():\n        return [word for word in words]', None),
+])
+def test_comprehension_parent_full_name(Script, source, expected):
+    names = Script(source).get_names(all_scopes=True, references=True)
+    word_names = [name for name in names if name.name == 'word']
+    assert len(word_names) == 2
+    assert {name.full_name for name in word_names} == {expected}
