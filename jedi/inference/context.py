@@ -265,8 +265,14 @@ class TreeContextMixin:
             if scope_node.type in ('funcdef', 'lambdef', 'classdef'):
                 return self.create_value(scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
-                parent_context = from_scope_node(parent_scope(scope_node.parent))
-                if node.start_pos >= scope_node.children[-1].start_pos:
+                if scope_node.type == 'comp_for':
+                    scope_node = scope_node.children[1]  # Skip the async keyword.
+                parent = scope_node.parent
+                if parent.type == 'comp_for':
+                    parent = parent.parent
+                parent_context = from_scope_node(parent_scope(parent))
+                iterable = scope_node.children[3]
+                if iterable.start_pos <= node.start_pos < iterable.end_pos:
                     return parent_context
                 return CompForContext(parent_context, scope_node)
             raise Exception("There's a scope that was not managed: %s" % scope_node)
@@ -396,9 +402,14 @@ class CompForContext(TreeContextMixin, AbstractContext):
         return '<comprehension context>'
 
     def get_qualified_names(self) -> Any:
-        names = self.parent_context.get_qualified_names()
+        parent_context = self.parent_context
+        names = parent_context.get_qualified_names()
         if names is None:
             return None
+        if isinstance(parent_context, CompForContext) \
+                and self.tree_node in parser_utils.get_sync_comp_fors(parent_context.tree_node):
+            # Consecutive for clauses belong to the same comprehension.
+            return names
         return names + ('<comprehension>',)
 
     def __repr__(self):

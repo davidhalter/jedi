@@ -73,6 +73,7 @@ Code Contributors
 - Abdullah Ahmed (@abdull-ah-med)
 - spicysharkco (@spicysharkco)
 - Don Yin (@Don-Yin) <Don_Yin@outlook.com>
+- flynn-eye (@flynn-eye)
 
 And a few more "anonymous" contributors.
 

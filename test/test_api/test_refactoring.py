@@ -101,6 +101,39 @@ def test_rename_none_path(Script):
     assert refactoring
 
 
+@pytest.mark.parametrize('expression, expected', [
+    ('[x for x in x if x < 3]', '[y for y in x if y < 3]'),
+    ('{x for x in x if x < 3}', '{y for y in x if y < 3}'),
+    ('{x: x for x in x if x < 3}', '{y: y for y in x if y < 3}'),
+    ('(x for x in x if x < 3)', '(y for y in x if y < 3)'),
+    ('[x for x in x if x > 0 if x < 3]', '[y for y in x if y > 0 if y < 3]'),
+    ('[x for x in x for z in x if x < 3]', '[y for y in x for z in y if y < 3]'),
+    ('[[x for z in x if x] for x in x if x]', '[[y for z in y if y] for y in x if y]'),
+])
+def test_rename_comprehension_filter(Script, dir_with_content, expression, expected):
+    prefix = 'x = [1, 2, 3]\nfoo = '
+    suffix = '\noutside = x\n'
+    path = dir_with_content / 'some_script.py'
+    script = Script(prefix + expression + suffix, path=path)
+    column = len('foo = ') + expression.rindex('for x') + len('for ')
+    refactoring = script.rename(line=2, column=column, new_name='y')
+    assert refactoring.get_changed_files()[path].get_new_code() == prefix + expected + suffix
+
+
+def test_rename_async_comprehension_filter(Script, dir_with_content):
+    path = dir_with_content / 'some_script.py'
+    script = Script(
+        'async def f(x):\n'
+        '    return [x async for x in x if x]\n',
+        path=path,
+    )
+    refactoring = script.rename(line=2, column=24, new_name='y')
+    assert refactoring.get_changed_files()[path].get_new_code() == (
+        'async def f(x):\n'
+        '    return [y async for y in x if y]\n'
+    )
+
+
 def test_diff_without_ending_newline(Script):
     refactoring = Script('a = 1\nb\na').rename(1, 0, new_name='c')
     assert refactoring.get_diff() == dedent('''\
