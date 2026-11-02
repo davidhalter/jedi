@@ -21,31 +21,38 @@ def _check_instance(obj, attr):
 
 
 def _check_class(klass, attr):
+    # Most classes use the metaclass ``type``, whose ``__dict__`` is never
+    # shadowed. Only recompute _shadowed_dict when the metaclass changes.
+    metaclass = type
+    shadowed = _sentinel
     for entry in _static_getmro(klass):
-        if _shadowed_dict(type(entry)) is _sentinel:
-            try:
-                return entry.__dict__[attr]
-            except KeyError:
-                pass
+        if type(entry) is not metaclass:
+            metaclass = type(entry)
+            shadowed = _shadowed_dict(metaclass)
+        if shadowed is _sentinel:
+            class_dict = entry.__dict__
+            if type(class_dict) is types.MappingProxyType:
+                result = class_dict.get(attr, _sentinel)
+                if result is not _sentinel:
+                    return result
+            else:
+                try:
+                    return class_dict[attr]
+                except KeyError:
+                    pass
     return _sentinel
 
 
 def _is_type(obj):
-    try:
-        _static_getmro(obj)
-    except TypeError:
-        return False
-    return True
+    # Same check as the one done by type.__mro__.__get__, without raising.
+    return issubclass(type(obj), type)
 
 
 def _shadowed_dict(klass):
     dict_attr = type.__dict__["__dict__"]  # type: ignore[index]
     for entry in _static_getmro(klass):
-        try:
-            class_dict = dict_attr.__get__(entry)["__dict__"]
-        except KeyError:
-            pass
-        else:
+        class_dict = dict_attr.__get__(entry).get("__dict__", _sentinel)
+        if class_dict is not _sentinel:
             if not (type(class_dict) is types.GetSetDescriptorType
                     and class_dict.__name__ == "__dict__"
                     and class_dict.__objclass__ is entry):
@@ -54,7 +61,13 @@ def _shadowed_dict(klass):
 
 
 def _static_getmro(klass):
+    if type(klass) is type:
+        # Without a custom metaclass ``__mro__`` always resolves to the data
+        # descriptor of ``type``, so the plain attribute access is safe.
+        return klass.__mro__
     mro = type.__dict__['__mro__'].__get__(klass)  # type: ignore[index]
+    if type(mro) is tuple:
+        return mro
     if not isinstance(mro, (tuple, list)):
         # There are unfortunately no tests for this, I was not able to
         # reproduce this in pure Python. However should still solve the issue
@@ -113,12 +126,9 @@ def getattr_static(obj, attr, default=_sentinel):
 
     if obj is klass:
         # for types we check the metaclass too
-        for entry in _static_getmro(type(klass)):
-            if _shadowed_dict(type(entry)) is _sentinel:
-                try:
-                    return entry.__dict__[attr], False
-                except KeyError:
-                    pass
+        metaclass_result = _check_class(type(klass), attr)
+        if metaclass_result is not _sentinel:
+            return metaclass_result, False
     if default is not _sentinel:
         return default, False
     raise AttributeError(attr)
