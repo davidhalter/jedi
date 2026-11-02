@@ -113,13 +113,29 @@ class _AbstractUsedNamesFilter(AbstractFilter):
         return [self.name_class(self.parent_context, name) for name in names]
 
     def values(self):
-        return self._convert_names(
-            name
-            for name_key in self._used_names
-            for name in self._filter(
-                _get_definition_names(self._parso_cache_node, self._used_names, name_key),
-            )
-        )
+        # Look up the per-module definition cache once instead of once per
+        # name key (see _get_definition_names).
+        parso_cache_node = self._parso_cache_node
+        if parso_cache_node is None:
+            definition_names = {}
+        else:
+            try:
+                definition_names = _definition_name_cache[parso_cache_node]
+            except KeyError:
+                definition_names = _definition_name_cache[parso_cache_node] = {}
+
+        filter_ = self._filter
+        names = []
+        for name_key, used_names in self._used_names.items():
+            try:
+                definitions = definition_names[name_key]
+            except KeyError:
+                definitions = definition_names[name_key] = tuple(
+                    name for name in used_names if name.is_definition(include_setitem=True)
+                )
+            if definitions:
+                names += filter_(definitions)
+        return self._convert_names(names)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.parent_context)
@@ -139,8 +155,17 @@ class ParserTreeFilter(_AbstractUsedNamesFilter):
         self._until_position = until_position
 
     def _filter(self, names):
-        names = super()._filter(names)
-        names = [n for n in names if self._is_name_reachable(n)]
+        if not names:
+            return []
+        until_position = self._until_position
+        is_name_reachable = self._is_name_reachable
+        if until_position is None:
+            names = [n for n in names if is_name_reachable(n)]
+        else:
+            names = [n for n in names
+                     if n.start_pos < until_position and is_name_reachable(n)]
+        if not names:
+            return names
         return list(self._check_flows(names))
 
     def _is_name_reachable(self, name):
@@ -151,18 +176,28 @@ class ParserTreeFilter(_AbstractUsedNamesFilter):
         return get_cached_parent_scope(self._parso_cache_node, base_node) == self._parser_scope
 
     def _check_flows(self, names):
-        for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
-            check = flow_analysis.reachability_check(
-                context=self._node_context,
-                value_scope=self._parser_scope,
+        if len(names) > 1:
+            names = sorted(names, key=lambda name: name.start_pos, reverse=True)
+        reachability_check = flow_analysis.reachability_check
+        UNREACHABLE = flow_analysis.UNREACHABLE
+        REACHABLE = flow_analysis.REACHABLE
+        context = self._node_context
+        value_scope = self._parser_scope
+        origin_scope = self._origin_scope
+        result = []
+        for name in names:
+            check = reachability_check(
+                context=context,
+                value_scope=value_scope,
                 node=name,
-                origin_scope=self._origin_scope
+                origin_scope=origin_scope
             )
-            if check is not flow_analysis.UNREACHABLE:
-                yield name
+            if check is not UNREACHABLE:
+                result.append(name)
 
-            if check is flow_analysis.REACHABLE:
+            if check is REACHABLE:
                 break
+        return result
 
 
 class _FunctionExecutionFilter(ParserTreeFilter):
