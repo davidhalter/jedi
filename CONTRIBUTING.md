@@ -6,3 +6,7 @@ Pull Requests are great.
  4. Push to your fork and submit a pull request.
 
 **Try to use the PEP8 style guide** (and it's ok to have a line length of 100 characters).
+
+# LLM usage
+
+LLM usage is prohibited unless done by maintainers or people who understand what they do.
