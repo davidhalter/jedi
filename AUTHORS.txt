@@ -73,6 +73,7 @@ Code Contributors
 - Abdullah Ahmed (@abdull-ah-med)
 - spicysharkco (@spicysharkco)
 - Don Yin (@Don-Yin) <Don_Yin@outlook.com>
+- Sheng Lee (@leeshengis) (with OpenAI Codex assistance)
 
 And a few more "anonymous" contributors.
 

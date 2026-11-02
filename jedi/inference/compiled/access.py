@@ -537,8 +537,15 @@ class DirectObjectAccess:
             raise ValueError
 
     def get_return_annotation(self) -> Optional[AccessPath]:
+        obj = self._obj
+        if self.is_instance() and not self.is_class():
+            # Calling an instance uses its type's special method, not the
+            # instance's own annotations (or an instance-level __call__).
+            obj = safe_getattr(type(obj), '__call__', None)
+            if not (inspect.isfunction(obj) or inspect.ismethod(obj)):
+                return None
         try:
-            o = self._obj.__annotations__.get('return')
+            o = obj.__annotations__.get('return')
         except AttributeError:
             return None
 
@@ -546,7 +553,7 @@ class DirectObjectAccess:
             return None
 
         try:
-            o = typing.get_type_hints(self._obj).get('return')
+            o = typing.get_type_hints(obj).get('return')
         except Exception:
             pass
 

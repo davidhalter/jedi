@@ -328,6 +328,65 @@ def test_completion_param_annotations():
     assert d.name == 'bytes'
 
 
+@pytest.mark.parametrize('annotation', ['Result', "'Result'"])
+@pytest.mark.parametrize('inherit', [False, True])
+@pytest.mark.parametrize('decorator, parameter', [
+    ('', 'self'), ('@staticmethod', ''), ('@classmethod', 'cls'),
+])
+def test_callable_instance_return_annotation(annotation, inherit, decorator, parameter):
+    # As in an IPython session, the source of these objects is unavailable.
+    namespace = {}
+    exec("""
+class Result:
+    def my_method(self):
+        pass
+
+class Callable:
+    %s
+    def __call__(%s) -> %s:
+        raise AssertionError("completion must not execute __call__")
+
+class Child(Callable):
+    pass
+
+obj = %s()
+# Special method lookup ignores these instance-level attributes.
+obj.__annotations__ = {'return': int}
+obj.__call__ = lambda: 1
+""" % (decorator, parameter, annotation, 'Child' if inherit else 'Callable'), namespace)
+
+    completion = get_completion('obj().my_', namespace)
+    assert completion.name == 'my_method'
+    result, = jedi.Interpreter('obj()', [namespace]).infer()
+    assert result.name == 'Result'
+    # Calling the class must still produce its instance, not Result.
+    result, = jedi.Interpreter('Callable()', [namespace]).infer()
+    assert result.name == 'Callable'
+
+
+def test_callable_instance_annotation_descriptor_not_executed():
+    from jedi.inference.compiled.access import DirectObjectAccess
+
+    class Descriptor:
+        def __get__(self, instance, owner):
+            raise AssertionError("must not execute descriptor")
+
+        @property
+        def __annotations__(self):
+            raise AssertionError("must not inspect descriptor annotations")
+
+    class Callable:
+        __call__ = Descriptor()
+
+    class PropertyCallable:
+        @property
+        def __call__(self):
+            raise AssertionError("must not execute property")
+
+    for obj in (Callable(), PropertyCallable()):
+        assert DirectObjectAccess(None, obj).get_return_annotation() is None
+
+
 def test_keyword_argument():
     def f(some_keyword_argument):
         pass
